@@ -1,12 +1,14 @@
 /**
  * Footer — Cristina Vive Consciente
  * Design: "Luz Botánica" — limpio, natural, sin referencias externas
- * Secciones: Logo + tagline, navegación, servicios, contacto
+ * Logo real BION en versión clara (invertida sobre fondo oscuro)
  */
 
 import { Link } from "wouter";
 import { Instagram, Mail, Phone } from "lucide-react";
 import { toast } from "sonner";
+
+const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/logo-bion_ba8968f6.avif";
 
 const serviceLinks = [
   { href: "/consultas", label: "Consultas Holísticas" },
@@ -31,30 +33,14 @@ export default function Footer() {
 
           {/* Brand Column */}
           <div className="lg:col-span-1">
-            <Link href="/" className="inline-flex items-center gap-2.5 mb-5 no-underline group">
-              <div
-                className="w-8 h-8 flex items-center justify-center border border-[oklch(0.52_0.08_148)] text-[oklch(0.52_0.08_148)]"
-                style={{ borderWidth: "1.5px" }}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <circle cx="8" cy="8" r="3" fill="currentColor" opacity="0.7" />
-                  <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1" />
-                </svg>
-              </div>
-              <div>
-                <span
-                  className="block text-white font-display font-semibold text-base"
-                  style={{ letterSpacing: "0.25em", lineHeight: 1 }}
-                >
-                  BION
-                </span>
-                <span
-                  className="block text-[oklch(0.72_0.06_148)] text-[0.55rem]"
-                  style={{ letterSpacing: "0.18em" }}
-                >
-                  Vive Consciente
-                </span>
-              </div>
+            <Link href="/" className="inline-block mb-5 no-underline">
+              {/* Logo invertido a blanco sobre fondo oscuro */}
+              <img
+                src={LOGO_URL}
+                alt="BION — Cristina Vive Consciente"
+                className="h-12 w-auto object-contain brightness-0 invert opacity-90"
+                style={{ maxWidth: "160px" }}
+              />
             </Link>
 
             <p className="text-[oklch(0.72_0.06_60)] text-sm leading-relaxed mb-6 font-body" style={{ fontWeight: 300 }}>
@@ -171,7 +157,7 @@ export default function Footer() {
         <div className="container py-5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-[oklch(0.52_0.02_60)] text-xs font-body" style={{ fontWeight: 300 }}>
-              © {new Date().getFullYear()} Cristina Vive Consciente. Todos los derechos reservados.
+              © {new Date().getFullYear()} BION — Cristina Vive Consciente. Todos los derechos reservados.
             </p>
             <div className="flex items-center gap-5">
               <button
