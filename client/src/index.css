@@ -1,3 +1,10 @@
+/* ============================================================
+   CRISTINA VIVE CONSCIENTE — Design System
+   Philosophy: "Luz Botánica" — Art Nouveau depurado + Minimalismo escandinavo
+   Palette: Verde salvia, beige cálido, marrón tierra
+   Typography: Playfair Display (serif display) + DM Sans (body)
+   ============================================================ */
+
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -43,83 +50,112 @@
 }
 
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.235 0.015 65);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.235 0.015 65);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.235 0.015 65);
-  --secondary: oklch(0.98 0.001 286.375);
-  --secondary-foreground: oklch(0.4 0.015 65);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.141 0.005 285.823);
+  /* Luz Botánica — Natural Palette */
+  --radius: 0.375rem;
+
+  /* Core Colors */
+  --background: oklch(0.985 0.006 85);           /* #FAFAF7 — lino blanco cálido */
+  --foreground: oklch(0.18 0.018 55);             /* #2A2420 — casi negro cálido */
+
+  /* Primary: Verde Salvia */
+  --primary: oklch(0.52 0.08 148);               /* #7A9E7E — verde salvia */
+  --primary-foreground: oklch(0.985 0.006 85);   /* blanco cálido */
+
+  /* Secondary: Beige Dorado */
+  --secondary: oklch(0.88 0.04 75);              /* #E8D9C0 — beige cálido */
+  --secondary-foreground: oklch(0.28 0.025 55);  /* marrón oscuro */
+
+  /* Accent: Marrón Tierra */
+  --accent: oklch(0.72 0.06 65);                 /* #C9A96E — beige dorado */
+  --accent-foreground: oklch(0.18 0.018 55);     /* texto oscuro */
+
+  /* Muted */
+  --muted: oklch(0.94 0.012 80);                 /* beige muy suave */
+  --muted-foreground: oklch(0.52 0.02 60);       /* #9B8E85 — piedra gris-beige */
+
+  /* Cards */
+  --card: oklch(0.99 0.004 85);                  /* blanco cálido */
+  --card-foreground: oklch(0.18 0.018 55);
+
+  /* Popover */
+  --popover: oklch(0.99 0.004 85);
+  --popover-foreground: oklch(0.18 0.018 55);
+
+  /* Borders */
+  --border: oklch(0.88 0.015 75);               /* beige suave */
+  --input: oklch(0.88 0.015 75);
+  --ring: oklch(0.52 0.08 148);                 /* verde salvia */
+
+  /* Destructive */
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.235 0.015 65);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
-}
 
-.dark {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-500);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.85 0.005 65);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.85 0.005 65);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.85 0.005 65);
-  --secondary: oklch(0.24 0.006 286.033);
-  --secondary-foreground: oklch(0.7 0.005 65);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground:  oklch(0.92 0.005 65);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.85 0.005 65);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground:  oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.488 0.243 264.376);
+  /* Charts */
+  --chart-1: oklch(0.52 0.08 148);
+  --chart-2: oklch(0.72 0.06 65);
+  --chart-3: oklch(0.58 0.07 55);
+  --chart-4: oklch(0.88 0.04 75);
+  --chart-5: oklch(0.42 0.06 148);
+
+  /* Sidebar */
+  --sidebar: oklch(0.985 0.006 85);
+  --sidebar-foreground: oklch(0.18 0.018 55);
+  --sidebar-primary: oklch(0.52 0.08 148);
+  --sidebar-primary-foreground: oklch(0.985 0.006 85);
+  --sidebar-accent: oklch(0.94 0.012 80);
+  --sidebar-accent-foreground: oklch(0.18 0.018 55);
+  --sidebar-border: oklch(0.88 0.015 75);
+  --sidebar-ring: oklch(0.52 0.08 148);
+
+  /* Custom Brand Colors */
+  --sage: oklch(0.52 0.08 148);
+  --sage-light: oklch(0.72 0.06 148);
+  --sage-dark: oklch(0.38 0.07 148);
+  --beige: oklch(0.94 0.018 80);
+  --beige-warm: oklch(0.88 0.04 75);
+  --earth: oklch(0.52 0.06 55);
+  --earth-light: oklch(0.72 0.06 65);
+  --linen: oklch(0.985 0.006 85);
+  --text-dark: oklch(0.18 0.018 55);
+  --text-muted: oklch(0.52 0.02 60);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); }
+  h2 { font-size: clamp(1.8rem, 3.5vw, 3rem); }
+  h3 { font-size: clamp(1.3rem, 2.5vw, 1.8rem); }
+  h4 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
+
+  p {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    line-height: 1.75;
+  }
+
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   [type="button"]:not(:disabled),
@@ -134,25 +170,13 @@
 }
 
 @layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
+  /* Container */
   .container {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
-    padding-right: 1rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
   }
 
   .flex {
@@ -162,16 +186,237 @@
 
   @media (min-width: 640px) {
     .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
-      padding-right: 1.5rem;
+      padding-left: 2rem;
+      padding-right: 2rem;
     }
   }
 
   @media (min-width: 1024px) {
     .container {
-      padding-left: 2rem; /* 32px - desktop padding */
-      padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
+      padding-left: 3rem;
+      padding-right: 3rem;
+      max-width: 1280px;
     }
+  }
+
+  /* Typography Utilities */
+  .font-display {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .font-body {
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .text-display-xl {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(3rem, 6vw, 5.5rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .text-display-lg {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+  }
+
+  .text-serif-italic {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  /* Brand Button — Primary */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 2rem;
+    background-color: oklch(0.52 0.08 148);
+    color: oklch(0.985 0.006 85);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-radius: 0;
+    border: 1.5px solid oklch(0.52 0.08 148);
+    transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    text-decoration: none;
+  }
+
+  .btn-primary:hover {
+    background-color: oklch(0.38 0.07 148);
+    border-color: oklch(0.38 0.07 148);
+    transform: translateY(-1px);
+  }
+
+  /* Brand Button — Outline */
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 2rem;
+    background-color: transparent;
+    color: oklch(0.52 0.08 148);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-radius: 0;
+    border: 1.5px solid oklch(0.52 0.08 148);
+    transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    text-decoration: none;
+  }
+
+  .btn-outline:hover {
+    background-color: oklch(0.52 0.08 148);
+    color: oklch(0.985 0.006 85);
+    transform: translateY(-1px);
+  }
+
+  /* Section Divider */
+  .section-divider {
+    width: 3rem;
+    height: 1.5px;
+    background-color: oklch(0.52 0.08 148);
+    margin: 1.5rem 0;
+  }
+
+  /* Card Natural */
+  .card-natural {
+    background: oklch(0.99 0.004 85);
+    border: 1px solid oklch(0.88 0.015 75);
+    transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .card-natural:hover {
+    box-shadow: 0 8px 32px oklch(0.52 0.06 55 / 0.12);
+    transform: translateY(-3px);
+    border-color: oklch(0.72 0.06 148);
+  }
+
+  /* Section Padding */
+  .section-padding {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+
+  @media (min-width: 768px) {
+    .section-padding {
+      padding-top: 8rem;
+      padding-bottom: 8rem;
+    }
+  }
+
+  /* Botanical Accent Line */
+  .accent-line::after {
+    content: '';
+    display: block;
+    width: 3rem;
+    height: 1.5px;
+    background: oklch(0.52 0.08 148);
+    margin-top: 1rem;
+  }
+
+  /* Fade In Animation */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+
+  /* Stagger delays */
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+
+  /* Nav Link */
+  .nav-link {
+    position: relative;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: oklch(0.18 0.018 55);
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background-color: oklch(0.52 0.08 148);
+    transition: width 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .nav-link:hover {
+    color: oklch(0.52 0.08 148);
+  }
+
+  .nav-link:hover::after,
+  .nav-link.active::after {
+    width: 100%;
+  }
+
+  .nav-link.active {
+    color: oklch(0.52 0.08 148);
+  }
+
+  /* Page Hero */
+  .page-hero {
+    position: relative;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  /* Overlay gradient */
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to right,
+      oklch(0.18 0.018 55 / 0.65) 0%,
+      oklch(0.18 0.018 55 / 0.3) 60%,
+      transparent 100%
+    );
+  }
+
+  /* Blog Card */
+  .blog-card-img {
+    overflow: hidden;
+    aspect-ratio: 16/9;
+  }
+
+  .blog-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .blog-card-img:hover img {
+    transform: scale(1.04);
   }
 }
