@@ -62,7 +62,7 @@ export default function Header() {
                 className={`w-auto object-contain transition-all duration-500 ${
                   solidBg ? "brightness-100" : "brightness-0 invert"
                 }`}
-                style={{ width: '100px', height: 'auto' }}
+                style={{ width: '120px', height: 'auto' }}
               />
             </Link>
 
