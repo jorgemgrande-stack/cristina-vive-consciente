@@ -59,10 +59,10 @@ export default function Header() {
               <img
                 src={LOGO_URL}
                 alt="BION — Cristina Vive Consciente"
-                className={`h-10 md:h-12 w-auto object-contain transition-all duration-500 ${
+                className={`w-auto object-contain transition-all duration-500 ${
                   solidBg ? "brightness-100" : "brightness-0 invert"
                 }`}
-                style={{ maxWidth: "180px" }}
+                style={{ width: '100px', height: 'auto' }}
               />
             </Link>
 
