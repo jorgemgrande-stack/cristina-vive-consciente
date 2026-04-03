@@ -1,0 +1,22 @@
+CREATE TABLE `ebook_purchases` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`stripeSessionId` varchar(200) NOT NULL,
+	`stripePaymentIntentId` varchar(200),
+	`customerEmail` varchar(320) NOT NULL,
+	`customerName` varchar(200),
+	`ebookId` varchar(50) NOT NULL,
+	`ebookTitle` varchar(200) NOT NULL,
+	`amountCents` int NOT NULL,
+	`currency` varchar(3) DEFAULT 'EUR',
+	`downloadToken` varchar(100) NOT NULL,
+	`downloadExpiresAt` bigint NOT NULL,
+	`downloadCount` int DEFAULT 0,
+	`status` enum('pending','completed','refunded') NOT NULL DEFAULT 'pending',
+	`emailSentAt` bigint,
+	`clientId` int,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `ebook_purchases_id` PRIMARY KEY(`id`),
+	CONSTRAINT `ebook_purchases_stripeSessionId_unique` UNIQUE(`stripeSessionId`),
+	CONSTRAINT `ebook_purchases_downloadToken_unique` UNIQUE(`downloadToken`)
+);

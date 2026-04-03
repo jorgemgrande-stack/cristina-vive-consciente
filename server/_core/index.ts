@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { handleStripeCheckoutCompleted } from "../routers/ebooks";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -30,6 +31,48 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  // ─── Stripe Webhook (MUST be before express.json) ───────────────────────────
+  // Stripe requires the raw body for signature verification
+  app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+    const sig = req.headers["stripe-signature"];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? "";
+    const stripeKey = process.env.STRIPE_SECRET_KEY ?? "";
+
+    if (!stripeKey) {
+      return res.status(200).json({ received: true, note: "Stripe not configured" });
+    }
+
+    let event: any;
+    try {
+      const Stripe = require("stripe");
+      const stripe = new Stripe(stripeKey, { apiVersion: "2024-06-20" });
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err: any) {
+      console.error("[Webhook] Signature verification failed:", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Test events — return immediately for verification
+    if (event.id?.startsWith("evt_test_")) {
+      console.log("[Webhook] Test event detected, returning verification response");
+      return res.json({ verified: true });
+    }
+
+    console.log(`[Webhook] Received event: ${event.type} (${event.id})`);
+
+    try {
+      if (event.type === "checkout.session.completed") {
+        await handleStripeCheckoutCompleted(event.data.object);
+      }
+    } catch (err) {
+      console.error("[Webhook] Error processing event:", err);
+      // Return 200 to avoid Stripe retries for processing errors
+    }
+
+    res.json({ received: true });
+  });
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

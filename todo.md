@@ -80,3 +80,17 @@
 - [ ] Configurar SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM para envío de emails reales
 - [ ] Configurar ADMIN_EMAIL con el email real de Cristina
 - [ ] Configurar WHATSAPP_ADMIN_NUMBER con el número real de WhatsApp de Cristina
+
+## Fase 6: Ebooks (Stripe listo para activar)
+- [x] Tabla ebook_purchases en base de datos
+- [x] Catálogo de productos en server/ebooks/products.ts
+- [x] Router tRPC: ebooks.list, ebooks.createCheckout, ebooks.download, ebooks.verifyPurchase
+- [x] Webhook Stripe en /api/stripe/webhook (registrado antes de express.json)
+- [x] Email de entrega con enlace de descarga seguro (sendEbookDeliveryEmail)
+- [x] Etiquetado de cliente en CRM tras compra (updateClientTag)
+- [x] Botones de compra reales en /guias-digitales (conectados a Stripe)
+- [x] Página /ebooks/gracias (verificación de compra + enlace de descarga)
+- [x] Página /ebooks/descarga (descarga segura por token, expira 72h)
+- [ ] Subir PDFs reales al CDN y añadir URLs en server/ebooks/products.ts
+- [ ] Crear precios en Stripe Dashboard y añadir stripePriceId en server/ebooks/products.ts
+- [ ] Configurar SMTP para emails de entrega automática

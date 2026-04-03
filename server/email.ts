@@ -279,3 +279,140 @@ export async function sendAdminNotificationEmail(data: BookingEmailData): Promis
     html,
   });
 }
+
+/**
+ * Email de entrega de ebook con enlace de descarga seguro
+ */
+export interface EbookDeliveryEmailData {
+  customerEmail: string;
+  customerName?: string;
+  ebookTitle: string;
+  downloadToken: string;
+  downloadExpiresAt: number; // timestamp ms
+  includesSession: boolean;
+}
+
+export async function sendEbookDeliveryEmail(data: EbookDeliveryEmailData): Promise<void> {
+  const firstName = data.customerName?.split(" ")[0] ?? "Hola";
+  const expiryDate = new Date(data.downloadExpiresAt).toLocaleDateString("es-ES", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  // La URL de descarga apunta a la ruta pública de la web
+  const baseUrl = process.env.VITE_FRONTEND_FORGE_API_URL
+    ? "https://cristinawell-hmjhx75n.manus.space"
+    : "https://cristinawell-hmjhx75n.manus.space";
+  const downloadUrl = `${baseUrl}/ebooks/descarga?token=${data.downloadToken}`;
+
+  const subject = `Tu ebook está listo — ${data.ebookTitle}`;
+
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${subject}</title>
+</head>
+<body style="margin:0;padding:0;background:#FAFAF7;font-family:'Georgia',serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAFAF7;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #E8E4DC;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#3A5A3A;padding:32px 40px;text-align:center;">
+              <p style="margin:0;color:#FFFFFF;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-family:'DM Sans',Arial,sans-serif;">BION</p>
+              <p style="margin:4px 0 0;color:rgba(255,255,255,0.7);font-size:10px;letter-spacing:2px;text-transform:uppercase;font-family:'DM Sans',Arial,sans-serif;">Cristina Vive Consciente</p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px 40px 32px;">
+              <h1 style="margin:0 0 8px;font-size:24px;font-weight:400;color:#1A1208;font-family:'Georgia',serif;">
+                ${firstName}, tu ebook está listo 🌿
+              </h1>
+              <p style="margin:0 0 24px;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
+                Gracias por tu compra de <strong style="color:#1A1208;">${data.ebookTitle}</strong>. A continuación tienes tu enlace de descarga.
+              </p>
+
+              <!-- CTA Descarga -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr>
+                  <td align="center">
+                    <a href="${downloadUrl}"
+                       style="display:inline-block;background:#3A5A3A;color:#FFFFFF;text-decoration:none;font-family:'DM Sans',Arial,sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:16px 40px;font-weight:500;">
+                      Descargar mi ebook
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 24px;font-size:12px;color:#A09080;font-family:'DM Sans',Arial,sans-serif;font-weight:300;text-align:center;">
+                Este enlace es válido hasta el <strong>${expiryDate}</strong>.<br>
+                Si tienes problemas para descargar, responde a este email.
+              </p>
+
+              ${data.includesSession ? `
+              <!-- Sesión incluida -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F2EC;border-left:3px solid #8B7355;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <p style="margin:0 0 6px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#8B7355;font-family:'DM Sans',Arial,sans-serif;font-weight:500;">Incluido en tu compra</p>
+                    <p style="margin:0;font-size:13px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:400;line-height:1.6;">
+                      <strong>Sesión de 30 minutos con Cristina</strong> — Responde a este email para coordinar tu sesión cuando hayas leído la guía.
+                    </p>
+                  </td>
+                </tr>
+              </table>` : ""}
+
+              <p style="margin:0;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
+                Espero que esta guía te aporte mucha claridad y bienestar.<br>
+                Con cariño,<br>
+                <strong style="color:#3A5A3A;font-weight:500;">Cristina</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 40px;border-top:1px solid #E8E4DC;text-align:center;">
+              <p style="margin:0;font-size:11px;color:#A09080;font-family:'DM Sans',Arial,sans-serif;letter-spacing:1px;">
+                BION — Cristina Vive Consciente &nbsp;·&nbsp; info@cristinaviveconsciente.es
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+
+  const text = `${firstName}, tu ebook está listo!\n\nGracias por comprar "${data.ebookTitle}".\n\nDescarga tu ebook aquí: ${downloadUrl}\n\nEste enlace es válido hasta el ${expiryDate}.\n${data.includesSession ? "\nTu compra incluye una sesión de 30 minutos con Cristina. Responde a este email para coordinarla.\n" : ""}\nCon cariño,\nCristina — BION`;
+
+  const transporter = getTransporter();
+
+  if (!transporter) {
+    console.log("[Email DEV] Ebook delivery email:");
+    console.log(`  To: ${data.customerEmail}`);
+    console.log(`  Subject: ${subject}`);
+    console.log(`  Download URL: ${downloadUrl}`);
+    return;
+  }
+
+  await transporter.sendMail({
+    from: SMTP_FROM,
+    to: data.customerEmail,
+    subject,
+    html,
+    text,
+  });
+}

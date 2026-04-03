@@ -4,12 +4,62 @@
  * Contenido real exacto — FASE 2
  */
 
+import { useState } from "react";
 import { ArrowRight, Download, FileText, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
 
 const HERO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-consultas-VRAFvns5UX68Kqd64cBawH.webp";
+
+function BuyButton({ ebookId, label, price }: { ebookId: "agua" | "aceites"; label: string; price: string }) {
+  const [loading, setLoading] = useState(false);
+
+  const createCheckout = trpc.ebooks.createCheckout.useMutation({
+    onSuccess: (data) => {
+      if (data.checkoutUrl) {
+        window.open(data.checkoutUrl, "_blank");
+        toast.success("Redirigiendo a la pasarela de pago seguro...");
+      }
+      setLoading(false);
+    },
+    onError: (err) => {
+      if (err.message.includes("no está configurado") || err.message.includes("PRECONDITION_FAILED")) {
+        toast.info("El sistema de pago estará disponible próximamente. Escíbeme para adquirir la guía.");
+      } else {
+        toast.error("Ha ocurrido un error. Por favor, inténtalo de nuevo.");
+      }
+      setLoading(false);
+    },
+  });
+
+  const handleBuy = () => {
+    setLoading(true);
+    createCheckout.mutate({ ebookId, origin: window.location.origin });
+  };
+
+  return (
+    <button
+      onClick={handleBuy}
+      disabled={loading}
+      className="w-full py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body flex items-center justify-center gap-2 disabled:opacity-60"
+      style={{ borderRadius: 0, letterSpacing: "0.1em" }}
+    >
+      {loading ? (
+        <>
+          <span className="animate-spin inline-block w-3 h-3 border border-white border-t-transparent rounded-full" />
+          Procesando...
+        </>
+      ) : (
+        <>
+          <Download size={13} />
+          {label} — {price}
+        </>
+      )}
+    </button>
+  );
+}
 
 export default function GuiasDigitales() {
   return (
@@ -96,14 +146,7 @@ export default function GuiasDigitales() {
                     </ul>
                   </div>
 
-                  <button
-                    onClick={() => toast.info("Próximamente: compra de guía digital del agua")}
-                    className="w-full py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body flex items-center justify-center gap-2"
-                    style={{ borderRadius: 0, letterSpacing: "0.1em" }}
-                  >
-                    <Download size={13} />
-                    Obtener guía — 12€
-                  </button>
+                  <BuyButton ebookId="agua" label="Obtener guía" price="12€" />
                 </div>
               </div>
             </div>
@@ -168,14 +211,7 @@ export default function GuiasDigitales() {
                     </ul>
                   </div>
 
-                  <button
-                    onClick={() => toast.info("Próximamente: compra de guía digital de aceites")}
-                    className="w-full py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body flex items-center justify-center gap-2"
-                    style={{ borderRadius: 0, letterSpacing: "0.1em" }}
-                  >
-                    <Download size={13} />
-                    Obtener guía — 7€
-                  </button>
+                  <BuyButton ebookId="aceites" label="Obtener guía" price="7€" />
                 </div>
               </div>
             </div>

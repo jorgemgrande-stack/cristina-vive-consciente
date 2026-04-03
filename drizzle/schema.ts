@@ -142,3 +142,33 @@ export const invoices = mysqlTable("invoices", {
 
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = typeof invoices.$inferInsert;
+
+// ─── COMPRAS DE EBOOKS ────────────────────────────────────────────────────────
+export const ebookPurchases = mysqlTable("ebook_purchases", {
+  id: int("id").autoincrement().primaryKey(),
+  // Identificadores Stripe (fuente de verdad)
+  stripeSessionId: varchar("stripeSessionId", { length: 200 }).notNull().unique(),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 200 }),
+  // Datos del comprador
+  customerEmail: varchar("customerEmail", { length: 320 }).notNull(),
+  customerName: varchar("customerName", { length: 200 }),
+  // Producto comprado
+  ebookId: varchar("ebookId", { length: 50 }).notNull(), // 'agua' | 'aceites'
+  ebookTitle: varchar("ebookTitle", { length: 200 }).notNull(),
+  amountCents: int("amountCents").notNull(), // en céntimos (ej: 1200 = 12€)
+  currency: varchar("currency", { length: 3 }).default("EUR"),
+  // Enlace de descarga
+  downloadToken: varchar("downloadToken", { length: 100 }).notNull().unique(), // token seguro
+  downloadExpiresAt: bigint("downloadExpiresAt", { mode: "number" }).notNull(), // timestamp ms
+  downloadCount: int("downloadCount").default(0),
+  // Estado
+  status: mysqlEnum("status", ["pending", "completed", "refunded"]).default("pending").notNull(),
+  emailSentAt: bigint("emailSentAt", { mode: "number" }), // timestamp ms
+  // Referencia al cliente CRM (si existe)
+  clientId: int("clientId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EbookPurchase = typeof ebookPurchases.$inferSelect;
+export type InsertEbookPurchase = typeof ebookPurchases.$inferInsert;

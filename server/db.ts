@@ -322,3 +322,19 @@ export async function getDashboardStats() {
     completedThisMonth: completedMonthRes[0]?.count ?? 0,
   };
 }
+
+// ─── ETIQUETADO DE CLIENTES (EBOOKS) ──────────────────────────────────────────
+/**
+ * Añade un tag/etiqueta al campo notes del cliente en el CRM.
+ * Usado para marcar compradores de ebooks.
+ */
+export async function updateClientTag(clientId: number, tag: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  // Leer notes actuales y añadir el tag si no existe ya
+  const rows = await db.select({ notes: clients.notes }).from(clients).where(eq(clients.id, clientId)).limit(1);
+  const currentNotes = rows[0]?.notes ?? "";
+  if (currentNotes.includes(tag)) return; // ya etiquetado
+  const newNotes = currentNotes ? `${currentNotes}\n[TAG] ${tag}` : `[TAG] ${tag}`;
+  await db.update(clients).set({ notes: newNotes }).where(eq(clients.id, clientId));
+}

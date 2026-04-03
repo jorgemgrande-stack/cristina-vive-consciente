@@ -21,6 +21,8 @@ import GuiasDigitales from "./pages/GuiasDigitales";
 import Recomendados from "./pages/Recomendados";
 import Contacto from "./pages/Contacto";
 import Blog from "./pages/Blog";
+import EbookGracias from "./pages/EbookGracias";
+import EbookDescarga from "./pages/EbookDescarga";
 
 // CRM Pages
 import CRMDashboard from "./pages/crm/Dashboard";
@@ -45,6 +47,10 @@ function Router() {
       <Route path="/recomendados" component={Recomendados} />
       <Route path="/contacto" component={Contacto} />
       <Route path="/blog" component={Blog} />
+
+      {/* ── Ebooks ── */}
+      <Route path="/ebooks/gracias" component={EbookGracias} />
+      <Route path="/ebooks/descarga" component={EbookDescarga} />
 
       {/* ── CRM (admin protected) ── */}
       <Route path="/crm" component={CRMDashboard} />
