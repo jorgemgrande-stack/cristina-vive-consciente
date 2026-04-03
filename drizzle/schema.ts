@@ -262,3 +262,33 @@ export const leadSequences = mysqlTable("lead_sequences", {
 
 export type LeadSequence = typeof leadSequences.$inferSelect;
 export type InsertLeadSequence = typeof leadSequences.$inferInsert;
+
+// ─── SERVICIOS (CONSULTAS Y MASAJES) ───────────────────────────────────────────────
+export const services = mysqlTable("services", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Identificador único interno para conectar con el sistema de reservas (e.g. 'consulta_naturopata') */
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  name: varchar("name", { length: 200 }).notNull(),
+  shortDescription: varchar("shortDescription", { length: 500 }),
+  description: text("description"),
+  price: decimal("price", { precision: 10, scale: 2 }),
+  /** Duración en minutos */
+  durationMinutes: int("durationMinutes").default(60),
+  /** Texto de duración legible (e.g. '60 min', 'Mínimo 60 min', 'Consulta inicial + 21 días') */
+  durationLabel: varchar("durationLabel", { length: 100 }),
+  /** Tipo de servicio para agrupar en el frontend */
+  type: mysqlEnum("type", ["consulta", "masaje", "otro"]).default("consulta").notNull(),
+  /** Modalidad disponible */
+  modality: mysqlEnum("modality", ["online", "presencial", "ambos"]).default("ambos").notNull(),
+  imageUrl: text("imageUrl"),
+  /** Mostrar como destacado / más popular */
+  featured: int("featured").default(0).notNull(),
+  status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type Service = typeof services.$inferSelect;
+export type InsertService = typeof services.$inferInsert;

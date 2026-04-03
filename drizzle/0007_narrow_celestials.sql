@@ -1,0 +1,21 @@
+CREATE TABLE `services` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`slug` varchar(100) NOT NULL,
+	`name` varchar(200) NOT NULL,
+	`shortDescription` varchar(500),
+	`description` text,
+	`price` decimal(10,2),
+	`durationMinutes` int DEFAULT 60,
+	`durationLabel` varchar(100),
+	`type` enum('consulta','masaje','otro') NOT NULL DEFAULT 'consulta',
+	`modality` enum('online','presencial','ambos') NOT NULL DEFAULT 'ambos',
+	`imageUrl` text,
+	`featured` int NOT NULL DEFAULT 0,
+	`status` enum('active','inactive') NOT NULL DEFAULT 'active',
+	`sortOrder` int NOT NULL DEFAULT 0,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	`createdBy` int,
+	CONSTRAINT `services_id` PRIMARY KEY(`id`),
+	CONSTRAINT `services_slug_unique` UNIQUE(`slug`)
+);

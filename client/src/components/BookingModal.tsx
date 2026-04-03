@@ -10,7 +10,8 @@ import { X, Leaf, CheckCircle2, Loader2, MessageCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
-const SERVICE_OPTIONS = [
+// Fallback estático por si la BD no responde
+const FALLBACK_SERVICES = [
   { value: "consulta_acompanamiento", label: "Consulta de Acompañamiento", duration: "90 min" },
   { value: "consulta_naturopata", label: "Consulta Naturópata", duration: "60 min" },
   { value: "consulta_breve", label: "Consulta Breve", duration: "30 min" },
@@ -19,7 +20,7 @@ const SERVICE_OPTIONS = [
   { value: "kinesiologia", label: "Kinesiología", duration: "60 min" },
   { value: "masaje", label: "Masaje Terapéutico", duration: "60 min" },
   { value: "otro", label: "Otro / No sé todavía", duration: "" },
-] as const;
+];
 
 const MODALITY_OPTIONS = [
   { value: "zoom", label: "Videollamada (Zoom)" },
@@ -66,6 +67,23 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
   const [submitted, setSubmitted] = useState(false);
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+
+  // Cargar servicios activos desde la BD
+  const { data: dbServices = [] } = trpc.services.list.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000, // 5 min cache
+  });
+
+  // Construir opciones del selector: BD + opción "Otro"
+  const serviceOptions = dbServices.length > 0
+    ? [
+        ...dbServices.map((s) => ({
+          value: s.slug,
+          label: s.name,
+          duration: s.durationLabel ?? (s.durationMinutes ? `${s.durationMinutes} min` : ""),
+        })),
+        { value: "otro", label: "Otro / No sé todavía", duration: "" },
+      ]
+    : FALLBACK_SERVICES;
 
   const requestMutation = trpc.bookings.request.useMutation({
     onSuccess: (data) => {
@@ -280,7 +298,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                 className="w-full px-3 py-2.5 bg-white border border-[oklch(0.88_0.015_75)] text-sm font-body text-[oklch(0.18_0.018_55)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors appearance-none cursor-pointer"
                 style={{ borderRadius: 0, fontWeight: 300 }}
               >
-                {SERVICE_OPTIONS.map((opt) => (
+                {serviceOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}{opt.duration ? ` — ${opt.duration}` : ""}
                   </option>

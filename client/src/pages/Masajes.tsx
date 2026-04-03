@@ -4,15 +4,28 @@
  * Contenido real exacto — FASE 2
  */
 
-import { ArrowRight, MapPin } from "lucide-react";
-import { toast } from "sonner";
+import { useState } from "react";
+import { ArrowRight, MapPin, Clock } from "lucide-react";
 import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
+import BookingModal from "@/components/BookingModal";
+import { trpc } from "@/lib/trpc";
 
 const HERO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-masajes-PUiFsGVb8gAs6i4s8VF7U8.webp";
 
 export default function Masajes() {
+  const [bookingOpen, setBookingOpen] = useState(false);
+
+  // Tarjetas dinámicas desde la BD (solo masajes activos)
+  const { data: serviceCards = [] } = trpc.services.list.useQuery({ type: "masaje" });
+
   return (
+    <>
+    <BookingModal
+      isOpen={bookingOpen}
+      onClose={() => setBookingOpen(false)}
+      preselectedService="masaje"
+    />
     <Layout>
       <PageHero
         title="Masajes Terapéuticos"
@@ -90,7 +103,7 @@ export default function Masajes() {
 
               {/* CTA */}
               <button
-                onClick={() => toast.info("Próximamente: sistema de reservas online")}
+                onClick={() => setBookingOpen(true)}
                 className="inline-flex items-center gap-2 px-8 py-4 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body"
                 style={{ borderRadius: 0, letterSpacing: "0.1em" }}
               >
@@ -161,7 +174,7 @@ export default function Masajes() {
             Una hora de reconexión profunda para tu cuerpo, tu mente y tu espíritu.
           </p>
           <button
-            onClick={() => toast.info("Próximamente: sistema de reservas online")}
+            onClick={() => setBookingOpen(true)}
             className="inline-flex items-center gap-2 px-8 py-4 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body"
             style={{ borderRadius: 0, letterSpacing: "0.1em" }}
           >
@@ -171,5 +184,6 @@ export default function Masajes() {
         </div>
       </section>
     </Layout>
+    </>
   );
 }

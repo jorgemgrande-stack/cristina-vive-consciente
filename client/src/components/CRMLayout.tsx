@@ -14,6 +14,7 @@ import {
   Star,
   Tag,
   Zap,
+  Stethoscope,
   Menu,
   X,
   LogOut,
@@ -33,6 +34,7 @@ const NAV_ITEMS = [
   { href: "/crm/facturas", label: "Facturas", icon: FileText },
   { href: "/crm/afiliados", label: "Afiliados", icon: Star },
   { href: "/crm/categorias", label: "Categorías", icon: Tag },
+  { href: "/crm/servicios", label: "Servicios", icon: Stethoscope },
   { href: "/crm/automatizaciones", label: "Automatizaciones", icon: Zap },
 ];
 

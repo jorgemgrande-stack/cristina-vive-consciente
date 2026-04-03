@@ -5,10 +5,11 @@
  */
 
 import { useState } from "react";
-import { ArrowRight, Clock, CheckCircle, Euro } from "lucide-react";
+import { ArrowRight, Clock, CheckCircle, Euro, MapPin, Monitor } from "lucide-react";
 import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
 import BookingModal from "@/components/BookingModal";
+import { trpc } from "@/lib/trpc";
 
 const HERO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-consultas-VRAFvns5UX68Kqd64cBawH.webp";
 
@@ -179,9 +180,23 @@ const consultas = [
   },
 ];
 
+const MODALITY_ICON: Record<string, React.ReactNode> = {
+  online: <Monitor size={11} />,
+  presencial: <MapPin size={11} />,
+  ambos: <Monitor size={11} />,
+};
+const MODALITY_LABEL: Record<string, string> = {
+  online: "Online",
+  presencial: "Presencial",
+  ambos: "Presencial / Online",
+};
+
 export default function Consultas() {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [selectedService, setSelectedService] = useState("consulta_acompanamiento");
+
+  // Tarjetas dinámicas desde la BD (solo consultas activas)
+  const { data: serviceCards = [] } = trpc.services.list.useQuery({ type: "consulta" });
 
   return (
     <>
@@ -198,6 +213,96 @@ export default function Consultas() {
         image={HERO}
         breadcrumb={[{ label: "Inicio", href: "/" }, { label: "Consultas" }]}
       />
+
+      {/* ── Tarjetas visuales dinámicas (desde CRM) ─────────────────────────── */}
+      {serviceCards.length > 0 && (
+        <section className="section-padding bg-white border-b border-[oklch(0.92_0.012_80)]">
+          <div className="container">
+            <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-2 font-body" style={{ fontWeight: 500 }}>
+              Servicios disponibles
+            </p>
+            <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-8" style={{ fontWeight: 400, fontSize: "clamp(1.3rem, 3vw, 1.8rem)" }}>
+              Elige tu consulta
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {serviceCards.map((s) => (
+                <div
+                  key={s.id}
+                  className={`group relative flex flex-col overflow-hidden border transition-all duration-300 hover:shadow-md ${
+                    s.featured === 1
+                      ? "border-[oklch(0.52_0.08_148)]/50 bg-[oklch(0.97_0.008_100)]"
+                      : "border-[oklch(0.90_0.012_80)] bg-white"
+                  }`}
+                >
+                  {/* Badge destacado */}
+                  {s.featured === 1 && (
+                    <div className="absolute top-3 left-3 z-10">
+                      <span className="px-2 py-0.5 bg-[oklch(0.52_0.08_148)] text-white text-[0.55rem] tracking-widest uppercase font-body" style={{ fontWeight: 500 }}>
+                        Más completa
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Imagen */}
+                  {s.imageUrl && (
+                    <div className="h-40 overflow-hidden">
+                      <img
+                        src={s.imageUrl}
+                        alt={s.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                  )}
+
+                  {/* Contenido */}
+                  <div className="p-5 flex flex-col flex-1">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-display text-[oklch(0.18_0.018_55)] leading-snug" style={{ fontWeight: 400, fontSize: "1rem" }}>
+                        {s.name}
+                      </h3>
+                      {s.price ? (
+                        <span className="font-display text-[oklch(0.52_0.08_148)] flex-shrink-0" style={{ fontWeight: 400, fontSize: "1.25rem" }}>
+                          {parseFloat(s.price).toFixed(0)}€
+                        </span>
+                      ) : (
+                        <span className="text-[oklch(0.52_0.02_60)] text-xs italic font-body flex-shrink-0" style={{ fontWeight: 300 }}>
+                          A consultar
+                        </span>
+                      )}
+                    </div>
+
+                    {s.shortDescription && (
+                      <p className="text-[oklch(0.45_0.02_55)] text-xs leading-relaxed font-body mb-3 flex-1" style={{ fontWeight: 300 }}>
+                        {s.shortDescription}
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-3 mb-4 text-[oklch(0.55_0.02_60)] text-xs font-body">
+                      <span className="flex items-center gap-1">
+                        <Clock size={11} />
+                        {s.durationLabel ?? `${s.durationMinutes} min`}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        {MODALITY_ICON[s.modality] ?? <Monitor size={11} />}
+                        {MODALITY_LABEL[s.modality] ?? s.modality}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => { setSelectedService(s.slug); setBookingOpen(true); }}
+                      className="mt-auto w-full py-2.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-body hover:bg-[oklch(0.38_0.07_148)] transition-colors duration-300 flex items-center justify-center gap-2"
+                      style={{ borderRadius: 0, letterSpacing: "0.1em" }}
+                    >
+                      Reservar consulta
+                      <ArrowRight size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Listado de consultas */}
       <section className="section-padding bg-[oklch(0.985_0.006_85)]">

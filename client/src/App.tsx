@@ -37,6 +37,8 @@ import Afiliados from "./pages/crm/Afiliados";
 import AfiliadoForm from "./pages/crm/AfiliadoForm";
 import Categorias from "./pages/crm/Categorias";
 import Automatizaciones from "./pages/crm/Automatizaciones";
+import Servicios from "./pages/crm/Servicios";
+import ServicioForm from "./pages/crm/ServicioForm";
 
 function Router() {
   return (
@@ -81,6 +83,11 @@ function Router() {
 
       {/* Affiliate Categories */}
       <Route path="/crm/categorias" component={Categorias} />
+
+      {/* Services */}
+      <Route path="/crm/servicios" component={Servicios} />
+      <Route path="/crm/servicios/nuevo" component={ServicioForm} />
+      <Route path="/crm/servicios/:id/editar" component={ServicioForm} />
 
       {/* Automations */}
       <Route path="/crm/automatizaciones" component={Automatizaciones} />

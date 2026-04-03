@@ -159,3 +159,16 @@
 - [x] Colores del ribbon integrados con la paleta (verde, tierra, beige)
 - [x] Botón externo con rel="nofollow sponsored external" y target="_blank"
 - [x] Generar informe: total, afiliados, propios, sin enlace
+
+## Gestor de Servicios (Consultas y Masajes)
+- [x] Tabla `services` en BD con campos: nombre, descripción, precio, duración, tipo, modalidad, imagen, estado, orden
+- [x] Migrar servicios existentes de consultas y masajes a la nueva tabla
+- [x] Router tRPC `services` con CRUD completo (list, get, create, update, delete, toggleStatus, reorder)
+- [x] Procedimiento público `services.listPublic` para frontend (solo activos)
+- [x] Módulo CRM `/crm/servicios` con listado, crear, editar, activar/desactivar
+- [x] Submenú "Servicios" en el sidebar del CRM con filtro por tipo (Consultas / Masajes)
+- [x] Mejorar tarjetas de servicios en /consultas con imagen, precio y botón de reserva
+- [x] Mejorar tarjetas de servicios en /masajes con imagen, precio y botón de reserva
+- [x] Conectar selector de servicios en reservas con la tabla `services`
+- [x] Soporte de subida de imagen en el formulario de servicios del CRM
+- [x] Ordenación drag-and-drop o por campo `sortOrder` en CRM

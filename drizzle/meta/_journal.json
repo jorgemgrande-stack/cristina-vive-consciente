@@ -50,6 +50,13 @@
       "when": 1775240530221,
       "tag": "0006_cool_orphan",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1775242227139,
+      "tag": "0007_narrow_celestials",
+      "breakpoints": true
     }
   ]
 }

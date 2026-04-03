@@ -21,6 +21,8 @@ import {
   InsertAutomationLog,
   leadSequences,
   InsertLeadSequence,
+  services,
+  InsertService,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -527,4 +529,61 @@ export async function cancelLeadSequences(clientId: number) {
     .update(leadSequences)
     .set({ status: "cancelled" })
     .where(and(eq(leadSequences.clientId, clientId), eq(leadSequences.status, "pending")));
+}
+
+// ─── SERVICIOS ────────────────────────────────────────────────────────────────
+
+export async function listServices(onlyActive = false) {
+  const db = await getDb();
+  if (!db) return [];
+  const query = db.select().from(services);
+  if (onlyActive) {
+    return query
+      .where(eq(services.status, "active"))
+      .orderBy(services.type, services.sortOrder);
+  }
+  return query.orderBy(services.type, services.sortOrder);
+}
+
+export async function getServiceById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(services).where(eq(services.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getServiceBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(services).where(eq(services.slug, slug)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function createService(data: InsertService): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(services).values(data);
+  return (result as any).insertId as number;
+}
+
+export async function updateService(id: number, data: Partial<InsertService>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(services).set(data).where(eq(services.id, id));
+}
+
+export async function deleteService(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(services).where(eq(services.id, id));
+}
+
+export async function toggleServiceStatus(id: number): Promise<"active" | "inactive"> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const current = await getServiceById(id);
+  if (!current) throw new Error("Service not found");
+  const newStatus = current.status === "active" ? "inactive" : "active";
+  await db.update(services).set({ status: newStatus }).where(eq(services.id, id));
+  return newStatus;
 }
