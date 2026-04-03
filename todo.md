@@ -106,3 +106,9 @@
 - [x] Filtro por categoría en /recomendados
 - [x] Enlace "Afiliados" añadido al sidebar del CRM
 - [x] Rutas CRM registradas en App.tsx
+
+## Fase 7B: Migración productos Shopify → Afiliados
+- [x] Extracción de 15 colecciones de Shopify (cristinaviveconsciente.es)
+- [x] 97 productos únicos migrados (1 duplicado detectado y omitido)
+- [x] Script seed-afiliados.mjs creado y ejecutado correctamente
+- [x] Categorías pendientes documentadas (vacías en Shopify): Cereales/Pan/Pasta, Legumbres/Semillas, Iluminación/Biorritmos
