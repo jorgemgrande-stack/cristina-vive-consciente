@@ -11,7 +11,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
-// Pages
+// Public Pages
 import Home from "./pages/Home";
 import Consultas from "./pages/Consultas";
 import Masajes from "./pages/Masajes";
@@ -22,9 +22,20 @@ import Recomendados from "./pages/Recomendados";
 import Contacto from "./pages/Contacto";
 import Blog from "./pages/Blog";
 
+// CRM Pages
+import CRMDashboard from "./pages/crm/Dashboard";
+import CRMClientes from "./pages/crm/Clientes";
+import ClienteDetalle from "./pages/crm/ClienteDetalle";
+import ClienteForm from "./pages/crm/ClienteForm";
+import CRMCitas from "./pages/crm/Citas";
+import CitaForm from "./pages/crm/CitaForm";
+import CRMFacturas from "./pages/crm/Facturas";
+import FacturaForm from "./pages/crm/FacturaForm";
+
 function Router() {
   return (
     <Switch>
+      {/* ── Public ── */}
       <Route path="/" component={Home} />
       <Route path="/consultas" component={Consultas} />
       <Route path="/masajes" component={Masajes} />
@@ -34,8 +45,27 @@ function Router() {
       <Route path="/recomendados" component={Recomendados} />
       <Route path="/contacto" component={Contacto} />
       <Route path="/blog" component={Blog} />
-      <Route path="/404" component={NotFound} />
+
+      {/* ── CRM (admin protected) ── */}
+      <Route path="/crm" component={CRMDashboard} />
+      <Route path="/crm/dashboard" component={CRMDashboard} />
+
+      {/* Clients */}
+      <Route path="/crm/clientes" component={CRMClientes} />
+      <Route path="/crm/clientes/nuevo" component={ClienteForm} />
+      <Route path="/crm/clientes/:id/editar" component={ClienteForm} />
+      <Route path="/crm/clientes/:id" component={ClienteDetalle} />
+
+      {/* Appointments */}
+      <Route path="/crm/citas" component={CRMCitas} />
+      <Route path="/crm/citas/nueva" component={CitaForm} />
+
+      {/* Invoices */}
+      <Route path="/crm/facturas" component={CRMFacturas} />
+      <Route path="/crm/facturas/nueva" component={FacturaForm} />
+
       {/* Fallback */}
+      <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
   );

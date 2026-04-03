@@ -4,6 +4,7 @@
  * Secciones: Hero, Servicios, Sobre Mí, Filosofía, Testimonios, CTA
  */
 
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
 import { ArrowRight, Leaf, Droplets, BookOpen, Star, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
@@ -87,6 +88,10 @@ const testimonials = [
 ];
 
 export default function Home() {
+  // The userAuth hooks provides authentication state
+  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
+  let { user, loading, error, isAuthenticated, logout } = useAuth();
+
   return (
     <Layout>
       {/* ── HERO ─────────────────────────────────────────────── */}
