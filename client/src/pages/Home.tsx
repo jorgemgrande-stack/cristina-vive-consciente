@@ -290,9 +290,9 @@ export default function Home() {
             <div className="relative">
               <div className="relative overflow-hidden" style={{ aspectRatio: "4/5" }}>
                 <img
-                  src={HERO_IMG}
+                  src="https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/cristina-sobre-mi_45486ba2.png"
                   alt="Cristina — Bienestar Holístico"
-                  className="w-full h-full object-cover object-center"
+                  className="w-full h-full object-cover object-top"
                 />
               </div>
               {/* Floating accent */}
