@@ -3,23 +3,34 @@
  * Permite a usuarios sin autenticar solicitar una cita.
  * Reutiliza las tablas clients y appointments del CRM.
  * Las citas se crean con status "pending" para que Cristina las gestione desde el CRM.
+ *
+ * Flujo:
+ * 1. Buscar/crear cliente (deduplicación por email)
+ * 2. Crear cita con status "pending"
+ * 3. Enviar email de confirmación al cliente
+ * 4. Enviar email de notificación al admin
+ * 5. Notificar al admin via sistema de notificaciones Manus
+ * 6. Devolver enlace de WhatsApp pre-rellenado para el cliente
  */
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import { createClient, createAppointment, findClientByEmail } from "../db";
 import { notifyOwner } from "../_core/notification";
+import { sendClientConfirmationEmail, sendAdminNotificationEmail } from "../email";
 
 const SERVICE_LABELS: Record<string, string> = {
-  consulta_acompanamiento: "Consulta de Acompañamiento",
-  consulta_naturopata: "Consulta Naturópata",
-  consulta_breve: "Consulta Breve",
-  consulta_express: "Consulta Express",
+  consulta_acompanamiento: "Consulta + Acompañamiento 21 días",
+  consulta_naturopata: "Consulta Naturópata (60 min)",
+  consulta_breve: "Consulta Breve (30 min)",
+  consulta_express: "Consulta Express (20 min)",
   biohabitabilidad: "Biohabitabilidad",
   kinesiologia: "Kinesiología",
   masaje: "Masaje Terapéutico",
-  otro: "Otro",
+  otro: "Otro / Por definir",
 };
+
+const WHATSAPP_ADMIN_NUMBER = process.env.WHATSAPP_ADMIN_NUMBER ?? "34600000000"; // número de Cristina sin +
 
 export const bookingsRouter = router({
   /**
@@ -27,7 +38,8 @@ export const bookingsRouter = router({
    * 1. Busca si el cliente ya existe por email.
    * 2. Si no existe, lo crea como "lead".
    * 3. Crea la cita con status "pending".
-   * 4. Notifica al admin.
+   * 4. Envía emails de confirmación y notificación.
+   * 5. Devuelve enlace de WhatsApp para el cliente.
    */
   request: publicProcedure
     .input(
@@ -48,10 +60,10 @@ export const bookingsRouter = router({
           "masaje",
           "otro",
         ]),
-        preferredDate: z.string().min(1, "La fecha preferida es obligatoria"), // ISO string
+        preferredDate: z.string().min(1, "La fecha preferida es obligatoria"), // "YYYY-MM-DD"
         preferredTime: z.string().optional(), // "HH:MM"
         modality: z.enum(["presencial", "telefono", "zoom", "whatsapp"]).default("zoom"),
-        message: z.string().optional(), // Mensaje libre del usuario
+        message: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -95,16 +107,48 @@ export const bookingsRouter = router({
           : null,
       });
 
-      // 4. Notificar al admin (no bloqueante)
-      try {
-        await notifyOwner({
-          title: "Nueva solicitud de cita",
-          content: `${input.firstName} ${input.lastName} (${input.email}) ha solicitado una cita de ${serviceLabel} para el ${dateStr} a las ${timeStr}. Modalidad: ${input.modality}.${input.message ? ` Mensaje: "${input.message}"` : ""}`,
-        });
-      } catch {
-        // Notificación no crítica, no bloquear la respuesta
-      }
+      // Datos comunes para emails
+      const emailData = {
+        firstName: input.firstName.trim(),
+        lastName: input.lastName.trim(),
+        email: emailNormalized,
+        phone: input.phone?.trim(),
+        serviceLabel,
+        preferredDate: dateStr,
+        preferredTime: input.preferredTime,
+        modality: input.modality,
+        message: input.message?.trim(),
+      };
 
-      return { success: true };
+      // 4. Enviar email de confirmación al cliente (no bloqueante)
+      sendClientConfirmationEmail(emailData).catch((err) => {
+        console.warn("[Email] Error sending client confirmation:", err);
+      });
+
+      // 5. Enviar email de notificación al admin (no bloqueante)
+      sendAdminNotificationEmail(emailData).catch((err) => {
+        console.warn("[Email] Error sending admin notification:", err);
+      });
+
+      // 6. Notificar al admin via Manus (no bloqueante)
+      notifyOwner({
+        title: `Nueva solicitud de cita — ${input.firstName} ${input.lastName}`,
+        content: `${input.firstName} ${input.lastName} (${emailNormalized}${input.phone ? ` · ${input.phone}` : ""}) ha solicitado una cita de ${serviceLabel} para el ${dateStr}${input.preferredTime ? ` a las ${input.preferredTime}` : ""}. Modalidad: ${input.modality}.${input.message ? ` Mensaje: "${input.message}"` : ""}`,
+      }).catch((err) => {
+        console.warn("[Notification] Error notifying owner:", err);
+      });
+
+      // 7. Generar enlace de WhatsApp pre-rellenado para el cliente
+      // El cliente puede enviarse a sí mismo el mensaje de confirmación
+      const whatsappText = encodeURIComponent(
+        `Hola Cristina, acabo de solicitar una cita de ${serviceLabel} para el ${dateStr}${input.preferredTime ? ` a las ${input.preferredTime}` : ""}. Quedo a la espera de tu confirmación. Gracias 🌿`
+      );
+      const whatsappUrl = `https://wa.me/${WHATSAPP_ADMIN_NUMBER}?text=${whatsappText}`;
+
+      return {
+        success: true,
+        whatsappUrl,
+        message: "Tu solicitud ha sido recibida. Cristina se pondrá en contacto contigo en las próximas 24–48 horas.",
+      };
     }),
 });

@@ -6,7 +6,7 @@
  */
 
 import { useState } from "react";
-import { X, Leaf, CheckCircle2, Loader2 } from "lucide-react";
+import { X, Leaf, CheckCircle2, Loader2, MessageCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -64,11 +64,13 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
     serviceType: preselectedService ?? initialForm.serviceType,
   });
   const [submitted, setSubmitted] = useState(false);
+  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
 
   const requestMutation = trpc.bookings.request.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       setSubmitted(true);
+      if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
     },
     onError: (err) => {
       toast.error("Ha ocurrido un error. Por favor, inténtalo de nuevo.");
@@ -107,6 +109,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
   const handleClose = () => {
     setForm({ ...initialForm, serviceType: preselectedService ?? initialForm.serviceType });
     setSubmitted(false);
+    setWhatsappUrl(null);
     setErrors({});
     onClose();
   };
@@ -165,12 +168,32 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
             >
               ¡Solicitud recibida!
             </h3>
-            <p className="text-[oklch(0.52_0.02_60)] text-sm leading-relaxed mb-8 font-body" style={{ fontWeight: 300 }}>
-              Cristina revisará tu solicitud y se pondrá en contacto contigo en las próximas 24–48 horas para confirmar la cita.
+            <p className="text-[oklch(0.52_0.02_60)] text-sm leading-relaxed mb-6 font-body" style={{ fontWeight: 300 }}>
+              Cristina revisará tu solicitud y se pondrá en contacto contigo en las próximas 24–48 horas para confirmar la cita. Recibirás un email de confirmación.
             </p>
+
+            {/* WhatsApp CTA */}
+            {whatsappUrl && (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-3 mb-4 text-white text-xs tracking-widest uppercase font-body transition-colors w-full justify-center"
+                style={{
+                  background: "#25D366",
+                  borderRadius: 0,
+                  letterSpacing: "0.1em",
+                  textDecoration: "none",
+                }}
+              >
+                <MessageCircle size={15} />
+                Confirmar por WhatsApp
+              </a>
+            )}
+
             <button
               onClick={handleClose}
-              className="px-6 py-3 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-body hover:bg-[oklch(0.38_0.07_148)] transition-colors"
+              className="px-6 py-3 border border-[oklch(0.88_0.015_75)] text-[oklch(0.52_0.02_60)] text-xs tracking-widest uppercase font-body hover:border-[oklch(0.52_0.08_148)] hover:text-[oklch(0.52_0.08_148)] transition-colors w-full"
               style={{ letterSpacing: "0.1em" }}
             >
               Cerrar

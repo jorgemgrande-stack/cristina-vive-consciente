@@ -68,3 +68,15 @@
 - [x] Integrar BookingModal en botón "Reservar consulta" de la Home
 - [x] Integrar BookingModal en botones CTA de la página /consultas
 - [x] Notificación al admin cuando llega una nueva solicitud
+
+## Fase 4: Reservas completas
+- [x] Ampliar BookingModal con campo duración y modalidad online/presencial clara
+- [x] Email de confirmación al cliente tras solicitud (via nodemailer SMTP)
+- [x] Email de notificación al admin con datos completos de la solicitud
+- [x] Mensaje WhatsApp automático al cliente (enlace wa.me con texto pre-rellenado)
+- [x] Simular flujo completo web → CRM documentado
+
+## Pendiente de configuración (cuando Cristina tenga los datos)
+- [ ] Configurar SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM para envío de emails reales
+- [ ] Configurar ADMIN_EMAIL con el email real de Cristina
+- [ ] Configurar WHATSAPP_ADMIN_NUMBER con el número real de WhatsApp de Cristina
