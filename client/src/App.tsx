@@ -33,6 +33,8 @@ import CRMCitas from "./pages/crm/Citas";
 import CitaForm from "./pages/crm/CitaForm";
 import CRMFacturas from "./pages/crm/Facturas";
 import FacturaForm from "./pages/crm/FacturaForm";
+import Afiliados from "./pages/crm/Afiliados";
+import AfiliadoForm from "./pages/crm/AfiliadoForm";
 
 function Router() {
   return (
@@ -69,6 +71,11 @@ function Router() {
       {/* Invoices */}
       <Route path="/crm/facturas" component={CRMFacturas} />
       <Route path="/crm/facturas/nueva" component={FacturaForm} />
+
+      {/* Affiliate Products */}
+      <Route path="/crm/afiliados" component={Afiliados} />
+      <Route path="/crm/afiliados/nuevo" component={AfiliadoForm} />
+      <Route path="/crm/afiliados/:id/editar" component={AfiliadoForm} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

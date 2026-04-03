@@ -172,3 +172,21 @@ export const ebookPurchases = mysqlTable("ebook_purchases", {
 
 export type EbookPurchase = typeof ebookPurchases.$inferSelect;
 export type InsertEbookPurchase = typeof ebookPurchases.$inferInsert;
+// ─── PRODUCTOS AFILIADOS ──────────────────────────────────────────────────────
+export const affiliateProducts = mysqlTable("affiliate_products", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  description: text("description"),
+  imageUrl: text("imageUrl"),
+  category: varchar("category", { length: 100 }).notNull(),
+  affiliateUrl: text("affiliateUrl").notNull(),
+  provider: varchar("provider", { length: 100 }),
+  status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type AffiliateProduct = typeof affiliateProducts.$inferSelect;
+export type InsertAffiliateProduct = typeof affiliateProducts.$inferInsert;

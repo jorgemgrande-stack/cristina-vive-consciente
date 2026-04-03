@@ -13,6 +13,8 @@ import {
   InsertSessionHistory,
   invoices,
   InsertInvoice,
+  affiliateProducts,
+  InsertAffiliateProduct,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -337,4 +339,53 @@ export async function updateClientTag(clientId: number, tag: string): Promise<vo
   if (currentNotes.includes(tag)) return; // ya etiquetado
   const newNotes = currentNotes ? `${currentNotes}\n[TAG] ${tag}` : `[TAG] ${tag}`;
   await db.update(clients).set({ notes: newNotes }).where(eq(clients.id, clientId));
+}
+
+// ─── PRODUCTOS AFILIADOS ──────────────────────────────────────────────────────────────────────────────
+export async function listAffiliateProducts(onlyActive = false) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select()
+    .from(affiliateProducts)
+    .orderBy(affiliateProducts.sortOrder, affiliateProducts.createdAt);
+  return onlyActive ? rows.filter((r) => r.status === "active") : rows;
+}
+
+export async function getAffiliateProduct(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(affiliateProducts).where(eq(affiliateProducts.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function createAffiliateProduct(data: InsertAffiliateProduct) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const result = await db.insert(affiliateProducts).values(data);
+  const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
+  return insertId;
+}
+
+export async function updateAffiliateProduct(id: number, data: Partial<InsertAffiliateProduct>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(affiliateProducts).set(data).where(eq(affiliateProducts.id, id));
+}
+
+export async function deleteAffiliateProduct(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.delete(affiliateProducts).where(eq(affiliateProducts.id, id));
+}
+
+export async function toggleAffiliateProductStatus(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const rows = await db.select({ status: affiliateProducts.status }).from(affiliateProducts).where(eq(affiliateProducts.id, id)).limit(1);
+  const current = rows[0]?.status;
+  if (!current) throw new Error("Product not found");
+  const next = current === "active" ? "inactive" : "active";
+  await db.update(affiliateProducts).set({ status: next }).where(eq(affiliateProducts.id, id));
+  return next;
 }

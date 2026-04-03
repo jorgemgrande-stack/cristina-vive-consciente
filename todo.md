@@ -94,3 +94,15 @@
 - [x] Subir PDFs reales al CDN y añadir URLs en server/ebooks/products.ts
 - [ ] Crear precios en Stripe Dashboard y añadir stripePriceId en server/ebooks/products.ts
 - [ ] Configurar SMTP para emails de entrega automática
+
+## Fase 7: Productos Afiliados
+- [x] Tabla affiliateProducts en base de datos
+- [x] Helpers CRUD en db.ts para productos afiliados
+- [x] Router tRPC affiliates: list (público), listAdmin, create, update, delete, toggleStatus, reorder
+- [x] Módulo CRM: listado de afiliados agrupado por categoría con reordenación
+- [x] Módulo CRM: formulario crear/editar producto afiliado con preview de imagen
+- [x] Página /recomendados: listado dinámico desde DB con tarjetas y enlaces externos
+- [x] rel="nofollow sponsored noopener noreferrer" en todos los enlaces de afiliado
+- [x] Filtro por categoría en /recomendados
+- [x] Enlace "Afiliados" añadido al sidebar del CRM
+- [x] Rutas CRM registradas en App.tsx

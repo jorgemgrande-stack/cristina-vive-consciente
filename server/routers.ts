@@ -5,6 +5,7 @@ import { publicProcedure, router } from "./_core/trpc";
 import { crmRouter } from "./routers/crm";
 import { bookingsRouter } from "./routers/bookings";
 import { ebooksRouter } from "./routers/ebooks";
+import { affiliatesRouter } from "./routers/affiliates";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -23,6 +24,7 @@ export const appRouter = router({
   crm: crmRouter,
   bookings: bookingsRouter,
   ebooks: ebooksRouter,
+  affiliates: affiliatesRouter,
 
   // TODO: add feature routers here, e.g.
   // todo: router({

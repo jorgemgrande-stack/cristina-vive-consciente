@@ -1,77 +1,38 @@
 /**
  * Recomendados — Cristina Vive Consciente
- * Design: "Luz Botánica"
- * Estructura de categorías — FASE 2
- * Sin contenido fijo: solo estructura de categorías reales
+ * Listado dinámico de productos afiliados gestionados desde el CRM.
+ * Los enlaces externos usan rel="nofollow sponsored" según las directrices de Google.
  */
 
-import { ArrowRight, Star } from "lucide-react";
-import { toast } from "sonner";
+import { useState } from "react";
+import { Link } from "wouter";
+import { trpc } from "@/lib/trpc";
 import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
+import { ExternalLink, Globe, Star, ArrowRight } from "lucide-react";
 
 const HERO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-aceites-cn5cmPNwkFkzA35ejtXJUa.webp";
 
-const categorias = [
-  {
-    id: "alimentacion",
-    emoji: "🥦",
-    titulo: "Alimentación ecológica",
-    descripcion: "Productos libres de aditivos, marcas de confianza y proveedores que he probado personalmente.",
-    items: ["Marcas de alimentación ecológica", "Productos sin aditivos", "Suplementos naturales", "Superalimentos"],
-  },
-  {
-    id: "cocina",
-    emoji: "🍳",
-    titulo: "Utensilios de cocina",
-    descripcion: "Materiales seguros para cocinar sin contaminar tus alimentos con tóxicos.",
-    items: ["Sartenes y ollas sin tóxicos", "Recipientes de vidrio y acero", "Filtros de agua para cocina", "Herramientas de cocina natural"],
-  },
-  {
-    id: "limpieza",
-    emoji: "🌿",
-    titulo: "Productos de limpieza",
-    descripcion: "Alternativas naturales y efectivas para un hogar libre de químicos agresivos.",
-    items: ["Limpiadores naturales", "Jabones ecológicos", "Alternativas al plástico", "Productos biodegradables"],
-  },
-  {
-    id: "cosmetica",
-    emoji: "✨",
-    titulo: "Cosmética natural",
-    descripcion: "Cuidado personal sin parabenos, sulfatos ni ingredientes de síntesis química.",
-    items: ["Cremas y serums naturales", "Higiene personal ecológica", "Cosmética infantil", "Protección solar natural"],
-  },
-  {
-    id: "textil",
-    emoji: "🧵",
-    titulo: "Textil",
-    descripcion: "Ropa y tejidos de fibras naturales, libres de tratamientos químicos.",
-    items: ["Ropa de algodón orgánico", "Ropa de cama natural", "Fibras naturales certificadas"],
-  },
-  {
-    id: "electromagnetica",
-    emoji: "📡",
-    titulo: "Higiene electromagnética",
-    descripcion: "Herramientas y recursos para reducir la exposición a campos electromagnéticos en el hogar.",
-    items: ["Medidores de campos EM", "Protectores y armonizadores", "Recursos informativos"],
-  },
-  {
-    id: "luminica",
-    emoji: "💡",
-    titulo: "Higiene lumínica",
-    descripcion: "Iluminación respetuosa con los ritmos circadianos para un descanso y salud óptimos.",
-    items: ["Bombillas de espectro cálido", "Gafas bloqueadoras de luz azul", "Recursos sobre ritmos circadianos"],
-  },
-  {
-    id: "agua",
-    emoji: "💧",
-    titulo: "Sistemas de agua",
-    descripcion: "Los mejores sistemas de filtrado y estructuración del agua que he analizado personalmente.",
-    items: ["Filtros de agua", "Estructuradores de agua", "Jarras y botellas de calidad"],
-  },
-];
-
 export default function Recomendados() {
+  const [activeCategory, setActiveCategory] = useState<string>("Todos");
+
+  const { data: products = [], isLoading } = trpc.affiliates.list.useQuery();
+
+  // Derive categories from loaded products
+  const categories = ["Todos", ...Array.from(new Set(products.map((p) => p.category))).sort()];
+
+  const filtered =
+    activeCategory === "Todos"
+      ? products
+      : products.filter((p) => p.category === activeCategory);
+
+  // Group filtered by category
+  const byCategory = filtered.reduce<Record<string, typeof products>>((acc, p) => {
+    if (!acc[p.category]) acc[p.category] = [];
+    acc[p.category].push(p);
+    return acc;
+  }, {});
+
   return (
     <Layout>
       <PageHero
@@ -98,44 +59,70 @@ export default function Recomendados() {
         </div>
       </section>
 
-      {/* Categorías */}
+      {/* Products section */}
       <section className="section-padding bg-[oklch(0.94_0.012_80)]">
         <div className="container">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {categorias.map((cat) => (
-              <div
-                key={cat.id}
-                className="card-natural p-6 bg-white flex flex-col"
-              >
-                <div className="text-2xl mb-3">{cat.emoji}</div>
-                <h3 className="font-display text-[oklch(0.18_0.018_55)] mb-2" style={{ fontWeight: 400, fontSize: "1.1rem" }}>
-                  {cat.titulo}
-                </h3>
-                <div className="w-8 h-px bg-[oklch(0.52_0.08_148)] mb-3" />
-                <p className="text-[oklch(0.52_0.02_60)] text-xs leading-relaxed mb-4 font-body flex-1" style={{ fontWeight: 300 }}>
-                  {cat.descripcion}
-                </p>
-                <ul className="space-y-1.5 mb-5">
-                  {cat.items.map((item) => (
-                    <li key={item} className="flex items-center gap-2">
-                      <div className="w-1 h-1 rounded-full bg-[oklch(0.52_0.08_148)] flex-shrink-0" />
-                      <span className="text-[oklch(0.38_0.02_55)] text-xs font-body" style={{ fontWeight: 300 }}>
-                        {item}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+
+          {/* Category filter */}
+          {!isLoading && categories.length > 1 && (
+            <div className="flex flex-wrap gap-2 justify-center mb-10">
+              {categories.map((cat) => (
                 <button
-                  onClick={() => toast.info("Próximamente: productos recomendados")}
-                  className="inline-flex items-center gap-1.5 text-[oklch(0.52_0.08_148)] text-xs tracking-widest uppercase font-body hover:text-[oklch(0.38_0.07_148)] transition-colors duration-200 mt-auto"
-                  style={{ fontWeight: 500, letterSpacing: "0.1em" }}
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                    activeCategory === cat
+                      ? "bg-[oklch(0.42_0.08_148)] text-white"
+                      : "bg-white text-stone-600 hover:bg-stone-100 border border-stone-200"
+                  }`}
                 >
-                  Ver productos
-                  <ArrowRight size={11} />
+                  {cat}
                 </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+
+          {/* Loading */}
+          {isLoading && (
+            <div className="text-center py-20 text-stone-400">Cargando productos...</div>
+          )}
+
+          {/* Empty state */}
+          {!isLoading && products.length === 0 && (
+            <div className="text-center py-20">
+              <Globe size={48} className="mx-auto text-stone-300 mb-4" />
+              <p className="text-stone-500 mb-2">Próximamente compartiré mis productos favoritos aquí.</p>
+              <p className="text-sm text-stone-400">Mientras tanto, puedes escribirme directamente.</p>
+            </div>
+          )}
+
+          {/* Products by category */}
+          {!isLoading && Object.keys(byCategory).length > 0 && (
+            <div className="space-y-14">
+              {Object.entries(byCategory).map(([category, items]) => (
+                <div key={category}>
+                  {activeCategory === "Todos" && (
+                    <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-6 pb-3 border-b border-stone-300" style={{ fontWeight: 400, fontSize: "1.25rem" }}>
+                      {category}
+                    </h2>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {items.map((product) => (
+                      <ProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Disclaimer */}
+          {!isLoading && products.length > 0 && (
+            <p className="text-xs text-stone-400 text-center mt-16 max-w-lg mx-auto">
+              * Algunos enlaces de esta página son enlaces de afiliado. Esto no supone ningún coste
+              adicional para ti y me ayuda a mantener este espacio.
+            </p>
+          )}
         </div>
       </section>
 
@@ -148,16 +135,74 @@ export default function Recomendados() {
           <p className="text-white/70 mb-8 font-body max-w-md mx-auto" style={{ fontWeight: 300 }}>
             Escríbeme y te oriento hacia los productos que mejor se adapten a tu situación y presupuesto.
           </p>
-          <button
-            onClick={() => toast.info("Próximamente: formulario de contacto")}
-            className="inline-flex items-center gap-2 px-8 py-4 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body"
-            style={{ borderRadius: 0, letterSpacing: "0.1em" }}
-          >
-            Contactar
-            <ArrowRight size={14} />
-          </button>
+          <Link href="/contacto">
+            <span className="inline-flex items-center gap-2 px-8 py-4 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body cursor-pointer" style={{ borderRadius: 0, letterSpacing: "0.1em" }}>
+              Contactar
+              <ArrowRight size={14} />
+            </span>
+          </Link>
         </div>
       </section>
     </Layout>
+  );
+}
+
+function ProductCard({ product }: {
+  product: {
+    id: number;
+    name: string;
+    description: string | null;
+    imageUrl: string | null;
+    category: string;
+    affiliateUrl: string;
+    provider: string | null;
+  }
+}) {
+  return (
+    <div className="group card-natural bg-white overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col">
+      {/* Image */}
+      <div className="aspect-[4/3] bg-stone-50 overflow-hidden">
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Globe size={40} className="text-stone-300" />
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-5 flex flex-col flex-1">
+        {product.provider && (
+          <span className="text-xs text-stone-400 uppercase tracking-wider mb-1">
+            {product.provider}
+          </span>
+        )}
+        <h3 className="font-display text-[oklch(0.18_0.018_55)] mb-2 leading-snug" style={{ fontWeight: 400, fontSize: "1rem" }}>
+          {product.name}
+        </h3>
+        {product.description && (
+          <p className="text-sm text-[oklch(0.52_0.02_60)] leading-relaxed flex-1 mb-4 font-body" style={{ fontWeight: 300 }}>
+            {product.description}
+          </p>
+        )}
+
+        {/* CTA — rel="nofollow sponsored" obligatorio para enlaces de afiliado */}
+        <a
+          href={product.affiliateUrl}
+          target="_blank"
+          rel="nofollow sponsored noopener noreferrer"
+          className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 border border-[oklch(0.42_0.08_148)] text-[oklch(0.42_0.08_148)] text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.42_0.08_148)] hover:text-white transition-all duration-200 font-body"
+          style={{ letterSpacing: "0.08em" }}
+        >
+          Ver producto
+          <ExternalLink size={12} />
+        </a>
+      </div>
+    </div>
   );
 }
