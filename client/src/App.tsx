@@ -39,6 +39,8 @@ import Categorias from "./pages/crm/Categorias";
 import Automatizaciones from "./pages/crm/Automatizaciones";
 import Servicios from "./pages/crm/Servicios";
 import ServicioForm from "./pages/crm/ServicioForm";
+import CRMEbooks from "./pages/crm/Ebooks";
+import EbookForm from "./pages/crm/EbookForm";
 
 function Router() {
   return (
@@ -88,6 +90,11 @@ function Router() {
       <Route path="/crm/servicios" component={Servicios} />
       <Route path="/crm/servicios/nuevo" component={ServicioForm} />
       <Route path="/crm/servicios/:id/editar" component={ServicioForm} />
+
+      {/* Ebooks CRM */}
+      <Route path="/crm/ebooks" component={CRMEbooks} />
+      <Route path="/crm/ebooks/nuevo" component={EbookForm} />
+      <Route path="/crm/ebooks/:id/editar" component={EbookForm} />
 
       {/* Automations */}
       <Route path="/crm/automatizaciones" component={Automatizaciones} />

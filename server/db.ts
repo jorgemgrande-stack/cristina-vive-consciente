@@ -1,4 +1,4 @@
-import { eq, desc, and, gte, lte, like, or, sql } from "drizzle-orm";
+import { eq, desc, and, gte, lte, like, or, sql, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -23,6 +23,9 @@ import {
   InsertLeadSequence,
   services,
   InsertService,
+  ebooks,
+  type Ebook,
+  type InsertEbook,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -585,5 +588,58 @@ export async function toggleServiceStatus(id: number): Promise<"active" | "inact
   if (!current) throw new Error("Service not found");
   const newStatus = current.status === "active" ? "inactive" : "active";
   await db.update(services).set({ status: newStatus }).where(eq(services.id, id));
+  return newStatus;
+}
+
+// ─── EBOOKS ───────────────────────────────────────────────────────────────────
+export async function listEbooks(onlyActive = false): Promise<Ebook[]> {
+  const db = await getDb();
+  if (!db) return [];
+  if (onlyActive) {
+    return db.select().from(ebooks).where(eq(ebooks.status, "active")).orderBy(asc(ebooks.sortOrder));
+  }
+  return db.select().from(ebooks).orderBy(asc(ebooks.sortOrder));
+}
+
+export async function getEbookById(id: number): Promise<Ebook | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(ebooks).where(eq(ebooks.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getEbookBySlug(slug: string): Promise<Ebook | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(ebooks).where(eq(ebooks.slug, slug)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function createEbook(data: Omit<InsertEbook, "id" | "createdAt" | "updatedAt">): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(ebooks).values(data as InsertEbook);
+  return (result as any).insertId as number;
+}
+
+export async function updateEbook(id: number, data: Partial<InsertEbook>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(ebooks).set(data).where(eq(ebooks.id, id));
+}
+
+export async function deleteEbook(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(ebooks).where(eq(ebooks.id, id));
+}
+
+export async function toggleEbookStatus(id: number): Promise<"active" | "inactive"> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const current = await getEbookById(id);
+  if (!current) throw new Error("Ebook not found");
+  const newStatus = current.status === "active" ? "inactive" : "active";
+  await db.update(ebooks).set({ status: newStatus }).where(eq(ebooks.id, id));
   return newStatus;
 }

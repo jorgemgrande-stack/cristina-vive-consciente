@@ -292,3 +292,39 @@ export const services = mysqlTable("services", {
 
 export type Service = typeof services.$inferSelect;
 export type InsertService = typeof services.$inferInsert;
+
+// ─── EBOOKS (GUÍAS DIGITALES) ─────────────────────────────────────────────────
+export const ebooks = mysqlTable("ebooks", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Identificador único para conectar con Stripe y el sistema de compras (e.g. 'agua', 'aceites') */
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  title: varchar("title", { length: 200 }).notNull(),
+  subtitle: varchar("subtitle", { length: 300 }),
+  description: text("description"),
+  /** Precio en euros (e.g. '12.00') */
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  /** Precio en céntimos para Stripe */
+  priceCents: int("priceCents").notNull(),
+  currency: varchar("currency", { length: 3 }).default("EUR").notNull(),
+  /** ID del Price en Stripe */
+  stripePriceId: varchar("stripePriceId", { length: 100 }),
+  /** URL del PDF en S3/CDN */
+  pdfUrl: text("pdfUrl"),
+  /** Imagen de portada principal */
+  coverImage: text("coverImage"),
+  /** Imágenes adicionales del carrusel (JSON array de URLs, máximo 3) */
+  galleryImages: text("galleryImages"),
+  /** Horas de validez del enlace de descarga */
+  downloadExpiryHours: int("downloadExpiryHours").default(72).notNull(),
+  /** Tag para etiquetar al cliente en el CRM tras la compra */
+  crmTag: varchar("crmTag", { length: 100 }),
+  /** Si incluye sesión de 30 min con Cristina (0=no, 1=sí) */
+  includesSession: int("includesSession").default(0).notNull(),
+  status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Ebook = typeof ebooks.$inferSelect;
+export type InsertEbook = typeof ebooks.$inferInsert;

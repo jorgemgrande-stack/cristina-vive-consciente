@@ -1,0 +1,23 @@
+CREATE TABLE `ebooks` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`slug` varchar(100) NOT NULL,
+	`title` varchar(200) NOT NULL,
+	`subtitle` varchar(300),
+	`description` text,
+	`price` decimal(10,2) NOT NULL,
+	`priceCents` int NOT NULL,
+	`currency` varchar(3) NOT NULL DEFAULT 'EUR',
+	`stripePriceId` varchar(100),
+	`pdfUrl` text,
+	`coverImage` text,
+	`galleryImages` text,
+	`downloadExpiryHours` int NOT NULL DEFAULT 72,
+	`crmTag` varchar(100),
+	`includesSession` int NOT NULL DEFAULT 0,
+	`status` enum('active','inactive') NOT NULL DEFAULT 'active',
+	`sortOrder` int NOT NULL DEFAULT 0,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `ebooks_id` PRIMARY KEY(`id`),
+	CONSTRAINT `ebooks_slug_unique` UNIQUE(`slug`)
+);

@@ -172,3 +172,15 @@
 - [x] Conectar selector de servicios en reservas con la tabla `services`
 - [x] Soporte de subida de imagen en el formulario de servicios del CRM
 - [x] Ordenación drag-and-drop o por campo `sortOrder` en CRM
+
+## Gestor de Ebooks + Rediseño /guias-digitales
+- [ ] Tabla `ebooks` en BD (nombre, descripción, precio, imagen, imágenes adicionales, archivo PDF, estado, orden, stripePriceId)
+- [ ] Migrar los 2 ebooks existentes (hardcodeados en products.ts) a la tabla BD
+- [ ] Router tRPC `ebooks` admin: listAdmin, get, create, update, delete, toggleStatus, reorder
+- [ ] Módulo CRM `/crm/ebooks`: listado con estado, precio, toggle activo/inactivo, reordenar
+- [ ] Formulario CRM `/crm/ebooks/nuevo` y `/crm/ebooks/:id/editar` con todos los campos
+- [ ] Añadir enlace "Ebooks" al sidebar del CRM
+- [ ] Registrar rutas CRM de ebooks en App.tsx
+- [ ] Rediseño /guias-digitales: carrusel de imágenes (1 imagen grande + 3 miniaturas debajo)
+- [ ] Cargar ebooks dinámicamente desde BD en /guias-digitales
+- [ ] Mantener flujo de compra Stripe existente con datos dinámicos
