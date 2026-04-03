@@ -8,6 +8,8 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { handleStripeCheckoutCompleted } from "../routers/ebooks";
+import { getPendingLeadSequences, updateLeadSequence, createAutomationLog, updateAutomationLog } from "../db";
+import { sendLeadSequenceEmail } from "../email";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -103,6 +105,41 @@ async function startServer() {
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
   });
+
+  // ─── Scheduler: procesar secuencias de emails pendientes cada hora ──────────
+  setInterval(async () => {
+    try {
+      const pending = await getPendingLeadSequences();
+      if (pending.length === 0) return;
+      console.log(`[Scheduler] Processing ${pending.length} pending lead sequences...`);
+
+      for (const seq of pending) {
+        const step = seq.sequenceStep as 1 | 2 | 3;
+        const firstName = seq.clientName.split(" ")[0];
+        const logId = await createAutomationLog({
+          event: `lead_sequence_${step}` as "lead_sequence_1" | "lead_sequence_2" | "lead_sequence_3",
+          channel: "email",
+          recipientEmail: seq.clientEmail,
+          clientId: seq.clientId,
+          subject: `Secuencia lead paso ${step}`,
+          status: "pending",
+        });
+        try {
+          await sendLeadSequenceEmail(step, { email: seq.clientEmail, firstName });
+          await updateLeadSequence(seq.id, { status: "sent", sentAt: Date.now() });
+          await updateAutomationLog(logId, { status: "sent", sentAt: Date.now() });
+          console.log(`[Scheduler] Sent sequence step ${step} to ${seq.clientEmail}`);
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          await updateLeadSequence(seq.id, { status: "failed", errorMessage });
+          await updateAutomationLog(logId, { status: "failed", errorMessage });
+          console.error(`[Scheduler] Failed to send sequence step ${step} to ${seq.clientEmail}:`, errorMessage);
+        }
+      }
+    } catch (err) {
+      console.error("[Scheduler] Error processing sequences:", err);
+    }
+  }, 60 * 60 * 1000); // cada hora
 }
 
 startServer().catch(console.error);

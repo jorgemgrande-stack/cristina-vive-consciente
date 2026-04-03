@@ -205,3 +205,56 @@ export const affiliateProducts = mysqlTable("affiliate_products", {
 
 export type AffiliateProduct = typeof affiliateProducts.$inferSelect;
 export type InsertAffiliateProduct = typeof affiliateProducts.$inferInsert;
+
+// ─── LOGS DE AUTOMATIZACIONES ─────────────────────────────────────────────────
+export const automationLogs = mysqlTable("automation_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  // Tipo de evento que disparó la automatización
+  event: mysqlEnum("event", [
+    "booking_confirmation",   // Confirmación de reserva al cliente
+    "booking_admin",          // Notificación de reserva al admin
+    "ebook_delivery",         // Entrega de ebook
+    "lead_welcome",           // Bienvenida a nuevo lead
+    "lead_sequence_1",        // Secuencia lead: email 1 (inmediato)
+    "lead_sequence_2",        // Secuencia lead: email 2 (día 3)
+    "lead_sequence_3",        // Secuencia lead: email 3 (día 7)
+    "whatsapp_booking",       // WhatsApp de reserva (futuro)
+  ]).notNull(),
+  // Canal de comunicación
+  channel: mysqlEnum("channel", ["email", "whatsapp", "sms"]).default("email").notNull(),
+  // Destinatario
+  recipientEmail: varchar("recipientEmail", { length: 320 }),
+  recipientPhone: varchar("recipientPhone", { length: 30 }),
+  // Referencia al cliente CRM
+  clientId: int("clientId"),
+  // Estado del envío
+  status: mysqlEnum("status", ["sent", "failed", "pending", "skipped"]).default("pending").notNull(),
+  // Metadatos del envío
+  subject: varchar("subject", { length: 300 }),
+  errorMessage: text("errorMessage"),
+  sentAt: bigint("sentAt", { mode: "number" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AutomationLog = typeof automationLogs.$inferSelect;
+export type InsertAutomationLog = typeof automationLogs.$inferInsert;
+
+// ─── SECUENCIAS DE EMAILS PARA LEADS ─────────────────────────────────────────
+export const leadSequences = mysqlTable("lead_sequences", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId").notNull(),
+  clientEmail: varchar("clientEmail", { length: 320 }).notNull(),
+  clientName: varchar("clientName", { length: 200 }).notNull(),
+  // Qué email de la secuencia es este
+  sequenceStep: int("sequenceStep").notNull(), // 1, 2, 3
+  // Cuándo debe enviarse (timestamp ms)
+  scheduledAt: bigint("scheduledAt", { mode: "number" }).notNull(),
+  // Estado
+  status: mysqlEnum("status", ["pending", "sent", "failed", "cancelled"]).default("pending").notNull(),
+  sentAt: bigint("sentAt", { mode: "number" }),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type LeadSequence = typeof leadSequences.$inferSelect;
+export type InsertLeadSequence = typeof leadSequences.$inferInsert;

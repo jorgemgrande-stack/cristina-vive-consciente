@@ -36,6 +36,13 @@
       "when": 1775234792743,
       "tag": "0004_optimal_titanium_man",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1775238003868,
+      "tag": "0005_goofy_iron_patriot",
+      "breakpoints": true
     }
   ]
 }

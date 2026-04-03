@@ -36,6 +36,7 @@ import FacturaForm from "./pages/crm/FacturaForm";
 import Afiliados from "./pages/crm/Afiliados";
 import AfiliadoForm from "./pages/crm/AfiliadoForm";
 import Categorias from "./pages/crm/Categorias";
+import Automatizaciones from "./pages/crm/Automatizaciones";
 
 function Router() {
   return (
@@ -80,6 +81,9 @@ function Router() {
 
       {/* Affiliate Categories */}
       <Route path="/crm/categorias" component={Categorias} />
+
+      {/* Automations */}
+      <Route path="/crm/automatizaciones" component={Automatizaciones} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

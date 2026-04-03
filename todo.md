@@ -134,3 +134,17 @@
 - [x] Aviso de transparencia de afiliación visible
 - [x] Skeleton de carga animado
 - [x] CTA final de contacto
+
+## FASE 8: Automatizaciones de Comunicación
+- [x] Configurar credenciales SMTP en secrets (hola@cristinaviveconsciente.es / Dinahosting)
+- [x] Email HTML de confirmación de reserva al cliente (plantilla branded)
+- [x] Email HTML de notificación de reserva al admin (datos completos)
+- [x] Email HTML de entrega de ebook con enlace de descarga seguro
+- [x] Email HTML de bienvenida a lead (formulario de contacto)
+- [x] Secuencia de emails para leads: email 1 (inmediato), email 2 (día 3), email 3 (día 7)
+- [x] Tabla automation_logs en DB para registrar envíos (evento, destinatario, estado, fecha)
+- [x] Tabla lead_sequences en DB para gestionar secuencia de emails pendientes
+- [x] Job scheduler (setInterval) para procesar secuencias pendientes cada hora
+- [x] Panel CRM /crm/automatizaciones: logs de envíos y estado de secuencias
+- [x] Infraestructura WhatsApp: helper preparado con plantillas (activable con API futura)
+- [x] Formulario de contacto /contacto conectado al flujo de leads (crea cliente + dispara secuencia)

@@ -17,6 +17,10 @@ import {
   InsertAffiliateProduct,
   affiliateCategories,
   InsertAffiliateCategory,
+  automationLogs,
+  InsertAutomationLog,
+  leadSequences,
+  InsertLeadSequence,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -435,4 +439,92 @@ export async function toggleAffiliateCategoryStatus(id: number) {
   const next = current === "active" ? "inactive" : "active";
   await db.update(affiliateCategories).set({ status: next }).where(eq(affiliateCategories.id, id));
   return next;
+}
+
+// ─── AUTOMATIZACIONES — LOGS ──────────────────────────────────────────────────
+
+export async function createAutomationLog(data: InsertAutomationLog): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.insert(automationLogs).values(data);
+  return (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
+}
+
+export async function updateAutomationLog(id: number, data: Partial<InsertAutomationLog>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(automationLogs).set(data).where(eq(automationLogs.id, id));
+}
+
+export async function listAutomationLogs(limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(automationLogs)
+    .orderBy(desc(automationLogs.createdAt))
+    .limit(limit);
+}
+
+export async function getAutomationStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, sent: 0, failed: 0, pending: 0 };
+  const rows = await db.select().from(automationLogs);
+  return {
+    total: rows.length,
+    sent: rows.filter((r) => r.status === "sent").length,
+    failed: rows.filter((r) => r.status === "failed").length,
+    pending: rows.filter((r) => r.status === "pending").length,
+  };
+}
+
+// ─── AUTOMATIZACIONES — SECUENCIAS DE LEADS ──────────────────────────────────
+
+export async function createLeadSequence(data: InsertLeadSequence): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.insert(leadSequences).values(data);
+  return (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
+}
+
+export async function getPendingLeadSequences() {
+  const db = await getDb();
+  if (!db) return [];
+  const now = Date.now();
+  return db
+    .select()
+    .from(leadSequences)
+    .where(
+      and(
+        eq(leadSequences.status, "pending"),
+        lte(leadSequences.scheduledAt, now)
+      )
+    )
+    .orderBy(leadSequences.scheduledAt)
+    .limit(50);
+}
+
+export async function updateLeadSequence(id: number, data: Partial<InsertLeadSequence>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(leadSequences).set(data).where(eq(leadSequences.id, id));
+}
+
+export async function listLeadSequences(limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(leadSequences)
+    .orderBy(desc(leadSequences.createdAt))
+    .limit(limit);
+}
+
+export async function cancelLeadSequences(clientId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(leadSequences)
+    .set({ status: "cancelled" })
+    .where(and(eq(leadSequences.clientId, clientId), eq(leadSequences.status, "pending")));
 }
