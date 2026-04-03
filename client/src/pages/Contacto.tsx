@@ -1,10 +1,11 @@
 /**
  * Contacto — Cristina Vive Consciente
  * Design: "Luz Botánica"
- * Formulario de contacto (estructura visual sin lógica)
+ * Contenido real exacto — FASE 2
+ * Formulario + bloque captación comunidad
  */
 
-import { Mail, Phone, Clock, MapPin, Instagram, Send } from "lucide-react";
+import { Mail, Phone, Clock, MapPin, Instagram, Send, Users } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
@@ -32,28 +33,9 @@ const contactInfo = [
   },
   {
     icon: <MapPin size={18} />,
-    title: "Modalidad",
-    value: "Presencial y Online",
-    sub: "Adaptado a tus necesidades",
-  },
-];
-
-const faqs = [
-  {
-    q: "¿Cómo reservo una consulta?",
-    a: "Puedes escribirme por email o rellenar el formulario de contacto. Te responderé en 24-48 horas para acordar fecha y hora.",
-  },
-  {
-    q: "¿Las consultas son presenciales u online?",
-    a: "Ofrezco ambas modalidades. Las consultas online tienen la misma calidad y profundidad que las presenciales.",
-  },
-  {
-    q: "¿Qué necesito para mi primera consulta?",
-    a: "Solo necesitas llegar con mente abierta. Antes de la sesión te enviaré un breve cuestionario para prepararme mejor.",
-  },
-  {
-    q: "¿Puedo regalar una consulta?",
-    a: "Sí, ofrezco bonos regalo para consultas y masajes. Escríbeme y te preparo uno personalizado.",
+    title: "Ubicación",
+    value: "Navas de Río Frío, Segovia",
+    sub: "Presencial y online",
   },
 ];
 
@@ -73,12 +55,12 @@ export default function Contacto() {
         breadcrumb={[{ label: "Inicio", href: "/" }, { label: "Contacto" }]}
       />
 
-      {/* Main Content */}
+      {/* Formulario + Info */}
       <section className="section-padding bg-[oklch(0.985_0.006_85)]">
         <div className="container">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16">
 
-            {/* Contact Form */}
+            {/* Formulario */}
             <div className="lg:col-span-3">
               <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-4 font-body" style={{ fontWeight: 500 }}>
                 Escríbeme
@@ -91,10 +73,7 @@ export default function Contacto() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
-                    <label
-                      className="block text-[oklch(0.28_0.025_55)] text-xs tracking-widest uppercase mb-2 font-body"
-                      style={{ fontWeight: 500, letterSpacing: "0.1em" }}
-                    >
+                    <label className="block text-[oklch(0.28_0.025_55)] text-xs tracking-widest uppercase mb-2 font-body" style={{ fontWeight: 500, letterSpacing: "0.1em" }}>
                       Nombre *
                     </label>
                     <input
@@ -105,10 +84,7 @@ export default function Contacto() {
                     />
                   </div>
                   <div>
-                    <label
-                      className="block text-[oklch(0.28_0.025_55)] text-xs tracking-widest uppercase mb-2 font-body"
-                      style={{ fontWeight: 500, letterSpacing: "0.1em" }}
-                    >
+                    <label className="block text-[oklch(0.28_0.025_55)] text-xs tracking-widest uppercase mb-2 font-body" style={{ fontWeight: 500, letterSpacing: "0.1em" }}>
                       Email *
                     </label>
                     <input
@@ -121,10 +97,7 @@ export default function Contacto() {
                 </div>
 
                 <div>
-                  <label
-                    className="block text-[oklch(0.28_0.025_55)] text-xs tracking-widest uppercase mb-2 font-body"
-                    style={{ fontWeight: 500, letterSpacing: "0.1em" }}
-                  >
+                  <label className="block text-[oklch(0.28_0.025_55)] text-xs tracking-widest uppercase mb-2 font-body" style={{ fontWeight: 500, letterSpacing: "0.1em" }}>
                     Motivo de consulta
                   </label>
                   <select
@@ -132,20 +105,22 @@ export default function Contacto() {
                     style={{ borderRadius: 0, fontWeight: 300 }}
                   >
                     <option value="">Selecciona una opción</option>
-                    <option value="consulta">Consulta holística</option>
-                    <option value="masaje">Masaje terapéutico</option>
-                    <option value="agua">Sistemas de agua</option>
-                    <option value="aceites">Aceites esenciales</option>
-                    <option value="guias">Guías digitales</option>
+                    <option value="consulta-acompanamiento">Consulta + Acompañamiento 21 días</option>
+                    <option value="consulta-naturopata">Consulta Naturópata</option>
+                    <option value="consulta-breve">Consulta Breve 30 min</option>
+                    <option value="consulta-express">Consulta Express 10€</option>
+                    <option value="biohabitabilidad">Asesoría Biohabitabilidad</option>
+                    <option value="kinesiologia">Testaje Kinesiológico</option>
+                    <option value="masaje">Masaje Terapéutico</option>
+                    <option value="agua">Sistemas de Agua</option>
+                    <option value="aceites">Aceites Esenciales</option>
+                    <option value="guias">Guías Digitales</option>
                     <option value="otro">Otro</option>
                   </select>
                 </div>
 
                 <div>
-                  <label
-                    className="block text-[oklch(0.28_0.025_55)] text-xs tracking-widest uppercase mb-2 font-body"
-                    style={{ fontWeight: 500, letterSpacing: "0.1em" }}
-                  >
+                  <label className="block text-[oklch(0.28_0.025_55)] text-xs tracking-widest uppercase mb-2 font-body" style={{ fontWeight: 500, letterSpacing: "0.1em" }}>
                     Mensaje *
                   </label>
                   <textarea
@@ -179,7 +154,7 @@ export default function Contacto() {
               </form>
             </div>
 
-            {/* Contact Info */}
+            {/* Info de contacto */}
             <div className="lg:col-span-2">
               <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-4 font-body" style={{ fontWeight: 500 }}>
                 Información
@@ -228,30 +203,51 @@ export default function Contacto() {
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="section-padding bg-[oklch(0.94_0.012_80)]">
+      {/* Bloque captación: Comunidad de salud consciente */}
+      <section className="section-padding bg-[oklch(0.18_0.018_55)]">
         <div className="container">
-          <div className="max-w-lg mb-12">
-            <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-4 font-body" style={{ fontWeight: 500 }}>
-              Preguntas frecuentes
-            </p>
-            <h2 className="font-display text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 400 }}>
-              Resuelvo tus dudas
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
-            {faqs.map((faq) => (
-              <div key={faq.q} className="p-6 bg-[oklch(0.985_0.006_85)] border border-[oklch(0.88_0.015_75)]">
-                <h4 className="font-display text-[oklch(0.18_0.018_55)] mb-3" style={{ fontWeight: 500, fontSize: "1rem" }}>
-                  {faq.q}
-                </h4>
-                <div className="w-5 h-px bg-[oklch(0.52_0.08_148)] mb-3" />
-                <p className="text-[oklch(0.52_0.02_60)] text-sm leading-relaxed font-body" style={{ fontWeight: 300 }}>
-                  {faq.a}
-                </p>
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="flex justify-center mb-6">
+              <div className="w-12 h-12 flex items-center justify-center border border-[oklch(0.52_0.08_148)]/50 text-[oklch(0.52_0.08_148)]">
+                <Users size={22} />
               </div>
-            ))}
+            </div>
+
+            <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-4 font-body" style={{ fontWeight: 500 }}>
+              Únete
+            </p>
+            <h2 className="font-display text-white mb-4" style={{ fontWeight: 400 }}>
+              Comunidad de salud consciente
+            </h2>
+            <div className="w-12 h-px bg-[oklch(0.52_0.08_148)] mx-auto mb-6" />
+
+            <p className="text-white/80 leading-relaxed mb-4 font-body" style={{ fontWeight: 300 }}>
+              Si quieres estar actualizado en salud natural, medicina integrativa y aprender a mejorar tu entorno y hábitos, déjame tu correo electrónico.
+            </p>
+            <p className="text-white/70 leading-relaxed mb-10 font-body" style={{ fontWeight: 300 }}>
+              Recibirás acceso a contenido exclusivo, recursos prácticos y grupos privados donde comparto información que no publico en redes.
+            </p>
+
+            {/* Formulario captación */}
+            <div className="flex flex-col sm:flex-row gap-0 max-w-md mx-auto">
+              <input
+                type="email"
+                placeholder="Tu correo electrónico"
+                className="flex-1 px-5 py-4 bg-white/10 border border-white/20 text-white text-sm placeholder-white/50 focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors duration-200 font-body"
+                style={{ borderRadius: 0, fontWeight: 300 }}
+              />
+              <button
+                onClick={() => toast.info("Próximamente: suscripción a la comunidad")}
+                className="px-6 py-4 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-colors duration-300 font-body whitespace-nowrap"
+                style={{ borderRadius: 0, letterSpacing: "0.08em" }}
+              >
+                Unirme
+              </button>
+            </div>
+
+            <p className="text-white/40 text-xs mt-4 font-body" style={{ fontWeight: 300 }}>
+              Sin spam. Puedes darte de baja cuando quieras.
+            </p>
           </div>
         </div>
       </section>
