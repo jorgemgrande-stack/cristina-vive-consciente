@@ -114,10 +114,23 @@
 - [x] Categorías pendientes documentadas (vacías en Shopify): Cereales/Pan/Pasta, Legumbres/Semillas, Iluminación/Biorritmos
 
 ## Gestor de Categorías de Afiliados
-- [ ] Tabla affiliateCategories en DB (id, name, slug, description, sortOrder, status)
-- [ ] Helpers CRUD en db.ts para categorías de afiliados
-- [ ] Router tRPC affiliateCategories: list, create, update, delete, reorder
-- [ ] Página CRM /crm/afiliados/categorias: listado con reordenación, editar, activar/desactivar, eliminar
-- [ ] Actualizar AfiliadoForm para usar selector dinámico de categorías desde DB
-- [ ] Migrar las 12 categorías existentes a la nueva tabla
-- [ ] Añadir enlace "Categorías" en el sidebar del CRM bajo Afiliados
+- [x] Tabla affiliateCategories en DB (id, name, slug, description, sortOrder, status)
+- [x] Helpers CRUD en db.ts para categorías de afiliados
+- [x] Router tRPC affiliateCategories: list, create, update, delete, reorder, toggle
+- [x] Página CRM /crm/categorias: listado con reordenación, editar, activar/desactivar, eliminar
+- [x] Actualizar AfiliadoForm para usar selector dinámico de categorías desde DB
+- [x] Migrar las 12 categorías existentes a la nueva tabla
+- [x] Añadir enlace "Categorías" en el sidebar del CRM
+
+## Mejora UX/UI — Recomendados
+- [x] Rediseñar tarjetas de producto: imagen grande, nombre destacado, descripción, etiqueta, botón
+- [x] Hover elegante con elevación suave y animación
+- [x] Grid 3/2/1 columnas con espaciado generoso
+- [x] Headers de categoría con título y descripción opcional
+- [x] Botón "Ver producto" verde suave con icono externo
+- [x] Mostrar proveedor y texto de confianza en cada tarjeta
+- [x] Filtros de categoría mejorados visualmente con contadores
+- [x] Mantener rel="nofollow sponsored" en todos los enlaces
+- [x] Aviso de transparencia de afiliación visible
+- [x] Skeleton de carga animado
+- [x] CTA final de contacto
