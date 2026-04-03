@@ -42,7 +42,7 @@ export const EBOOKS: Record<string, EbookProduct> = {
     priceCents: 1200,
     currency: "EUR",
     stripePriceId: null, // Añadir cuando se configure Stripe: "price_xxxxxxxxxxxxxxxx"
-    pdfUrl: null,        // Añadir URL del PDF tras subirlo: "https://cdn.../guia-agua.pdf"
+    pdfUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/ebook-agua_83415515.pdf",
     downloadExpiryHours: 72,
     coverImage: "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-agua-BJHXyW4FibywwKgaqzvu2q.webp",
     crmTag: "comprador_ebook_agua",
@@ -58,7 +58,7 @@ export const EBOOKS: Record<string, EbookProduct> = {
     priceCents: 700,
     currency: "EUR",
     stripePriceId: null, // Añadir cuando se configure Stripe: "price_xxxxxxxxxxxxxxxx"
-    pdfUrl: null,        // Añadir URL del PDF tras subirlo: "https://cdn.../guia-aceites.pdf"
+    pdfUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/ebook-aceites_ac7d8e5a.pdf",
     downloadExpiryHours: 72,
     coverImage: "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-aceites-cn5cmPNwkFkzA35ejtXJUa.webp",
     crmTag: "comprador_ebook_aceites",

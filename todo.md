@@ -91,6 +91,6 @@
 - [x] Botones de compra reales en /guias-digitales (conectados a Stripe)
 - [x] Página /ebooks/gracias (verificación de compra + enlace de descarga)
 - [x] Página /ebooks/descarga (descarga segura por token, expira 72h)
-- [ ] Subir PDFs reales al CDN y añadir URLs en server/ebooks/products.ts
+- [x] Subir PDFs reales al CDN y añadir URLs en server/ebooks/products.ts
 - [ ] Crear precios en Stripe Dashboard y añadir stripePriceId en server/ebooks/products.ts
 - [ ] Configurar SMTP para emails de entrega automática
