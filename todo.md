@@ -48,6 +48,10 @@
 - [x] Módulo Facturas: formulario nueva factura con cálculo automático IVA
 - [x] Rutas CRM registradas en App.tsx
 
+## Ajustes adicionales
+- [x] Enlace sutil "Acceso privado" en footer para acceder al CRM
+- [x] Logo correcto de BION en CRMLayout (sidebar y pantalla de login)
+
 ## Pendiente (Fases futuras)
 - [ ] Formulario de contacto funcional (envío email)
 - [ ] Sistema de reservas online

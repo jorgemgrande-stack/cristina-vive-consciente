@@ -22,7 +22,7 @@ import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 
 const LOGO_URL =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/logo-bion-lFfxJoV4aq4Yq8bqJLTfPj.avif";
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/logo-bion-original_f6b56924.avif";
 
 const NAV_ITEMS = [
   { href: "/crm", label: "Dashboard", icon: LayoutDashboard },
@@ -57,7 +57,7 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[oklch(0.97_0.006_85)] gap-6">
-        <img src={LOGO_URL} alt="BION" className="w-28 object-contain" />
+        <img src={LOGO_URL} alt="BION — Cristina Vive Consciente" className="w-36 object-contain" />
         <p className="text-[oklch(0.38_0.02_55)] font-body text-sm">Acceso restringido. Inicia sesión para continuar.</p>
         <a
           href={getLoginUrl()}
@@ -100,7 +100,7 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
       >
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-white/10">
-          <img src={LOGO_URL} alt="BION" className="w-20 object-contain brightness-0 invert opacity-90" />
+          <img src={LOGO_URL} alt="BION" className="w-24 object-contain brightness-0 invert opacity-90" />
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden text-white/60 hover:text-white transition-colors"

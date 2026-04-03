@@ -174,6 +174,13 @@ export default function Footer() {
               >
                 Términos
               </button>
+              <Link
+                href="/crm"
+                className="text-[oklch(0.35_0.01_55)] text-[0.6rem] hover:text-[oklch(0.52_0.02_60)] transition-colors duration-300 font-body no-underline"
+                style={{ fontWeight: 300, letterSpacing: "0.05em" }}
+              >
+                Acceso privado
+              </Link>
             </div>
           </div>
         </div>
