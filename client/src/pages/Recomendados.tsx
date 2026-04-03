@@ -24,9 +24,27 @@ type Product = {
   category: string;
   affiliateUrl: string;
   provider: string | null;
+  isAffiliate: number;
+  sourceUrl: string | null;
   sortOrder: number;
   status: string;
 };
+
+// Colores del ribbon por proveedor (paleta integrada con la web)
+const PROVIDER_RIBBON: Record<string, { bg: string; text: string; border: string }> = {
+  Amazon: { bg: "bg-[oklch(0.96_0.04_60)]", text: "text-[oklch(0.42_0.09_60)]", border: "border-[oklch(0.88_0.06_60)]" },
+  Conasi: { bg: "bg-[oklch(0.95_0.04_148)]", text: "text-[oklch(0.38_0.09_148)]", border: "border-[oklch(0.87_0.06_148)]" },
+  Naturitas: { bg: "bg-[oklch(0.95_0.04_148)]", text: "text-[oklch(0.38_0.09_148)]", border: "border-[oklch(0.87_0.06_148)]" },
+  NaturalByMe: { bg: "bg-[oklch(0.96_0.03_200)]", text: "text-[oklch(0.38_0.08_200)]", border: "border-[oklch(0.88_0.05_200)]" },
+  iHerb: { bg: "bg-[oklch(0.95_0.04_148)]", text: "text-[oklch(0.38_0.09_148)]", border: "border-[oklch(0.87_0.06_148)]" },
+  Afiliado: { bg: "bg-[oklch(0.96_0.02_85)]", text: "text-[oklch(0.42_0.05_85)]", border: "border-[oklch(0.90_0.03_85)]" },
+  default: { bg: "bg-[oklch(0.96_0.02_85)]", text: "text-[oklch(0.42_0.05_85)]", border: "border-[oklch(0.90_0.03_85)]" },
+};
+
+function getProviderRibbon(provider: string | null) {
+  if (!provider) return PROVIDER_RIBBON.default;
+  return PROVIDER_RIBBON[provider] ?? PROVIDER_RIBBON.default;
+}
 
 // Asignar badge visual según el nombre/descripción del producto
 function getProductBadge(product: Product) {
@@ -45,6 +63,7 @@ function getProductBadge(product: Product) {
 
 function ProductCard({ product }: { product: Product }) {
   const badge = getProductBadge(product);
+  const ribbon = product.isAffiliate ? getProviderRibbon(product.provider) : null;
 
   return (
     <article className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-stone-100 shadow-sm hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 ease-out">
@@ -62,12 +81,20 @@ function ProductCard({ product }: { product: Product }) {
             <ShoppingBag size={36} className="text-stone-200" />
           </div>
         )}
-        {/* Badge */}
+        {/* Badge categoría */}
         <span
           className={`absolute top-3 left-3 text-[10px] font-medium tracking-wide px-2.5 py-1 rounded-full border ${badge.color}`}
         >
           {badge.label}
         </span>
+        {/* Ribbon proveedor — solo si es afiliado */}
+        {ribbon && product.provider && (
+          <span
+            className={`absolute top-3 right-3 text-[9px] font-semibold tracking-wide px-2 py-0.5 rounded-md border ${ribbon.bg} ${ribbon.text} ${ribbon.border}`}
+          >
+            {product.provider}
+          </span>
+        )}
       </div>
 
       {/* Contenido */}
@@ -102,16 +129,22 @@ function ProductCard({ product }: { product: Product }) {
           </span>
         </div>
 
-        {/* Botón */}
-        <a
-          href={product.affiliateUrl}
-          target="_blank"
-          rel="nofollow sponsored noopener noreferrer"
-          className="mt-1 flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-[oklch(0.94_0.04_140)] hover:bg-[oklch(0.45_0.1_140)] text-[oklch(0.38_0.08_148)] hover:text-white text-xs font-medium tracking-wide transition-all duration-200 border border-[oklch(0.88_0.05_140)] hover:border-[oklch(0.45_0.1_140)]"
-        >
-          Ver producto
-          <ExternalLink size={11} className="flex-shrink-0" />
-        </a>
+        {/* Botón — solo si tiene URL de afiliado */}
+        {product.isAffiliate && product.affiliateUrl ? (
+          <a
+            href={product.affiliateUrl}
+            target="_blank"
+            rel="nofollow sponsored external noopener noreferrer"
+            className="mt-1 flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-[oklch(0.94_0.04_140)] hover:bg-[oklch(0.45_0.1_140)] text-[oklch(0.38_0.08_148)] hover:text-white text-xs font-medium tracking-wide transition-all duration-200 border border-[oklch(0.88_0.05_140)] hover:border-[oklch(0.45_0.1_140)]"
+          >
+            Ver en {product.provider ?? "tienda"}
+            <ExternalLink size={11} className="flex-shrink-0" />
+          </a>
+        ) : (
+          <span className="mt-1 flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-stone-50 text-stone-400 text-xs font-medium tracking-wide border border-stone-100 cursor-default">
+            Próximamente disponible
+          </span>
+        )}
       </div>
     </article>
   );

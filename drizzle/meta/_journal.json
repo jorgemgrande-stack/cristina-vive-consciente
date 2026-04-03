@@ -43,6 +43,13 @@
       "when": 1775238003868,
       "tag": "0005_goofy_iron_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1775240530221,
+      "tag": "0006_cool_orphan",
+      "breakpoints": true
     }
   ]
 }

@@ -148,3 +148,14 @@
 - [x] Panel CRM /crm/automatizaciones: logs de envíos y estado de secuencias
 - [x] Infraestructura WhatsApp: helper preparado con plantillas (activable con API futura)
 - [x] Formulario de contacto /contacto conectado al flujo de leads (crea cliente + dispara secuencia)
+
+## Revisión Productos Afiliados — Extracción URLs + Ribbon Visual
+- [x] Extraer affiliate_url real de cada ficha de producto Shopify (scraping masivo)
+- [x] Detectar proveedor (Amazon, Conasi, Naturitas, propio) por URL de salida
+- [x] Añadir columnas provider, is_affiliate, source_url al schema DB
+- [x] Actualizar BD con datos extraídos (affiliate_url, provider, is_affiliate)
+- [x] Añadir ribbon visual del proveedor en tarjetas de /recomendados
+- [x] Solo mostrar ribbon si is_affiliate = true
+- [x] Colores del ribbon integrados con la paleta (verde, tierra, beige)
+- [x] Botón externo con rel="nofollow sponsored external" y target="_blank"
+- [x] Generar informe: total, afiliados, propios, sin enlace

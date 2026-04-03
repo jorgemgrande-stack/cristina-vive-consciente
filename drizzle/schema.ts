@@ -196,6 +196,10 @@ export const affiliateProducts = mysqlTable("affiliate_products", {
   category: varchar("category", { length: 100 }).notNull(),
   affiliateUrl: text("affiliateUrl").notNull(),
   provider: varchar("provider", { length: 100 }),
+  /** true si el enlace apunta a un proveedor externo (afiliado), false si es producto propio */
+  isAffiliate: int("isAffiliate").default(0).notNull(),
+  /** URL original de la ficha en Shopify (para referencia) */
+  sourceUrl: text("sourceUrl"),
   status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
   sortOrder: int("sortOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
