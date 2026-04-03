@@ -17,6 +17,7 @@ import { getDb } from "../db";
 import { ebookPurchases } from "../../drizzle/schema";
 import { eq, and, gt } from "drizzle-orm";
 import { getAllEbooks, getEbook } from "../ebooks/products";
+import { getEbookBySlug } from "../db";
 import { notifyOwner } from "../_core/notification";
 import { sendEbookDeliveryEmail } from "../email";
 import { findClientByEmail, updateClientTag } from "../db";
@@ -55,15 +56,34 @@ export const ebooksRouter = router({
   createCheckout: publicProcedure
     .input(
       z.object({
-        ebookId: z.enum(["agua", "aceites"]),
+        ebookId: z.string().min(1), // slug dinámico (agua, aceites, o cualquier slug de la BD)
         customerEmail: z.string().email().optional(),
         origin: z.string().url(), // window.location.origin desde el frontend
       })
     )
     .mutation(async ({ input }) => {
-      const ebook = getEbook(input.ebookId);
-      if (!ebook) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Ebook no encontrado" });
+      // Primero buscar en la tabla ebooks (BD dinámica)
+      let ebookTitle = "";
+      let ebookStripePriceId: string | null = null;
+      let ebookIncludesSession = false;
+      let ebookDownloadExpiryHours = 72;
+
+      const dbEbook = await getEbookBySlug(input.ebookId);
+      if (dbEbook && dbEbook.status === "active") {
+        ebookTitle = dbEbook.title;
+        ebookStripePriceId = dbEbook.stripePriceId;
+        ebookIncludesSession = dbEbook.includesSession === 1;
+        ebookDownloadExpiryHours = dbEbook.downloadExpiryHours;
+      } else {
+        // Fallback: buscar en el catálogo estático (retrocompatibilidad)
+        const staticEbook = getEbook(input.ebookId as "agua" | "aceites");
+        if (!staticEbook) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Ebook no encontrado" });
+        }
+        ebookTitle = staticEbook.title;
+        ebookStripePriceId = staticEbook.stripePriceId;
+        ebookIncludesSession = staticEbook.includesSession;
+        ebookDownloadExpiryHours = staticEbook.downloadExpiryHours;
       }
 
       const stripe = getStripe();
@@ -74,7 +94,7 @@ export const ebooksRouter = router({
         });
       }
 
-      if (!ebook.stripePriceId) {
+      if (!ebookStripePriceId) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message: "Este ebook no está disponible para compra en este momento.",
@@ -86,15 +106,15 @@ export const ebooksRouter = router({
         payment_method_types: ["card"],
         line_items: [
           {
-            price: ebook.stripePriceId,
+            price: ebookStripePriceId,
             quantity: 1,
           },
         ],
         customer_email: input.customerEmail,
         allow_promotion_codes: true,
         metadata: {
-          ebook_id: ebook.id,
-          ebook_title: ebook.title,
+          ebook_id: input.ebookId,
+          ebook_title: ebookTitle,
         },
         success_url: `${input.origin}/ebooks/gracias?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${input.origin}/guias-digitales`,

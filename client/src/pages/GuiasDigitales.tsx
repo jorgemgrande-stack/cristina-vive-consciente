@@ -259,7 +259,7 @@ function EbookCard({ ebook }: { ebook: EbookData }) {
 
 // ── Página principal ─────────────────────────────────────────────────────────
 export default function GuiasDigitales() {
-  const { data: ebooks = [], isLoading } = trpc.ebooksAdmin.list.useQuery();
+  const { data: ebooks = [], isLoading } = trpc.ebooksAdmin.list.useQuery(); // list = solo activos (publicProcedure)
 
   return (
     <Layout>
