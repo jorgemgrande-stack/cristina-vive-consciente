@@ -15,6 +15,8 @@ import {
   InsertInvoice,
   affiliateProducts,
   InsertAffiliateProduct,
+  affiliateCategories,
+  InsertAffiliateCategory,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -387,5 +389,50 @@ export async function toggleAffiliateProductStatus(id: number) {
   if (!current) throw new Error("Product not found");
   const next = current === "active" ? "inactive" : "active";
   await db.update(affiliateProducts).set({ status: next }).where(eq(affiliateProducts.id, id));
+  return next;
+}
+
+// ─── CATEGORÍAS DE AFILIADOS ──────────────────────────────────────────────────────
+export async function listAffiliateCategories() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(affiliateCategories).orderBy(affiliateCategories.sortOrder);
+}
+
+export async function getAffiliateCategoryById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(affiliateCategories).where(eq(affiliateCategories.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function createAffiliateCategory(data: InsertAffiliateCategory) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const result = await db.insert(affiliateCategories).values(data);
+  const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId ?? 0;
+  return insertId;
+}
+
+export async function updateAffiliateCategory(id: number, data: Partial<InsertAffiliateCategory>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(affiliateCategories).set(data).where(eq(affiliateCategories.id, id));
+}
+
+export async function deleteAffiliateCategory(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.delete(affiliateCategories).where(eq(affiliateCategories.id, id));
+}
+
+export async function toggleAffiliateCategoryStatus(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const rows = await db.select({ status: affiliateCategories.status }).from(affiliateCategories).where(eq(affiliateCategories.id, id)).limit(1);
+  const current = rows[0]?.status;
+  if (!current) throw new Error("Category not found");
+  const next = current === "active" ? "inactive" : "active";
+  await db.update(affiliateCategories).set({ status: next }).where(eq(affiliateCategories.id, id));
   return next;
 }

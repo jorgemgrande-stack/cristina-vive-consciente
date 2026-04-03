@@ -12,6 +12,7 @@ import {
   CalendarDays,
   FileText,
   Star,
+  Tag,
   Menu,
   X,
   LogOut,
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { href: "/crm/citas", label: "Citas", icon: CalendarDays },
   { href: "/crm/facturas", label: "Facturas", icon: FileText },
   { href: "/crm/afiliados", label: "Afiliados", icon: Star },
+  { href: "/crm/categorias", label: "Categorías", icon: Tag },
 ];
 
 interface CRMLayoutProps {

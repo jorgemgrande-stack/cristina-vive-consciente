@@ -21,17 +21,7 @@ import {
 import { toast } from "sonner";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 
-const CATEGORIES = [
-  "Alimentación",
-  "Cocina saludable",
-  "Limpieza ecológica",
-  "Cosmética natural",
-  "Textil consciente",
-  "Microorganismos EM",
-  "Terapia lumínica",
-  "Sistemas de agua",
-  "Otros",
-];
+// Las categorías se cargan dinámicamente desde la base de datos
 
 interface FormData {
   name: string;
@@ -63,6 +53,10 @@ export default function AfiliadoForm() {
 
   const [form, setForm] = useState<FormData>(emptyForm);
   const utils = trpc.useUtils();
+
+  // Cargar categorías dinámicas desde la base de datos
+  const { data: categoriesData = [] } = trpc.affiliates.listCategoriesAdmin.useQuery();
+  const activeCategories = categoriesData.filter((c) => c.status === "active");
 
   // Load existing product for edit
   const { data: existing, isLoading: loadingProduct } = trpc.affiliates.get.useQuery(
@@ -209,7 +203,17 @@ export default function AfiliadoForm() {
 
           {/* Categoría */}
           <div className="space-y-1.5">
-            <Label>Categoría *</Label>
+            <div className="flex items-center justify-between">
+              <Label>Categoría *</Label>
+              <a
+                href="/crm/categorias"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-[oklch(0.45_0.1_140)] hover:underline"
+              >
+                + Gestionar categorías
+              </a>
+            </div>
             <Select
               value={form.category}
               onValueChange={(v) => setForm({ ...form, category: v })}
@@ -218,11 +222,17 @@ export default function AfiliadoForm() {
                 <SelectValue placeholder="Selecciona una categoría" />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
-                ))}
+                {activeCategories.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-stone-400">
+                    No hay categorías activas. <a href="/crm/categorias" target="_blank" className="text-[oklch(0.45_0.1_140)] underline">Crear una</a>
+                  </div>
+                ) : (
+                  activeCategories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>

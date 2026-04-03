@@ -112,3 +112,12 @@
 - [x] 97 productos únicos migrados (1 duplicado detectado y omitido)
 - [x] Script seed-afiliados.mjs creado y ejecutado correctamente
 - [x] Categorías pendientes documentadas (vacías en Shopify): Cereales/Pan/Pasta, Legumbres/Semillas, Iluminación/Biorritmos
+
+## Gestor de Categorías de Afiliados
+- [ ] Tabla affiliateCategories en DB (id, name, slug, description, sortOrder, status)
+- [ ] Helpers CRUD en db.ts para categorías de afiliados
+- [ ] Router tRPC affiliateCategories: list, create, update, delete, reorder
+- [ ] Página CRM /crm/afiliados/categorias: listado con reordenación, editar, activar/desactivar, eliminar
+- [ ] Actualizar AfiliadoForm para usar selector dinámico de categorías desde DB
+- [ ] Migrar las 12 categorías existentes a la nueva tabla
+- [ ] Añadir enlace "Categorías" en el sidebar del CRM bajo Afiliados
