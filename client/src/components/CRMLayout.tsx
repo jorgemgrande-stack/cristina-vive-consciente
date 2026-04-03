@@ -60,7 +60,7 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
         <img src={LOGO_URL} alt="BION — Cristina Vive Consciente" className="w-36 object-contain" />
         <p className="text-[oklch(0.38_0.02_55)] font-body text-sm">Acceso restringido. Inicia sesión para continuar.</p>
         <a
-          href={getLoginUrl()}
+          href={getLoginUrl("/crm")}
           className="px-6 py-3 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-body hover:bg-[oklch(0.38_0.07_148)] transition-colors"
           style={{ letterSpacing: "0.1em" }}
         >

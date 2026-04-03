@@ -59,3 +59,4 @@
 - [ ] Blog con artículos reales
 - [ ] Notificaciones WhatsApp automáticas
 - [ ] Exportar facturas a PDF
+- [x] Corregir redirect post-login: tras autenticarse desde /crm debe volver a /crm
