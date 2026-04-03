@@ -60,3 +60,11 @@
 - [ ] Notificaciones WhatsApp automáticas
 - [ ] Exportar facturas a PDF
 - [x] Corregir redirect post-login: tras autenticarse desde /crm debe volver a /crm
+
+## Capa pública de solicitud de citas
+- [x] Endpoint tRPC público: bookings.request (inserta en appointments con status pending)
+- [x] Componente BookingModal: formulario público de solicitud de cita
+- [x] Integrar BookingModal en botón "Reservar consulta" del Header
+- [x] Integrar BookingModal en botón "Reservar consulta" de la Home
+- [x] Integrar BookingModal en botones CTA de la página /consultas
+- [x] Notificación al admin cuando llega una nueva solicitud

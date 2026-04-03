@@ -4,12 +4,23 @@
  * Contenido real exacto — FASE 2
  */
 
+import { useState } from "react";
 import { ArrowRight, Clock, CheckCircle, Euro } from "lucide-react";
-import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
+import BookingModal from "@/components/BookingModal";
 
 const HERO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-consultas-VRAFvns5UX68Kqd64cBawH.webp";
+
+// Mapa de id de consulta → serviceType del CRM
+const SERVICE_TYPE_MAP: Record<string, string> = {
+  acompanamiento: "consulta_acompanamiento",
+  naturopata: "consulta_naturopata",
+  breve: "consulta_breve",
+  express: "consulta_express",
+  biohabitabilidad: "biohabitabilidad",
+  kinesiologia: "kinesiologia",
+};
 
 const consultas = [
   {
@@ -169,7 +180,16 @@ const consultas = [
 ];
 
 export default function Consultas() {
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState("consulta_acompanamiento");
+
   return (
+    <>
+    <BookingModal
+      isOpen={bookingOpen}
+      onClose={() => setBookingOpen(false)}
+      preselectedService={selectedService}
+    />
     <Layout>
       <PageHero
         title="Consultas"
@@ -333,7 +353,7 @@ export default function Consultas() {
 
                 {/* CTA */}
                 <button
-                  onClick={() => toast.info("Próximamente: sistema de reservas online")}
+                  onClick={() => { setSelectedService(SERVICE_TYPE_MAP[c.id] ?? "otro"); setBookingOpen(true); }}
                   className="inline-flex items-center gap-2 px-6 py-3 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body"
                   style={{ borderRadius: 0, letterSpacing: "0.1em" }}
                 >
@@ -346,5 +366,6 @@ export default function Consultas() {
         </div>
       </section>
     </Layout>
+    </>
   );
 }

@@ -2,13 +2,13 @@
  * Header — Cristina Vive Consciente
  * Design: "Luz Botánica" — Art Nouveau depurado + Minimalismo escandinavo
  * Sticky transparent → fondo sólido al hacer scroll
- * Logo BION real + navegación limpia + botón "Reservar consulta"
+ * Logo BION real + navegación limpia + botón "Reservar consulta" → BookingModal
  */
 
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
-import { toast } from "sonner";
+import BookingModal from "./BookingModal";
 
 const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/logo-bion_ba8968f6.avif";
 
@@ -27,6 +27,7 @@ const navLinks = [
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
   const [location] = useLocation();
 
   useEffect(() => {
@@ -108,7 +109,7 @@ export default function Header() {
                 Contacto
               </Link>
               <button
-                onClick={() => toast.info("Próximamente: sistema de reservas online")}
+                onClick={() => setBookingOpen(true)}
                 className={`px-5 py-2.5 text-[0.7rem] font-medium tracking-widest uppercase transition-all duration-350 ${
                   solidBg
                     ? "bg-[oklch(0.52_0.08_148)] text-white border border-[oklch(0.52_0.08_148)] hover:bg-[oklch(0.38_0.07_148)] hover:border-[oklch(0.38_0.07_148)]"
@@ -190,7 +191,7 @@ export default function Header() {
               <button
                 onClick={() => {
                   setMenuOpen(false);
-                  toast.info("Próximamente: sistema de reservas online");
+                  setBookingOpen(true);
                 }}
                 className="w-full py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-colors duration-300"
                 style={{
@@ -205,6 +206,12 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      {/* Booking Modal */}
+      <BookingModal
+        isOpen={bookingOpen}
+        onClose={() => setBookingOpen(false)}
+      />
     </>
   );
 }

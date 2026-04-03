@@ -128,11 +128,13 @@ export async function getClientById(id: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function createClient(data: InsertClient) {
+export async function createClient(data: InsertClient): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(clients).values(data);
-  return result[0];
+  const [result] = await db.insert(clients).values(data);
+  const insertId = (result as any).insertId as number;
+  if (!insertId) throw new Error("Failed to get insertId after creating client");
+  return insertId;
 }
 
 export async function updateClient(id: number, data: Partial<InsertClient>) {
@@ -145,6 +147,13 @@ export async function deleteClient(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(clients).where(eq(clients.id, id));
+}
+
+export async function findClientByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(clients).where(eq(clients.email, email)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
 }
 
 export async function getClientsCount() {

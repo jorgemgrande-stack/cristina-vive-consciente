@@ -4,11 +4,11 @@
  * Secciones: Hero, Servicios, Sobre Mí, Filosofía, Testimonios, CTA
  */
 
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, Leaf, Droplets, BookOpen, Star, ChevronRight } from "lucide-react";
-import { toast } from "sonner";
 import Layout from "@/components/Layout";
+import BookingModal from "@/components/BookingModal";
 
 const HERO_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-main-T6UmVzyg8XHyq4zLvU5RfZ.webp";
 const CONSULTAS_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-consultas-VRAFvns5UX68Kqd64cBawH.webp";
@@ -88,11 +88,11 @@ const testimonials = [
 ];
 
 export default function Home() {
-  // The userAuth hooks provides authentication state
-  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
-  let { user, loading, error, isAuthenticated, logout } = useAuth();
+  const [bookingOpen, setBookingOpen] = useState(false);
 
   return (
+    <>
+    <BookingModal isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />
     <Layout>
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
@@ -146,7 +146,7 @@ export default function Home() {
             {/* CTAs */}
             <div className="flex flex-wrap gap-4">
               <button
-                onClick={() => toast.info("Próximamente: sistema de reservas online")}
+                onClick={() => setBookingOpen(true)}
                 className="inline-flex items-center gap-2 px-7 py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-350 font-body"
                 style={{ borderRadius: 0, letterSpacing: "0.1em" }}
               >
@@ -449,7 +449,7 @@ export default function Home() {
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
               <button
-                onClick={() => toast.info("Próximamente: sistema de reservas online")}
+                onClick={() => setBookingOpen(true)}
                 className="btn-primary"
               >
                 Reservar consulta
@@ -467,5 +467,6 @@ export default function Home() {
         </div>
       </section>
     </Layout>
+    </>
   );
 }
