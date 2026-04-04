@@ -184,3 +184,6 @@
 - [x] Rediseño /guias-digitales: carrusel de imágenes (1 imagen grande + 3 miniaturas debajo)
 - [x] Cargar ebooks dinámicamente desde BD en /guias-digitales
 - [x] Mantener flujo de compra Stripe existente con datos dinámicos
+
+## Importación Clientes Shopify
+- [x] Importar clientes del CSV de Shopify a la BD del CRM (limpiar duplicados y spam)
