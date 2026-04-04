@@ -18,6 +18,7 @@ import { publicProcedure, router } from "../_core/trpc";
 import { createClient, createAppointment, findClientByEmail } from "../db";
 import { notifyOwner } from "../_core/notification";
 import { sendClientConfirmationEmail, sendAdminNotificationEmail } from "../email";
+import { notifyAdminNewBooking } from "../whatsapp";
 
 const SERVICE_LABELS: Record<string, string> = {
   consulta_acompanamiento: "Consulta + Acompañamiento 21 días",
@@ -130,7 +131,22 @@ export const bookingsRouter = router({
         console.warn("[Email] Error sending admin notification:", err);
       });
 
-      // 6. Notificar al admin via Manus (no bloqueante)
+      // 6. Notificar al admin via WhatsApp (no bloqueante)
+      notifyAdminNewBooking({
+        firstName: input.firstName.trim(),
+        lastName: input.lastName.trim(),
+        phone: input.phone?.trim(),
+        email: emailNormalized,
+        serviceLabel,
+        preferredDate: dateStr,
+        preferredTime: input.preferredTime,
+        modality: input.modality,
+        notes: input.message?.trim(),
+      }).catch((err) => {
+        console.warn("[WhatsApp] Error notifying admin (booking):", err);
+      });
+
+      // 7. Notificar al admin via Manus (no bloqueante)
       notifyOwner({
         title: `Nueva solicitud de cita — ${input.firstName} ${input.lastName}`,
         content: `${input.firstName} ${input.lastName} (${emailNormalized}${input.phone ? ` · ${input.phone}` : ""}) ha solicitado una cita de ${serviceLabel} para el ${dateStr}${input.preferredTime ? ` a las ${input.preferredTime}` : ""}. Modalidad: ${input.modality}.${input.message ? ` Mensaje: "${input.message}"` : ""}`,

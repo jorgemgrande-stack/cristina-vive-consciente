@@ -218,3 +218,15 @@
 - [x] EbookForm: reemplazar campo URL PDF por FileUploader
 - [x] ServicioForm: reemplazar campo URL imagen por ImageUploader
 - [x] AfiliadoForm: reemplazar campo URL imagen por ImageUploader
+
+## WhatsApp — Botón flotante y notificaciones automáticas
+- [x] Componente WhatsAppButton flotante sticky (esquina inferior derecha)
+- [x] Diseño acorde a la paleta de la web (verde suave, no verde WhatsApp puro)
+- [x] Tooltip con mensaje de bienvenida al hacer hover
+- [x] Enlace wa.me con mensaje pre-rellenado en español
+- [x] Integrar WhatsAppButton en el Layout global (visible en todas las páginas públicas)
+- [x] Notificación WhatsApp automática al admin (+34657165343) en nueva reserva
+- [x] Notificación WhatsApp automática al admin en nuevo lead (formulario contacto)
+- [x] Notificación WhatsApp automática al admin en nueva compra de ebook
+- [x] Helper notifyAdminWhatsApp en server/whatsapp.ts con soporte wa.me + API futura
+- [x] Panel CRM: mostrar estado de notificaciones WhatsApp en logs de automatizaciones

@@ -26,6 +26,7 @@ import {
   sendLeadSequenceEmail,
 } from "../email";
 import { notifyOwner } from "../_core/notification";
+import { notifyAdminNewLead } from "../whatsapp";
 
 // ─── HELPER: Registrar log de automatización ──────────────────────────────────
 
@@ -155,7 +156,17 @@ export const automationsRouter = router({
         fn: () => sendAdminLeadNotificationEmail(leadData),
       }).catch(console.error);
 
-      // 4. Notificación Manus
+      // 4. Notificación WhatsApp al admin (no bloqueante)
+      notifyAdminNewLead({
+        firstName: input.firstName.trim(),
+        lastName: input.lastName.trim(),
+        phone: input.phone?.trim(),
+        email: emailNormalized,
+        message: input.message?.trim(),
+        interest: input.subject?.trim(),
+      }).catch(console.error);
+
+      // 5. Notificación Manus
       notifyOwner({
         title: `Nuevo lead — ${fullName}`,
         content: `${fullName} (${emailNormalized}${input.phone ? ` · ${input.phone}` : ""}) ha contactado a través del formulario.${input.subject ? ` Asunto: ${input.subject}.` : ""}${input.message ? ` Mensaje: "${input.message}"` : ""}`,

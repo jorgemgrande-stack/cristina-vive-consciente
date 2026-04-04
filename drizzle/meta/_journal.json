@@ -71,6 +71,13 @@
       "when": 1775339051812,
       "tag": "0009_adorable_karnak",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1775344558110,
+      "tag": "0010_adorable_lilandra",
+      "breakpoints": true
     }
   ]
 }

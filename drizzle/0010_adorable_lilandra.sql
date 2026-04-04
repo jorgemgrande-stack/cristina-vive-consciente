@@ -1,0 +1,1 @@
+ALTER TABLE `automation_logs` MODIFY COLUMN `event` enum('booking_confirmation','booking_admin','ebook_delivery','lead_welcome','lead_sequence_1','lead_sequence_2','lead_sequence_3','whatsapp_booking','whatsapp_lead','whatsapp_purchase') NOT NULL;

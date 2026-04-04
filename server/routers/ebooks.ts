@@ -21,6 +21,7 @@ import { getEbookBySlug } from "../db";
 import { notifyOwner } from "../_core/notification";
 import { sendEbookDeliveryEmail } from "../email";
 import { findClientByEmail, updateClientTag } from "../db";
+import { notifyAdminNewPurchase } from "../whatsapp";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? "";
 
@@ -287,7 +288,18 @@ export async function handleStripeCheckoutCompleted(session: any): Promise<void>
     console.error("[Ebooks] Error sending delivery email:", err);
   }
 
-  // Notificar al admin
+  // Notificar al admin via WhatsApp
+  notifyAdminNewPurchase({
+    firstName: customerName?.split(" ")[0] ?? "Cliente",
+    lastName: customerName?.split(" ").slice(1).join(" ") ?? "",
+    email: customerEmail,
+    productName: ebookTitle ?? ebook.title,
+    amount: `${(amountCents / 100).toFixed(2)}€`,
+  }).catch((err) => {
+    console.warn("[WhatsApp] Error notifying admin (purchase):", err);
+  });
+
+  // Notificar al admin via Manus
   try {
     await notifyOwner({
       title: `Nueva venta de ebook — ${ebookTitle ?? ebook.title}`,

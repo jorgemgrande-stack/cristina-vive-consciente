@@ -227,7 +227,9 @@ export const automationLogs = mysqlTable("automation_logs", {
     "lead_sequence_1",        // Secuencia lead: email 1 (inmediato)
     "lead_sequence_2",        // Secuencia lead: email 2 (día 3)
     "lead_sequence_3",        // Secuencia lead: email 3 (día 7)
-    "whatsapp_booking",       // WhatsApp de reserva (futuro)
+    "whatsapp_booking",       // WhatsApp de reserva al admin
+    "whatsapp_lead",          // WhatsApp de nuevo lead al admin
+    "whatsapp_purchase",      // WhatsApp de nueva compra al admin
   ]).notNull(),
   // Canal de comunicación
   channel: mysqlEnum("channel", ["email", "whatsapp", "sms"]).default("email").notNull(),

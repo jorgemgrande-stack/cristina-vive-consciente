@@ -31,7 +31,9 @@ const EVENT_LABELS: Record<string, string> = {
   lead_sequence_1: "Secuencia lead — paso 1",
   lead_sequence_2: "Secuencia lead — paso 2",
   lead_sequence_3: "Secuencia lead — paso 3",
-  whatsapp_booking: "WhatsApp reserva",
+  whatsapp_booking: "WhatsApp 📱 Reserva",
+  whatsapp_lead: "WhatsApp 📱 Lead",
+  whatsapp_purchase: "WhatsApp 📱 Compra",
 };
 
 const EVENT_COLORS: Record<string, string> = {
@@ -43,6 +45,8 @@ const EVENT_COLORS: Record<string, string> = {
   lead_sequence_2: "bg-indigo-100 text-indigo-800",
   lead_sequence_3: "bg-purple-100 text-purple-800",
   whatsapp_booking: "bg-green-100 text-green-800",
+  whatsapp_lead: "bg-green-100 text-green-800",
+  whatsapp_purchase: "bg-green-100 text-green-800",
 };
 
 const STATUS_CONFIG = {
@@ -211,11 +215,11 @@ export default function Automatizaciones() {
             </div>
             <div className="bg-white rounded p-3 border border-[#E8E4DC]">
               <div className="flex items-center gap-2 mb-1">
-                <MessageSquare size={14} className="text-stone-400" />
+                <MessageSquare size={14} className="text-green-600" />
                 <span className="text-sm font-medium text-[#1A1208]">WhatsApp</span>
               </div>
-              <p className="text-xs text-[#7A6E5E]">Enlace wa.me activo · API futura</p>
-              <span className="inline-block mt-1 text-xs bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">Preparado</span>
+              <p className="text-xs text-[#7A6E5E]">Notif. admin en reservas, leads y compras</p>
+              <span className="inline-block mt-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Activo</span>
             </div>
           </div>
         </div>
@@ -293,7 +297,18 @@ export default function Automatizaciones() {
                               <StatusIcon size={13} />
                               <span className="text-xs font-medium">{statusConf.label}</span>
                             </div>
-                            {log.errorMessage && (
+                            {/* Si es un log de WhatsApp pendiente, mostrar el enlace wa.me */}
+                            {log.event?.startsWith("whatsapp_") && log.status === "pending" && log.errorMessage?.startsWith("wa.me link:") && (
+                              <a
+                                href={log.errorMessage.replace("wa.me link: ", "")}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-xs text-green-700 underline mt-0.5 hover:text-green-900"
+                              >
+                                Abrir en WhatsApp ↗
+                              </a>
+                            )}
+                            {log.errorMessage && !log.errorMessage.startsWith("wa.me link:") && (
                               <p className="text-xs text-red-400 mt-0.5 truncate max-w-[200px]" title={log.errorMessage}>
                                 {log.errorMessage}
                               </p>

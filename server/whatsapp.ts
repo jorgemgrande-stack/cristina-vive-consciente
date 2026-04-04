@@ -1,20 +1,24 @@
 /**
  * WhatsApp Helper — Cristina Vive Consciente
  *
- * ESTADO ACTUAL: Infraestructura preparada para activación futura.
- * Los mensajes se generan como URLs de wa.me (sin API).
+ * ESTRATEGIA ACTUAL: Notificaciones al admin mediante wa.me links.
+ * Cuando el servidor detecta un evento (reserva, lead, compra), genera
+ * un enlace wa.me con el mensaje pre-rellenado y lo registra en automation_logs.
  *
- * ACTIVACIÓN FUTURA:
- * Cuando se disponga de WhatsApp Business API (Meta Cloud API o Twilio),
- * añadir las credenciales como secrets y descomentar el bloque de envío real.
+ * Sin WhatsApp Business API, el envío automático al admin no es posible
+ * (WhatsApp no permite envíos server-side sin API oficial). Sin embargo,
+ * el sistema registra cada notificación pendiente en la BD y genera el
+ * enlace para que Cristina pueda abrirlo directamente desde el CRM.
  *
- * Variables de entorno necesarias (futuro):
- * - WHATSAPP_API_TOKEN: Token de la API de WhatsApp Business
- * - WHATSAPP_PHONE_ID: ID del número de teléfono de WhatsApp Business
- * - WHATSAPP_ADMIN_NUMBER: Número de Cristina (sin +, ej: 34612345678)
+ * ACTIVACIÓN FUTURA con WhatsApp Business API:
+ * - Añadir WHATSAPP_API_TOKEN y WHATSAPP_PHONE_ID como secrets
+ * - El bloque de envío real se activará automáticamente
  */
 
-const WHATSAPP_ADMIN_NUMBER = process.env.WHATSAPP_ADMIN_NUMBER ?? "34600000000";
+import { getDb } from "./db";
+import { automationLogs } from "../drizzle/schema";
+
+const WHATSAPP_ADMIN_NUMBER = process.env.WHATSAPP_ADMIN_NUMBER ?? "34657165343";
 
 // ─── TIPOS ────────────────────────────────────────────────────────────────────
 
@@ -22,108 +26,211 @@ export interface WhatsAppBookingData {
   firstName: string;
   lastName: string;
   phone?: string;
+  email?: string;
   serviceLabel: string;
   preferredDate: string;
   preferredTime?: string;
   modality: string;
+  notes?: string;
+}
+
+export interface WhatsAppLeadData {
+  firstName: string;
+  lastName?: string;
+  phone?: string;
+  email?: string;
+  message?: string;
+  interest?: string;
+}
+
+export interface WhatsAppPurchaseData {
+  firstName: string;
+  lastName?: string;
+  email: string;
+  productName: string;
+  amount: string;
 }
 
 // ─── GENERADORES DE MENSAJES ──────────────────────────────────────────────────
 
-/**
- * Genera el texto del mensaje de WhatsApp para el cliente tras una reserva.
- * El cliente puede enviarlo a Cristina directamente.
- */
-export function generateBookingWhatsAppText(data: WhatsAppBookingData): string {
-  const lines = [
-    `Hola Cristina, acabo de solicitar una cita de ${data.serviceLabel}`,
-    `para el ${data.preferredDate}${data.preferredTime ? ` a las ${data.preferredTime}` : ""}.`,
-    `Modalidad: ${data.modality}.`,
-    `Quedo a la espera de tu confirmación. Gracias 🌿`,
-  ];
-  return lines.join(" ");
-}
-
-/**
- * Genera la URL de wa.me para que el cliente contacte a Cristina.
- * Funciona sin API — abre WhatsApp con el mensaje pre-rellenado.
- */
-export function generateBookingWhatsAppUrl(data: WhatsAppBookingData): string {
-  const text = generateBookingWhatsAppText(data);
-  return `https://wa.me/${WHATSAPP_ADMIN_NUMBER}?text=${encodeURIComponent(text)}`;
-}
-
-/**
- * Genera el texto de notificación para el admin cuando llega una reserva.
- * Para uso futuro con WhatsApp Business API.
- */
 export function generateAdminBookingNotification(data: WhatsAppBookingData): string {
   return [
     `🌿 *Nueva solicitud de cita*`,
     ``,
     `👤 ${data.firstName} ${data.lastName}`,
     data.phone ? `📱 ${data.phone}` : "",
+    data.email ? `📧 ${data.email}` : "",
     ``,
     `📋 Servicio: ${data.serviceLabel}`,
-    `📅 Fecha: ${data.preferredDate}${data.preferredTime ? ` a las ${data.preferredTime}` : ""}`,
+    `📅 Fecha preferida: ${data.preferredDate}${data.preferredTime ? ` a las ${data.preferredTime}` : ""}`,
     `💻 Modalidad: ${data.modality}`,
+    data.notes ? `📝 Notas: ${data.notes}` : "",
     ``,
-    `Accede al CRM para gestionar esta solicitud.`,
+    `Accede al CRM → cristinaviveconsciente.es/crm`,
   ]
     .filter(Boolean)
     .join("\n");
 }
 
-// ─── ENVÍO REAL (FUTURO — WhatsApp Business API) ──────────────────────────────
+export function generateAdminLeadNotification(data: WhatsAppLeadData): string {
+  return [
+    `🌱 *Nuevo lead / contacto*`,
+    ``,
+    `👤 ${data.firstName}${data.lastName ? ` ${data.lastName}` : ""}`,
+    data.phone ? `📱 ${data.phone}` : "",
+    data.email ? `📧 ${data.email}` : "",
+    data.interest ? `💡 Interés: ${data.interest}` : "",
+    data.message ? `💬 Mensaje: "${data.message?.substring(0, 120)}${(data.message?.length ?? 0) > 120 ? "…" : ""}"` : "",
+    ``,
+    `Accede al CRM → cristinaviveconsciente.es/crm/clientes`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export function generateAdminPurchaseNotification(data: WhatsAppPurchaseData): string {
+  return [
+    `💚 *Nueva compra de ebook*`,
+    ``,
+    `👤 ${data.firstName}${data.lastName ? ` ${data.lastName}` : ""}`,
+    `📧 ${data.email}`,
+    ``,
+    `📖 Producto: ${data.productName}`,
+    `💶 Importe: ${data.amount}`,
+    ``,
+    `El PDF se ha enviado automáticamente al cliente.`,
+    `Accede al CRM → cristinaviveconsciente.es/crm`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
 
 /**
- * Envía un mensaje de WhatsApp usando la API de Meta Cloud.
- * DESACTIVADO hasta que se configuren las credenciales.
- *
- * Para activar:
- * 1. Crear cuenta en Meta for Developers
- * 2. Configurar WhatsApp Business API
- * 3. Añadir WHATSAPP_API_TOKEN y WHATSAPP_PHONE_ID como secrets
- * 4. Descomentar el código de abajo
+ * Genera la URL de wa.me para el cliente (para que contacte a Cristina).
  */
-export async function sendWhatsAppMessage(
-  _to: string,
-  _message: string
-): Promise<{ sent: boolean; note: string }> {
+export function generateBookingWhatsAppUrl(data: WhatsAppBookingData): string {
+  const text = [
+    `Hola Cristina, acabo de solicitar una cita de ${data.serviceLabel}`,
+    `para el ${data.preferredDate}${data.preferredTime ? ` a las ${data.preferredTime}` : ""}.`,
+    `Modalidad: ${data.modality}.`,
+    `Quedo a la espera de tu confirmación. Gracias 🌿`,
+  ].join(" ");
+  return `https://wa.me/${WHATSAPP_ADMIN_NUMBER}?text=${encodeURIComponent(text)}`;
+}
+
+// ─── ENVÍO / REGISTRO DE NOTIFICACIONES ──────────────────────────────────────
+
+/**
+ * Intenta enviar un mensaje de WhatsApp al admin.
+ *
+ * - Si hay WhatsApp Business API configurada: envía el mensaje directamente.
+ * - Si no: genera el enlace wa.me y lo registra en automation_logs para
+ *   que Cristina pueda acceder desde el CRM.
+ */
+export async function notifyAdminWhatsApp(
+  event: "booking" | "lead" | "purchase",
+  message: string,
+  recipientInfo: string
+): Promise<{ sent: boolean; waUrl: string; note: string }> {
   const apiToken = process.env.WHATSAPP_API_TOKEN;
   const phoneId = process.env.WHATSAPP_PHONE_ID;
 
-  if (!apiToken || !phoneId) {
-    // Modo preparado: registrar en consola
-    console.log(`[WhatsApp READY] To: ${_to}`);
-    console.log(`[WhatsApp READY] Message: ${_message.substring(0, 100)}...`);
-    return { sent: false, note: "WhatsApp API not configured yet. Message logged." };
+  const waUrl = `https://wa.me/${WHATSAPP_ADMIN_NUMBER}?text=${encodeURIComponent(message)}`;
+
+  // Intentar envío con WhatsApp Business API si está configurada
+  if (apiToken && phoneId) {
+    try {
+      const response = await fetch(
+        `https://graph.facebook.com/v18.0/${phoneId}/messages`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            to: WHATSAPP_ADMIN_NUMBER,
+            type: "text",
+            text: { body: message },
+          }),
+        }
+      );
+
+      if (response.ok) {
+        // Registrar envío exitoso
+        const dbInst = await getDb();
+        const eventKey = `whatsapp_${event}` as "whatsapp_booking" | "whatsapp_lead" | "whatsapp_purchase";
+        await dbInst?.insert(automationLogs).values({
+          event: eventKey,
+          channel: "whatsapp",
+          recipientPhone: WHATSAPP_ADMIN_NUMBER,
+          status: "sent",
+          subject: recipientInfo.substring(0, 300),
+          sentAt: Date.now(),
+        }).catch(() => {});
+
+        return { sent: true, waUrl, note: "Enviado via WhatsApp Business API" };
+      }
+    } catch (err) {
+      console.error("[WhatsApp API] Error:", err);
+    }
   }
 
-  // ─── Activar cuando se tengan las credenciales ───────────────────────────
-  // try {
-  //   const response = await fetch(
-  //     `https://graph.facebook.com/v18.0/${phoneId}/messages`,
-  //     {
-  //       method: "POST",
-  //       headers: {
-  //         "Authorization": `Bearer ${apiToken}`,
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({
-  //         messaging_product: "whatsapp",
-  //         to: _to,
-  //         type: "text",
-  //         text: { body: _message },
-  //       }),
-  //     }
-  //   );
-  //   if (!response.ok) throw new Error(`WhatsApp API error: ${response.status}`);
-  //   return { sent: true, note: "Message sent via WhatsApp Business API" };
-  // } catch (err) {
-  //   console.error("[WhatsApp] Send error:", err);
-  //   return { sent: false, note: err instanceof Error ? err.message : "Unknown error" };
-  // }
+  // Sin API: registrar como pendiente con el enlace wa.me
+  const dbInst2 = await getDb();
+  const eventKey2 = `whatsapp_${event}` as "whatsapp_booking" | "whatsapp_lead" | "whatsapp_purchase";
+  await dbInst2?.insert(automationLogs).values({
+    event: eventKey2,
+    channel: "whatsapp",
+    recipientPhone: WHATSAPP_ADMIN_NUMBER,
+    status: "pending",
+    subject: recipientInfo.substring(0, 300),
+    errorMessage: `wa.me link: ${waUrl.substring(0, 400)}`,
+    sentAt: Date.now(),
+  }).catch(() => {});
 
-  return { sent: false, note: "WhatsApp API configured but sending disabled" };
+  console.log(`[WhatsApp] Notificación generada para admin (${event}): ${message.substring(0, 80)}...`);
+
+  return {
+    sent: false,
+    waUrl,
+    note: "Enlace wa.me generado (API no configurada). Disponible en CRM → Automatizaciones.",
+  };
+}
+
+/**
+ * Notifica al admin sobre una nueva reserva.
+ */
+export async function notifyAdminNewBooking(data: WhatsAppBookingData) {
+  const message = generateAdminBookingNotification(data);
+  return notifyAdminWhatsApp(
+    "booking",
+    message,
+    `${data.firstName} ${data.lastName} (${data.phone ?? data.email ?? "sin contacto"})`
+  );
+}
+
+/**
+ * Notifica al admin sobre un nuevo lead.
+ */
+export async function notifyAdminNewLead(data: WhatsAppLeadData) {
+  const message = generateAdminLeadNotification(data);
+  return notifyAdminWhatsApp(
+    "lead",
+    message,
+    `${data.firstName}${data.lastName ? ` ${data.lastName}` : ""} (${data.email ?? data.phone ?? "sin contacto"})`
+  );
+}
+
+/**
+ * Notifica al admin sobre una nueva compra de ebook.
+ */
+export async function notifyAdminNewPurchase(data: WhatsAppPurchaseData) {
+  const message = generateAdminPurchaseNotification(data);
+  return notifyAdminWhatsApp(
+    "purchase",
+    message,
+    `${data.firstName} (${data.email})`
+  );
 }
