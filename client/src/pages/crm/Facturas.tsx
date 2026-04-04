@@ -94,9 +94,13 @@ export default function CRMFacturas() {
                   className="grid grid-cols-1 md:grid-cols-[1fr_2fr_1.5fr_1fr_1fr_auto] gap-2 md:gap-4 px-5 py-4 hover:bg-[oklch(0.98_0.004_80)] transition-colors items-center"
                 >
                   {/* Invoice number */}
-                  <p className="text-sm text-[oklch(0.18_0.018_55)] font-body font-mono" style={{ fontWeight: 500 }}>
+                  <Link
+                    href={`/crm/facturas/${inv.id}`}
+                    className="text-sm text-[oklch(0.18_0.018_55)] font-body font-mono hover:text-[oklch(0.52_0.08_148)] transition-colors no-underline"
+                    style={{ fontWeight: 500 }}
+                  >
                     {inv.invoiceNumber}
-                  </p>
+                  </Link>
 
                   {/* Client */}
                   <div>
@@ -144,6 +148,15 @@ export default function CRMFacturas() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1.5">
+                    {/* Descargar PDF */}
+                    <a
+                      href={`/api/invoices/${inv.id}/pdf`}
+                      download={`factura-${inv.invoiceNumber}.pdf`}
+                      className="w-7 h-7 flex items-center justify-center bg-[oklch(0.97_0.006_85)] text-[oklch(0.38_0.02_55)] hover:bg-[oklch(0.52_0.08_148)]/10 hover:text-[oklch(0.52_0.08_148)] transition-colors"
+                      title="Descargar PDF"
+                    >
+                      <Download size={13} />
+                    </a>
                     {client && (
                       <Link
                         href={`/crm/clientes/${client.id}`}

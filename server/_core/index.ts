@@ -10,6 +10,8 @@ import { serveStatic, setupVite } from "./vite";
 import { handleStripeCheckoutCompleted } from "../routers/ebooks";
 import { getPendingLeadSequences, updateLeadSequence, createAutomationLog, updateAutomationLog } from "../db";
 import { sendLeadSequenceEmail } from "../email";
+import { generateInvoicePdf } from "../invoicePdf";
+import { sdk } from "./sdk";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -78,6 +80,30 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // ─── Factura PDF ─────────────────────────────────────────────────────────────
+  // GET /api/invoices/:id/pdf — descarga la factura como PDF (solo admin)
+  app.get("/api/invoices/:id/pdf", async (req: any, res: any) => {
+    try {
+      // Verificar sesión usando el SDK (mismo mecanismo que tRPC)
+      let user: any = null;
+      try { user = await sdk.authenticateRequest(req); } catch {}
+      if (!user || user.role !== "admin") {
+        return res.status(401).json({ error: "No autorizado" });
+      }
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "ID inválido" });
+      const pdfBuffer = await generateInvoicePdf(id);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="factura-${id}.pdf"`);
+      res.setHeader("Content-Length", pdfBuffer.length);
+      return res.end(pdfBuffer);
+    } catch (err: any) {
+      console.error("[PDF] Error generating invoice PDF:", err);
+      return res.status(500).json({ error: err.message ?? "Error generando PDF" });
+    }
+  });
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // tRPC API

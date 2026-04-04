@@ -187,3 +187,9 @@
 
 ## Importación Clientes Shopify
 - [x] Importar clientes del CSV de Shopify a la BD del CRM (limpiar duplicados y spam)
+
+## Exportar Facturas a PDF
+- [x] Instalar pdfkit en el servidor
+- [x] Crear endpoint GET /api/invoices/:id/pdf con diseño branded
+- [x] Añadir botón "Descargar PDF" en la lista de facturas del CRM
+- [x] Añadir botón "Descargar PDF" en el formulario/detalle de factura
