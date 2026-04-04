@@ -12,6 +12,7 @@ import { getPendingLeadSequences, updateLeadSequence, createAutomationLog, updat
 import { sendLeadSequenceEmail } from "../email";
 import { generateInvoicePdf } from "../invoicePdf";
 import { sdk } from "./sdk";
+import { uploadRouter } from "../upload";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -103,6 +104,9 @@ async function startServer() {
       return res.status(500).json({ error: err.message ?? "Error generando PDF" });
     }
   });
+
+  // File upload endpoint (admin only)
+  app.use("/api/upload", uploadRouter);
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);

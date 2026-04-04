@@ -202,9 +202,19 @@
 - [x] Feedback visual: toast de éxito/error y estado de envío en la fila
 
 ## Datos Fiscales en Facturas
-- [ ] Encabezado PDF con datos fiscales de Cristina (nombre, DNI, dirección, CP, ciudad, provincia)
-- [ ] Añadir campos fiscales al schema de clientes: nif, razonSocial, address, postalCode, city, province, country
-- [ ] Migrar BD con los nuevos campos fiscales del cliente
-- [ ] Actualizar formulario CRM de clientes con sección "Datos fiscales"
-- [ ] PDF de factura: bloque receptor con datos fiscales del cliente desde BD
-- [ ] Actualizar getInvoiceById para incluir todos los campos fiscales del cliente
+- [x] Encabezado PDF con datos fiscales de Cristina (nombre, DNI, dirección, CP, ciudad, provincia)
+- [x] Añadir campos fiscales al schema de clientes: nif, razonSocial, address, postalCode, city, province, country
+- [x] Migrar BD con los nuevos campos fiscales del cliente
+- [x] Actualizar formulario CRM de clientes con sección "Datos fiscales"
+- [x] PDF de factura: bloque receptor con datos fiscales del cliente desde BD
+- [x] Actualizar getInvoiceById para incluir todos los campos fiscales del cliente
+
+## Cargadores de Imagen en el CRM
+- [x] Endpoint POST /api/upload con multer + subida a S3 (admin autenticado)
+- [x] Componente reutilizable ImageUploader (drag&drop + click, preview, botón eliminar)
+- [x] Componente FileUploader para PDFs (mismo patrón)
+- [x] EbookForm: reemplazar campo URL portada por ImageUploader
+- [x] EbookForm: reemplazar 3 campos URL carrusel por ImageUploader
+- [x] EbookForm: reemplazar campo URL PDF por FileUploader
+- [x] ServicioForm: reemplazar campo URL imagen por ImageUploader
+- [x] AfiliadoForm: reemplazar campo URL imagen por ImageUploader

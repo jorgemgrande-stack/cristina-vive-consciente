@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { ImageUploader, FileUploader } from "@/components/ImageUploader";
 
 interface FormData {
   slug: string;
@@ -324,34 +325,23 @@ export default function EbookForm() {
               Imágenes
             </h2>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="coverImage">Imagen de portada (URL)</Label>
-              <Input
-                id="coverImage"
-                value={form.coverImage}
-                onChange={(e) => setForm((f) => ({ ...f, coverImage: e.target.value }))}
-                placeholder="https://..."
-              />
-              {form.coverImage && (
-                <img src={form.coverImage} alt="Preview portada" className="mt-2 h-24 w-auto rounded-lg object-cover border border-gray-100" />
-              )}
-            </div>
+            <ImageUploader
+              label="Imagen de portada"
+              value={form.coverImage}
+              onChange={(url) => setForm((f) => ({ ...f, coverImage: url }))}
+              hint="JPG, PNG, WEBP hasta 20 MB"
+            />
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Imágenes del carrusel (máximo 3)</Label>
               {galleryList.map((url, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400 w-4">{idx + 1}.</span>
-                  <Input
-                    value={url}
-                    onChange={(e) => handleGalleryChange(idx, e.target.value)}
-                    placeholder={`URL imagen ${idx + 1}...`}
-                    className="flex-1"
-                  />
-                  {url && (
-                    <img src={url} alt={`Gallery ${idx + 1}`} className="h-10 w-10 rounded object-cover border border-gray-100 flex-shrink-0" />
-                  )}
-                </div>
+                <ImageUploader
+                  key={idx}
+                  label={`Imagen carrusel ${idx + 1}`}
+                  value={url}
+                  onChange={(newUrl) => handleGalleryChange(idx, newUrl)}
+                  hint="JPG, PNG, WEBP hasta 20 MB"
+                />
               ))}
             </div>
           </section>
@@ -363,15 +353,12 @@ export default function EbookForm() {
               Archivo y CRM
             </h2>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="pdfUrl">URL del PDF (S3/CDN)</Label>
-              <Input
-                id="pdfUrl"
-                value={form.pdfUrl}
-                onChange={(e) => setForm((f) => ({ ...f, pdfUrl: e.target.value }))}
-                placeholder="https://cdn.../ebook.pdf"
-              />
-            </div>
+            <FileUploader
+              label="Archivo PDF del ebook"
+              value={form.pdfUrl}
+              onChange={(url) => setForm((f) => ({ ...f, pdfUrl: url }))}
+              hint="PDF hasta 20 MB"
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">

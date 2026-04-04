@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ImageUploader } from "@/components/ImageUploader";
 import {
   Select,
   SelectContent,
@@ -313,20 +314,12 @@ export default function ServicioForm() {
           </div>
 
           {/* Imagen */}
-          <div className="space-y-1.5">
-            <Label htmlFor="imageUrl">URL de imagen</Label>
-            <Input
-              id="imageUrl"
-              value={form.imageUrl}
-              onChange={(e) => set("imageUrl", e.target.value)}
-              placeholder="https://..."
-            />
-            {form.imageUrl && (
-              <div className="mt-2 w-24 h-16 rounded-lg overflow-hidden border border-stone-100">
-                <img src={form.imageUrl} alt="Preview" className="w-full h-full object-cover" />
-              </div>
-            )}
-          </div>
+          <ImageUploader
+            label="Imagen del servicio"
+            value={form.imageUrl}
+            onChange={(url) => set("imageUrl", url)}
+            hint="JPG, PNG, WEBP hasta 20 MB"
+          />
 
           {/* Estado, orden y destacado */}
           <div className="grid grid-cols-3 gap-4">

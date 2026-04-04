@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ImageUploader } from "@/components/ImageUploader";
 
 // Las categorías se cargan dinámicamente desde la base de datos
 
@@ -182,24 +183,12 @@ export default function AfiliadoForm() {
           </div>
 
           {/* Imagen */}
-          <div className="space-y-1.5">
-            <Label htmlFor="imageUrl">URL de imagen</Label>
-            <Input
-              id="imageUrl"
-              type="url"
-              value={form.imageUrl}
-              onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-              placeholder="https://..."
-            />
-            {form.imageUrl && (
-              <img
-                src={form.imageUrl}
-                alt="Preview"
-                className="w-20 h-20 object-cover rounded-lg border border-stone-200 mt-2"
-                onError={(e) => (e.currentTarget.style.display = "none")}
-              />
-            )}
-          </div>
+          <ImageUploader
+            label="Imagen del producto"
+            value={form.imageUrl}
+            onChange={(url) => setForm({ ...form, imageUrl: url })}
+            hint="JPG, PNG, WEBP hasta 20 MB"
+          />
 
           {/* Categoría */}
           <div className="space-y-1.5">
