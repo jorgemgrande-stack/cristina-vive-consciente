@@ -571,3 +571,119 @@ export async function sendLeadSequenceEmail(
 
   await sendEmail({ to: data.email, subject, html, text });
 }
+
+// ─── EMAIL: FACTURA AL CLIENTE (CON PDF ADJUNTO) ──────────────────────────────
+
+export interface InvoiceEmailData {
+  to: string;
+  clientName: string;
+  invoiceNumber: string;
+  concept: string;
+  total: string | number;
+  issuedAt?: number | null;
+  pdfBuffer: Buffer;
+}
+
+export async function sendInvoiceEmail(data: InvoiceEmailData): Promise<void> {
+  const totalFormatted = parseFloat(String(data.total ?? 0)).toLocaleString("es-ES", {
+    style: "currency",
+    currency: "EUR",
+  });
+  const dateFormatted = data.issuedAt
+    ? new Date(data.issuedAt).toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
+    : new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
+
+  const firstName = data.clientName.split(" ")[0];
+  const subject = `Tu factura ${data.invoiceNumber} — BION · Cristina Vive Consciente`;
+
+  const html = wrapEmail(`
+    ${emailHeader()}
+    <tr>
+      <td style="padding:40px 40px 32px;">
+        <h1 style="margin:0 0 8px;font-size:22px;font-weight:400;color:#1A1208;font-family:'Georgia',serif;">
+          Hola, ${firstName}
+        </h1>
+        <p style="margin:0 0 24px;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.8;">
+          Adjunta a este email encontrarás tu factura en formato PDF.
+        </p>
+
+        <table width="100%" cellpadding="0" cellspacing="0"
+               style="border:1px solid #E8E4DC;margin:0 0 24px;">
+          <tr>
+            <td style="padding:16px 20px;background:#F5F2EC;border-bottom:1px solid #E8E4DC;">
+              <p style="margin:0;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#3A5A3A;font-family:'DM Sans',Arial,sans-serif;font-weight:500;">
+                Resumen de factura
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 20px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="font-size:13px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;padding-bottom:8px;">Número</td>
+                  <td align="right" style="font-size:13px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:500;padding-bottom:8px;">${data.invoiceNumber}</td>
+                </tr>
+                <tr>
+                  <td style="font-size:13px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;padding-bottom:8px;">Fecha</td>
+                  <td align="right" style="font-size:13px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;padding-bottom:8px;">${dateFormatted}</td>
+                </tr>
+                <tr>
+                  <td style="font-size:13px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;padding-bottom:8px;">Concepto</td>
+                  <td align="right" style="font-size:13px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;padding-bottom:8px;">${data.concept}</td>
+                </tr>
+                <tr>
+                  <td style="font-size:14px;color:#3A5A3A;font-family:'DM Sans',Arial,sans-serif;font-weight:600;border-top:1px solid #E8E4DC;padding-top:12px;">Total</td>
+                  <td align="right" style="font-size:16px;color:#3A5A3A;font-family:'DM Sans',Arial,sans-serif;font-weight:700;border-top:1px solid #E8E4DC;padding-top:12px;">${totalFormatted}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+
+        <p style="margin:0 0 24px;font-size:13px;color:#A09080;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.7;">
+          Si tienes alguna pregunta sobre esta factura, no dudes en contactarme respondiendo a este email.
+        </p>
+
+        <p style="margin:24px 0 0;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
+          Con cariño,<br>
+          <strong style="color:#3A5A3A;font-weight:500;">Cristina</strong>
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:16px 40px;background:#F5F2EC;border-top:1px solid #E8E4DC;">
+        <p style="margin:0;font-size:11px;color:#A09080;font-family:'DM Sans',Arial,sans-serif;text-align:center;">
+          BION — Cristina Vive Consciente &nbsp;·&nbsp; hola@cristinaviveconsciente.es
+        </p>
+      </td>
+    </tr>
+    ${emailFooter()}
+  `);
+
+  const text = `Hola ${firstName},\n\nAdjunta encontrarás tu factura ${data.invoiceNumber} por importe de ${totalFormatted}.\n\nConcepto: ${data.concept}\nFecha: ${dateFormatted}\n\nSi tienes alguna pregunta, responde a este email.\n\nCon cariño,\nCristina — BION\nhola@cristinaviveconsciente.es`;
+
+  const transporter = getTransporter();
+  if (!transporter) {
+    console.log(`[Email DEV] Factura ${data.invoiceNumber} → ${data.to} (PDF adjunto: ${data.pdfBuffer.length} bytes)`);
+    return;
+  }
+
+  await transporter.sendMail({
+    from: SMTP_FROM,
+    to: data.to,
+    subject,
+    html,
+    text,
+    attachments: [
+      {
+        filename: `factura-${data.invoiceNumber}.pdf`,
+        content: data.pdfBuffer,
+        contentType: "application/pdf",
+      },
+    ],
+  });
+}

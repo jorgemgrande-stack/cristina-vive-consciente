@@ -5,6 +5,8 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
+import { generateInvoicePdf } from "../invoicePdf";
+import { sendInvoiceEmail } from "../email";
 import {
   getClients,
   getClientById,
@@ -322,6 +324,46 @@ const invoicesRouter = router({
       const { id, ...data } = input;
       await updateInvoice(id, data);
       return { success: true };
+    }),
+
+  sendByEmail: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const inv = await getInvoiceById(input.id);
+      if (!inv) throw new TRPCError({ code: "NOT_FOUND", message: "Factura no encontrada" });
+
+      // Determinar email del destinatario
+      const toEmail = (inv as any).client?.email ?? (inv as any).clientEmail ?? null;
+      if (!toEmail) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "El cliente no tiene email registrado",
+        });
+      }
+
+      const invoice = (inv as any).invoice ?? inv;
+      const client = (inv as any).client;
+
+      // Generar PDF en memoria
+      const pdfBuffer = await generateInvoicePdf(input.id);
+
+      // Enviar email con PDF adjunto
+      await sendInvoiceEmail({
+        to: toEmail,
+        clientName: client ? `${client.firstName} ${client.lastName}` : ((inv as any).clientName ?? "Cliente"),
+        invoiceNumber: invoice.invoiceNumber,
+        concept: invoice.concept ?? "",
+        total: invoice.total ?? "0",
+        issuedAt: invoice.issuedAt,
+        pdfBuffer,
+      });
+
+      // Marcar como enviada si estaba en borrador
+      if (invoice.status === "draft") {
+        await updateInvoice(input.id, { status: "sent" });
+      }
+
+      return { success: true, sentTo: toEmail };
     }),
 });
 

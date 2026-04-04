@@ -278,7 +278,7 @@ export async function getInvoices(clientId?: number, status?: string) {
   const conditions: any[] = [];
   if (clientId) conditions.push(eq(invoices.clientId, clientId));
   if (status && status !== "all") conditions.push(eq(invoices.status, status as any));
-  let query = db.select({ invoice: invoices, client: { id: clients.id, firstName: clients.firstName, lastName: clients.lastName } }).from(invoices).leftJoin(clients, eq(invoices.clientId, clients.id)).$dynamic();
+  let query = db.select({ invoice: invoices, client: { id: clients.id, firstName: clients.firstName, lastName: clients.lastName, email: clients.email } }).from(invoices).leftJoin(clients, eq(invoices.clientId, clients.id)).$dynamic();
   if (conditions.length > 0) query = query.where(and(...conditions));
   return query.orderBy(desc(invoices.issuedAt));
 }

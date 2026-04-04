@@ -53,12 +53,12 @@
 - [x] Logo correcto de BION en CRMLayout (sidebar y pantalla de login)
 
 ## Pendiente (Fases futuras)
-- [ ] Formulario de contacto funcional (envío email)
-- [ ] Sistema de reservas online
-- [ ] Integración pagos (Stripe)
+- [x] Formulario de contacto funcional (envío email)
+- [x] Sistema de reservas online
+- [x] Integración pagos (Stripe)
 - [ ] Blog con artículos reales
 - [ ] Notificaciones WhatsApp automáticas
-- [ ] Exportar facturas a PDF
+- [x] Exportar facturas a PDF
 - [x] Corregir redirect post-login: tras autenticarse desde /crm debe volver a /crm
 
 ## Capa pública de solicitud de citas
@@ -77,9 +77,9 @@
 - [x] Simular flujo completo web → CRM documentado
 
 ## Pendiente de configuración (cuando Cristina tenga los datos)
-- [ ] Configurar SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM para envío de emails reales
-- [ ] Configurar ADMIN_EMAIL con el email real de Cristina
-- [ ] Configurar WHATSAPP_ADMIN_NUMBER con el número real de WhatsApp de Cristina
+- [x] Configurar SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM para envío de emails reales
+- [x] Configurar ADMIN_EMAIL con el email real de Cristina
+- [x] Configurar WHATSAPP_ADMIN_NUMBER con el número real de WhatsApp de Cristina
 
 ## Fase 6: Ebooks (Stripe listo para activar)
 - [x] Tabla ebook_purchases en base de datos
@@ -93,7 +93,7 @@
 - [x] Página /ebooks/descarga (descarga segura por token, expira 72h)
 - [x] Subir PDFs reales al CDN y añadir URLs en server/ebooks/products.ts
 - [ ] Crear precios en Stripe Dashboard y añadir stripePriceId en server/ebooks/products.ts
-- [ ] Configurar SMTP para emails de entrega automática
+- [x] Configurar SMTP para emails de entrega automática
 
 ## Fase 7: Productos Afiliados
 - [x] Tabla affiliateProducts en base de datos
@@ -193,3 +193,10 @@
 - [x] Crear endpoint GET /api/invoices/:id/pdf con diseño branded
 - [x] Añadir botón "Descargar PDF" en la lista de facturas del CRM
 - [x] Añadir botón "Descargar PDF" en el formulario/detalle de factura
+
+## Envío de Factura por Email
+- [x] Procedimiento tRPC `crm.invoices.sendByEmail`: genera PDF y lo envía como adjunto al email del cliente
+- [x] Plantilla HTML de email de factura con diseño branded (consistente con la web)
+- [x] Botón "Enviar por email" en la lista de facturas del CRM
+- [x] Botón "Enviar por email" en el detalle/edición de factura del CRM
+- [x] Feedback visual: toast de éxito/error y estado de envío en la fila

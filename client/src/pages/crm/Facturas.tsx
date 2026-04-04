@@ -4,8 +4,9 @@
 
 import { useState } from "react";
 import { Link } from "wouter";
-import { Plus, FileText, ChevronDown, ArrowRight, Download } from "lucide-react";
+import { Plus, FileText, ChevronDown, ArrowRight, Download, Send } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import CRMLayout from "@/components/CRMLayout";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -25,6 +26,24 @@ export default function CRMFacturas() {
   const updateStatus = trpc.crm.invoices.update.useMutation({
     onSuccess: () => refetch(),
   });
+
+  const [sendingId, setSendingId] = useState<number | null>(null);
+  const sendByEmail = trpc.crm.invoices.sendByEmail.useMutation({
+    onSuccess: (data, variables) => {
+      setSendingId(null);
+      toast.success(`Factura enviada a ${data.sentTo}`);
+      refetch();
+    },
+    onError: (err) => {
+      setSendingId(null);
+      toast.error(err.message ?? "Error al enviar la factura");
+    },
+  });
+
+  function handleSendEmail(invoiceId: number) {
+    setSendingId(invoiceId);
+    sendByEmail.mutate({ id: invoiceId });
+  }
 
   return (
     <CRMLayout title="Facturas">
@@ -157,6 +176,21 @@ export default function CRMFacturas() {
                     >
                       <Download size={13} />
                     </a>
+                    {/* Enviar por email */}
+                    {client?.email && (
+                      <button
+                        onClick={() => handleSendEmail(inv.id)}
+                        disabled={sendingId === inv.id}
+                        className="w-7 h-7 flex items-center justify-center bg-[oklch(0.97_0.006_85)] text-[oklch(0.38_0.02_55)] hover:bg-[oklch(0.52_0.08_148)]/10 hover:text-[oklch(0.52_0.08_148)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={`Enviar por email a ${client.email}`}
+                      >
+                        {sendingId === inv.id ? (
+                          <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Send size={13} />
+                        )}
+                      </button>
+                    )}
                     {client && (
                       <Link
                         href={`/crm/clientes/${client.id}`}

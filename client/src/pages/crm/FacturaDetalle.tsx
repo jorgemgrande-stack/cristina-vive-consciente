@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
-import { ArrowLeft, Download, Save, Loader2, FileText } from "lucide-react";
+import { ArrowLeft, Download, Save, Loader2, FileText, Send } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -73,6 +73,23 @@ export default function FacturaDetalle() {
     onError: (e) => toast.error(e.message),
   });
 
+  const [isSending, setIsSending] = useState(false);
+  const sendByEmail = trpc.crm.invoices.sendByEmail.useMutation({
+    onSuccess: (data) => {
+      setIsSending(false);
+      toast.success(`Factura enviada a ${data.sentTo}`);
+    },
+    onError: (e) => {
+      setIsSending(false);
+      toast.error(e.message ?? "Error al enviar la factura");
+    },
+  });
+
+  function handleSendEmail() {
+    setIsSending(true);
+    sendByEmail.mutate({ id });
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateMutation.mutate({
@@ -125,16 +142,32 @@ export default function FacturaDetalle() {
             <ArrowLeft size={13} /> Volver a facturas
           </Link>
 
-          {/* Botón PDF */}
-          <a
-            href={`/api/invoices/${inv.id}/pdf`}
-            download={`factura-${inv.invoiceNumber}.pdf`}
-            className="inline-flex items-center gap-2 px-4 py-2.5 border border-[oklch(0.52_0.08_148)] text-[oklch(0.52_0.08_148)] text-xs tracking-widest uppercase font-body hover:bg-[oklch(0.52_0.08_148)]/5 transition-colors"
-            style={{ borderRadius: 0, letterSpacing: "0.08em" }}
-          >
-            <Download size={13} />
-            Descargar PDF
-          </a>
+          {/* Acciones */}
+          <div className="flex items-center gap-2">
+            {/* Enviar por email */}
+            {invoiceData.client?.email && (
+              <button
+                onClick={handleSendEmail}
+                disabled={isSending}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-body hover:bg-[oklch(0.38_0.07_148)] transition-colors disabled:opacity-60"
+                style={{ borderRadius: 0, letterSpacing: "0.08em" }}
+                title={`Enviar a ${invoiceData.client.email}`}
+              >
+                {isSending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                Enviar por email
+              </button>
+            )}
+            {/* Descargar PDF */}
+            <a
+              href={`/api/invoices/${inv.id}/pdf`}
+              download={`factura-${inv.invoiceNumber}.pdf`}
+              className="inline-flex items-center gap-2 px-4 py-2.5 border border-[oklch(0.52_0.08_148)] text-[oklch(0.52_0.08_148)] text-xs tracking-widest uppercase font-body hover:bg-[oklch(0.52_0.08_148)]/5 transition-colors"
+              style={{ borderRadius: 0, letterSpacing: "0.08em" }}
+            >
+              <Download size={13} />
+              Descargar PDF
+            </a>
+          </div>
         </div>
 
         {/* Info badge */}
