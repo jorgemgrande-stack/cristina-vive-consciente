@@ -20,7 +20,12 @@ import {
   X,
   LogOut,
   ChevronRight,
+  ChevronDown,
   Globe,
+  Droplets,
+  FolderOpen,
+  Package,
+  ClipboardList,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
@@ -40,6 +45,12 @@ const NAV_ITEMS = [
   { href: "/crm/automatizaciones", label: "Automatizaciones", icon: Zap },
 ];
 
+const WATER_SUBITEMS = [
+  { href: "/crm/agua/productos", label: "Productos", icon: Package },
+  { href: "/crm/agua/categorias", label: "Categorías", icon: FolderOpen },
+  { href: "/crm/agua/solicitudes", label: "Solicitudes", icon: ClipboardList },
+];
+
 interface CRMLayoutProps {
   children: React.ReactNode;
   title?: string;
@@ -48,6 +59,8 @@ interface CRMLayoutProps {
 export default function CRMLayout({ children, title }: CRMLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [location] = useLocation();
+  const isWaterSection = location.startsWith("/crm/agua");
+  const [waterExpanded, setWaterExpanded] = useState(isWaterSection);
 
   const { data: user, isLoading } = trpc.auth.me.useQuery();
   const logoutMutation = trpc.auth.logout.useMutation({
@@ -119,7 +132,7 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-6 px-3 space-y-1">
+        <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
             const isActive = location === href || (href !== "/crm" && location.startsWith(href));
             return (
@@ -140,6 +153,48 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
               </Link>
             );
           })}
+
+          {/* Máquinas de Agua — con submenú */}
+          <div>
+            <button
+              onClick={() => setWaterExpanded(!waterExpanded)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-body transition-all duration-200 group ${
+                isWaterSection
+                  ? "bg-[oklch(0.52_0.08_148)] text-white"
+                  : "text-white/60 hover:text-white hover:bg-white/8"
+              }`}
+              style={{ borderRadius: 0, fontWeight: isWaterSection ? 500 : 400 }}
+            >
+              <Droplets size={16} className={isWaterSection ? "text-white" : "text-white/50 group-hover:text-white/80"} />
+              Máquinas de Agua
+              <span className="ml-auto">
+                {waterExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              </span>
+            </button>
+            {waterExpanded && (
+              <div className="ml-4 mt-1 space-y-0.5">
+                {WATER_SUBITEMS.map(({ href, label, icon: Icon }) => {
+                  const isSubActive = location === href || location.startsWith(href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2 text-xs font-body transition-all duration-200 no-underline group ${
+                        isSubActive
+                          ? "text-white bg-white/15"
+                          : "text-white/50 hover:text-white hover:bg-white/8"
+                      }`}
+                      style={{ borderRadius: 0, fontWeight: isSubActive ? 500 : 400 }}
+                    >
+                      <Icon size={13} className={isSubActive ? "text-white" : "text-white/40 group-hover:text-white/70"} />
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Footer */}

@@ -335,3 +335,112 @@ export const ebooks = mysqlTable("ebooks", {
 
 export type Ebook = typeof ebooks.$inferSelect;
 export type InsertEbook = typeof ebooks.$inferInsert;
+
+// ─── SISTEMAS DE AGUA — CATEGORÍAS ───────────────────────────────────────────
+export const waterCategories = mysqlTable("water_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  slug: varchar("slug", { length: 120 }).notNull().unique(),
+  shortDescription: varchar("shortDescription", { length: 500 }),
+  imageUrl: text("imageUrl"),
+  /** Icono o emoji representativo */
+  icon: varchar("icon", { length: 50 }),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  /** 1 = visible en la parte pública */
+  visibleEnPublico: int("visibleEnPublico").default(1).notNull(),
+  status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WaterCategory = typeof waterCategories.$inferSelect;
+export type InsertWaterCategory = typeof waterCategories.$inferInsert;
+
+// ─── SISTEMAS DE AGUA — PRODUCTOS ────────────────────────────────────────────
+export const waterProducts = mysqlTable("water_products", {
+  id: int("id").autoincrement().primaryKey(),
+  // Identificación
+  title: varchar("title", { length: 200 }).notNull(),
+  slug: varchar("slug", { length: 120 }).notNull().unique(),
+  subtitle: varchar("subtitle", { length: 300 }),
+  // Categorías
+  categoryId: int("categoryId"),                          // categoría principal
+  secondaryCategories: text("secondaryCategories"),       // JSON array de IDs
+  // Textos comerciales
+  shortDescription: varchar("shortDescription", { length: 500 }),
+  longDescription: text("longDescription"),
+  claimsHighlighted: text("claimsHighlighted"),           // JSON array de strings
+  benefits: text("benefits"),                             // JSON array de strings
+  forWhom: text("forWhom"),                               // Para quién es ideal
+  // Precio
+  priceVisible: varchar("priceVisible", { length: 100 }), // "1.995,00 €"
+  priceFrom: varchar("priceFrom", { length: 100 }),       // "Desde X €" (opcional)
+  priceOrientative: varchar("priceOrientative", { length: 200 }),
+  // Imágenes
+  mainImage: text("mainImage"),
+  galleryImages: text("galleryImages"),                   // JSON array de URLs
+  // Badge comercial
+  badge: varchar("badge", { length: 100 }),               // "Premium", "Recomendado", etc.
+  badgeColor: varchar("badgeColor", { length: 50 }),      // color CSS opcional
+  // Ficha técnica
+  technicalSpecs: text("technicalSpecs"),                 // JSON array de {key, value}
+  // Instalación, mantenimiento, garantía
+  installationText: text("installationText"),
+  maintenanceText: text("maintenanceText"),
+  warrantyText: text("warrantyText"),
+  // Bloques dinámicos (JSON arrays)
+  bulletAdvantages: text("bulletAdvantages"),             // bullets de ventajas
+  whyChooseBlock: text("whyChooseBlock"),                 // bloque "por qué elegir"
+  expertBlock: text("expertBlock"),                       // bloque acompañamiento experto
+  faqBlock: text("faqBlock"),                             // preguntas frecuentes JSON [{q,a}]
+  testimonialsBlock: text("testimonialsBlock"),           // testimonios JSON [{name,text,rating}]
+  trustBlock: text("trustBlock"),                         // bloque de confianza/autoridad
+  // CTAs
+  ctaPrimaryLabel: varchar("ctaPrimaryLabel", { length: 100 }).default("Reservar sistema"),
+  ctaSecondaryLabel: varchar("ctaSecondaryLabel", { length: 100 }).default("Conocer más detalles"),
+  // SEO
+  seoTitle: varchar("seoTitle", { length: 200 }),
+  seoDescription: varchar("seoDescription", { length: 400 }),
+  // Flags
+  sortOrder: int("sortOrder").default(0).notNull(),
+  visibleEnPublico: int("visibleEnPublico").default(1).notNull(),
+  destacadoEnHome: int("destacadoEnHome").default(0).notNull(),
+  productoPrincipal: int("productoPrincipal").default(0).notNull(),
+  status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type WaterProduct = typeof waterProducts.$inferSelect;
+export type InsertWaterProduct = typeof waterProducts.$inferInsert;
+
+// ─── SISTEMAS DE AGUA — SOLICITUDES DE RESERVA ───────────────────────────────
+export const waterInquiries = mysqlTable("water_inquiries", {
+  id: int("id").autoincrement().primaryKey(),
+  // Datos del solicitante
+  firstName: varchar("firstName", { length: 100 }).notNull(),
+  lastName: varchar("lastName", { length: 100 }).notNull(),
+  phone: varchar("phone", { length: 30 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  province: varchar("province", { length: 100 }),
+  city: varchar("city", { length: 100 }),
+  housingType: varchar("housingType", { length: 100 }),   // piso, casa, chalet, etc.
+  // Producto de interés
+  productId: int("productId"),
+  productName: varchar("productName", { length: 200 }),
+  // Mensaje
+  observations: text("observations"),
+  // Consentimiento legal
+  acceptPrivacy: int("acceptPrivacy").default(0).notNull(),
+  // Estado CRM
+  status: mysqlEnum("status", ["new", "contacted", "qualified", "closed"]).default("new").notNull(),
+  internalNotes: text("internalNotes"),
+  // Vinculación CRM
+  clientId: int("clientId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WaterInquiry = typeof waterInquiries.$inferSelect;
+export type InsertWaterInquiry = typeof waterInquiries.$inferInsert;

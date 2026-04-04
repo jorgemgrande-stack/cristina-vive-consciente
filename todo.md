@@ -230,3 +230,45 @@
 - [x] Notificación WhatsApp automática al admin en nueva compra de ebook
 - [x] Helper notifyAdminWhatsApp en server/whatsapp.ts con soporte wa.me + API futura
 - [x] Panel CRM: mostrar estado de notificaciones WhatsApp en logs de automatizaciones
+
+## Módulo Máquinas de Agua — Gestión Consultiva
+
+### BD y Backend
+- [x] Tabla `water_categories` (nombre, slug, descripción, imagen, orden, visible_en_publico)
+- [x] Tabla `water_products` (todos los campos de ficha completa: título, slug, categoría, subtítulo, descripciones, precio, imágenes, claims, beneficios, características técnicas, instalación, mantenimiento, garantía, SEO, flags de visibilidad/destacado)
+- [x] Tabla `water_inquiries` (formulario "Reservar sistema": nombre, teléfono, email, provincia, tipo vivienda, producto de interés, observaciones, consentimiento)
+- [x] Router tRPC admin: CRUD categorías (listar, crear, editar, eliminar, reordenar)
+- [x] Router tRPC admin: CRUD productos (listar con filtros, crear, editar, activar/desactivar, reordenar)
+- [x] Router tRPC público: listar categorías + productos visibles
+- [x] Router tRPC público: detalle de producto por slug
+- [x] Router tRPC público: submitWaterInquiry (formulario Reservar Sistema)
+
+### Dashboard — Categorías
+- [x] Página CRM: Agua > Categorías (listado con orden drag-and-drop o botones arriba/abajo)
+- [x] Formulario crear/editar categoría con ImageUploader
+- [x] Activar/desactivar categoría desde listado
+
+### Dashboard — Productos
+- [x] Página CRM: Agua > Productos (listado con filtros por categoría, visibilidad, destacado)
+- [x] Búsqueda por nombre en listado de productos
+- [x] Formulario completo de producto (todos los campos especificados)
+- [x] ImageUploader para imagen principal + galería de imágenes
+- [x] Bloques dinámicos editables (bullets, FAQ, por qué elegir)
+- [x] Previsualizar producto (enlace a ficha pública)
+- [x] Activar/desactivar producto desde listado
+
+### Carga inicial de productos
+- [x] Cargar categorías iniciales (4 categorías: Ósmosis, Alcalinizadores, Descalcificadores, Filtros)
+- [x] Cargar producto: Awaes Direct Premium (1.995€) con textos comerciales
+- [x] Cargar producto: Óptima Compact (2.050€) con textos comerciales
+- [x] Cargar producto: Óptima Plus (2.750€) con textos comerciales
+
+### Parte pública
+- [x] Página pública /sistemas-agua (landing consultiva con categorías y productos dinámicos)
+- [x] Tarjetas de producto: imagen, nombre, subtítulo, precio, beneficios, badge, CTAs
+- [x] Página pública /sistemas-agua/:slug (ficha de detalle de producto)
+- [x] Ficha detalle: hero, imagen, nombre, precio, beneficios, descripción, bloque técnico, instalación, confianza, FAQ, CTAs
+- [x] Modal "Reservar Sistema" con formulario completo (nombre, teléfono, email, provincia, tipo vivienda, producto, observaciones, consentimiento)
+- [x] Bloques de autoridad de Cristina en la parte pública
+- [x] Integrar /sistemas-agua en la navegación principal
+- [x] Notificación WhatsApp + email al admin en nueva solicitud de sistema de agua

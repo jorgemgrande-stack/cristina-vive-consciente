@@ -24,6 +24,9 @@ import Blog from "./pages/Blog";
 import EbookGracias from "./pages/EbookGracias";
 import EbookDescarga from "./pages/EbookDescarga";
 
+// Water System Pages
+import SistemaAguaDetalle from "./pages/SistemaAguaDetalle";
+
 // CRM Pages
 import CRMDashboard from "./pages/crm/Dashboard";
 import CRMClientes from "./pages/crm/Clientes";
@@ -42,6 +45,9 @@ import Servicios from "./pages/crm/Servicios";
 import ServicioForm from "./pages/crm/ServicioForm";
 import CRMEbooks from "./pages/crm/Ebooks";
 import EbookForm from "./pages/crm/EbookForm";
+import AguaCategorias from "./pages/crm/AguaCategorias";
+import AguaProductos from "./pages/crm/AguaProductos";
+import AguaSolicitudes from "./pages/crm/AguaSolicitudes";
 
 function Router() {
   return (
@@ -51,6 +57,7 @@ function Router() {
       <Route path="/consultas" component={Consultas} />
       <Route path="/masajes" component={Masajes} />
       <Route path="/sistemas-agua" component={SistemasAgua} />
+      <Route path="/sistemas-agua/:slug" component={SistemaAguaDetalle} />
       <Route path="/aceites-esenciales" component={AceitesEsenciales} />
       <Route path="/guias-digitales" component={GuiasDigitales} />
       <Route path="/recomendados" component={Recomendados} />
@@ -97,6 +104,11 @@ function Router() {
       <Route path="/crm/ebooks" component={CRMEbooks} />
       <Route path="/crm/ebooks/nuevo" component={EbookForm} />
       <Route path="/crm/ebooks/:id/editar" component={EbookForm} />
+
+      {/* Water Systems CRM */}
+      <Route path="/crm/agua/categorias" component={AguaCategorias} />
+      <Route path="/crm/agua/productos" component={AguaProductos} />
+      <Route path="/crm/agua/solicitudes" component={AguaSolicitudes} />
 
       {/* Automations */}
       <Route path="/crm/automatizaciones" component={Automatizaciones} />
