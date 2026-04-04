@@ -143,15 +143,16 @@ export async function generateInvoicePdf(invoiceId: number): Promise<Buffer> {
       .fillColor(COLOR_DARK)
       .font("Helvetica-Bold")
       .fontSize(10)
-      .text("Cristina Battistelli", col1X, dataY + 14);
+      .text("Cristina Battistelli Lopez de Ayala", col1X, dataY + 14);
 
     doc
       .fillColor(COLOR_GRAY)
       .font("Helvetica")
       .fontSize(9)
-      .text("Cristina Vive Consciente", col1X, dataY + 28)
-      .text("hola@cristinaviveconsciente.es", col1X, dataY + 40)
-      .text("cristinaviveconsciente.es", col1X, dataY + 52);
+      .text("DNI: 70256237Z", col1X, dataY + 28)
+      .text("C/ Turín, 40 40400", col1X, dataY + 40)
+      .text("El Espinar, Segovia", col1X, dataY + 52)
+      .text("hola@cristinaviveconsciente.es", col1X, dataY + 64);
 
     // Datos del cliente (derecha)
     const clientName = client
@@ -176,6 +177,17 @@ export async function generateInvoicePdf(invoiceId: number): Promise<Buffer> {
       .fontSize(9);
 
     let clientY = dataY + 28;
+    // NIF o razón social
+    const clientNif = (client as any)?.nif;
+    const clientRazon = (client as any)?.razonSocial;
+    if (clientRazon) {
+      doc.text(clientRazon, col2X, clientY, { width: CONTENT_W / 2 });
+      clientY += 12;
+    }
+    if (clientNif) {
+      doc.text(`NIF/DNI: ${clientNif}`, col2X, clientY, { width: CONTENT_W / 2 });
+      clientY += 12;
+    }
     if (client?.email) {
       doc.text(client.email, col2X, clientY, { width: CONTENT_W / 2 });
       clientY += 12;
@@ -184,8 +196,19 @@ export async function generateInvoicePdf(invoiceId: number): Promise<Buffer> {
       doc.text(client.address, col2X, clientY, { width: CONTENT_W / 2 });
       clientY += 12;
     }
-    if (client?.city) {
-      doc.text(client.city, col2X, clientY, { width: CONTENT_W / 2 });
+    // CP + Ciudad + Provincia
+    const cpLine = [
+      (client as any)?.postalCode,
+      client?.city,
+      (client as any)?.province,
+    ].filter(Boolean).join(" ");
+    if (cpLine) {
+      doc.text(cpLine, col2X, clientY, { width: CONTENT_W / 2 });
+      clientY += 12;
+    }
+    const country = (client as any)?.country;
+    if (country && country !== "España") {
+      doc.text(country, col2X, clientY, { width: CONTENT_W / 2 });
     }
 
     // ── FECHAS ─────────────────────────────────────────────────────────────────

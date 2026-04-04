@@ -1,10 +1,11 @@
 /**
  * CRM ClienteForm — Nuevo / Editar cliente
+ * Incluye sección de datos fiscales para facturas correctas
  */
 
 import { useState, useEffect } from "react";
 import { useLocation, useParams } from "wouter";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, User, FileText } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -28,8 +29,15 @@ export default function ClienteForm() {
     phone: "",
     status: "active" as "active" | "inactive" | "lead",
     birthDate: "",
+    // Dirección fiscal
     address: "",
+    postalCode: "",
     city: "",
+    province: "",
+    country: "España",
+    nif: "",
+    razonSocial: "",
+    // Otros
     notes: "",
     referredBy: "",
   });
@@ -44,7 +52,12 @@ export default function ClienteForm() {
         status: existing.status ?? "active",
         birthDate: existing.birthDate ?? "",
         address: existing.address ?? "",
+        postalCode: (existing as any).postalCode ?? "",
         city: existing.city ?? "",
+        province: (existing as any).province ?? "",
+        country: (existing as any).country ?? "España",
+        nif: (existing as any).nif ?? "",
+        razonSocial: (existing as any).razonSocial ?? "",
         notes: existing.notes ?? "",
         referredBy: existing.referredBy ?? "",
       });
@@ -82,9 +95,13 @@ export default function ClienteForm() {
     }
   };
 
-  const field = (label: string, key: keyof typeof form, type = "text", required = false) => (
+  const inputClass = "w-full px-3 py-2.5 text-sm bg-white border border-[oklch(0.92_0.01_80)] text-[oklch(0.18_0.018_55)] placeholder-[oklch(0.75_0.01_60)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors font-body";
+  const labelClass = "block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider";
+  const sectionTitle = "flex items-center gap-2 text-xs font-body uppercase tracking-widest text-[oklch(0.52_0.08_148)] mb-4 pb-2 border-b border-[oklch(0.92_0.01_80)]";
+
+  const field = (label: string, key: keyof typeof form, type = "text", required = false, placeholder = "") => (
     <div>
-      <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
+      <label className={labelClass} style={{ fontWeight: 500 }}>
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <input
@@ -92,7 +109,8 @@ export default function ClienteForm() {
         value={form[key] as string}
         onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
         required={required}
-        className="w-full px-3 py-2.5 text-sm bg-white border border-[oklch(0.92_0.01_80)] text-[oklch(0.18_0.018_55)] placeholder-[oklch(0.75_0.01_60)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors font-body"
+        placeholder={placeholder}
+        className={inputClass}
         style={{ borderRadius: 0 }}
       />
     </div>
@@ -108,57 +126,84 @@ export default function ClienteForm() {
           <ArrowLeft size={13} /> Volver
         </Link>
 
-        <form onSubmit={handleSubmit} className="bg-white border border-[oklch(0.92_0.01_80)] p-6 space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {field("Nombre", "firstName", "text", true)}
-            {field("Apellido", "lastName", "text", true)}
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {field("Email", "email", "email")}
-            {field("Teléfono / WhatsApp", "phone", "tel")}
-          </div>
+          {/* ── DATOS PERSONALES ── */}
+          <div className="bg-white border border-[oklch(0.92_0.01_80)] p-6 space-y-5">
+            <div className={sectionTitle}>
+              <User size={13} />
+              Datos personales
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {field("Fecha de nacimiento", "birthDate", "date")}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {field("Nombre", "firstName", "text", true)}
+              {field("Apellido", "lastName", "text", true)}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {field("Email", "email", "email")}
+              {field("Teléfono / WhatsApp", "phone", "tel")}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {field("Fecha de nacimiento", "birthDate", "date")}
+              <div>
+                <label className={labelClass} style={{ fontWeight: 500 }}>Estado</label>
+                <select
+                  value={form.status}
+                  onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as any }))}
+                  className={inputClass}
+                  style={{ borderRadius: 0 }}
+                >
+                  <option value="active">Activo</option>
+                  <option value="lead">Lead</option>
+                  <option value="inactive">Inactivo</option>
+                </select>
+              </div>
+            </div>
+
+            {field("Referido por", "referredBy")}
+
             <div>
-              <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
-                Estado
-              </label>
-              <select
-                value={form.status}
-                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as any }))}
-                className="w-full px-3 py-2.5 text-sm bg-white border border-[oklch(0.92_0.01_80)] text-[oklch(0.18_0.018_55)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors font-body cursor-pointer"
+              <label className={labelClass} style={{ fontWeight: 500 }}>Notas internas</label>
+              <textarea
+                value={form.notes}
+                onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                rows={3}
+                className={`${inputClass} resize-none`}
                 style={{ borderRadius: 0 }}
-              >
-                <option value="active">Activo</option>
-                <option value="lead">Lead</option>
-                <option value="inactive">Inactivo</option>
-              </select>
+              />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {field("Ciudad", "city")}
-            {field("Referido por", "referredBy")}
+          {/* ── DATOS FISCALES ── */}
+          <div className="bg-white border border-[oklch(0.92_0.01_80)] p-6 space-y-5">
+            <div className={sectionTitle}>
+              <FileText size={13} />
+              Datos fiscales (para facturas)
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {field("NIF / DNI / CIF", "nif", "text", false, "ej: 12345678A")}
+              {field("Razón social (si empresa)", "razonSocial", "text", false, "ej: Mi Empresa S.L.")}
+            </div>
+
+            {field("Dirección", "address", "text", false, "ej: C/ Mayor, 10, 2º A")}
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {field("Código postal", "postalCode", "text", false, "28001")}
+              {field("Ciudad", "city", "text", false, "Madrid")}
+              {field("Provincia", "province", "text", false, "Madrid")}
+              {field("País", "country", "text", false, "España")}
+            </div>
+
+            <p className="text-[0.7rem] text-[oklch(0.62_0.015_60)] font-body">
+              Estos datos aparecerán en el bloque "Facturado a" del PDF de la factura.
+            </p>
           </div>
 
-          {field("Dirección", "address")}
-
-          <div>
-            <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
-              Notas internas
-            </label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-              rows={3}
-              className="w-full px-3 py-2.5 text-sm bg-white border border-[oklch(0.92_0.01_80)] text-[oklch(0.18_0.018_55)] placeholder-[oklch(0.75_0.01_60)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors font-body resize-none"
-              style={{ borderRadius: 0 }}
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
+          {/* ── ACCIONES ── */}
+          <div className="flex gap-3">
             <button
               type="submit"
               disabled={isPending}

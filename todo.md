@@ -200,3 +200,11 @@
 - [x] Botón "Enviar por email" en la lista de facturas del CRM
 - [x] Botón "Enviar por email" en el detalle/edición de factura del CRM
 - [x] Feedback visual: toast de éxito/error y estado de envío en la fila
+
+## Datos Fiscales en Facturas
+- [ ] Encabezado PDF con datos fiscales de Cristina (nombre, DNI, dirección, CP, ciudad, provincia)
+- [ ] Añadir campos fiscales al schema de clientes: nif, razonSocial, address, postalCode, city, province, country
+- [ ] Migrar BD con los nuevos campos fiscales del cliente
+- [ ] Actualizar formulario CRM de clientes con sección "Datos fiscales"
+- [ ] PDF de factura: bloque receptor con datos fiscales del cliente desde BD
+- [ ] Actualizar getInvoiceById para incluir todos los campos fiscales del cliente

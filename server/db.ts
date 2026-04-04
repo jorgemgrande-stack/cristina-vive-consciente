@@ -286,7 +286,7 @@ export async function getInvoices(clientId?: number, status?: string) {
 export async function getInvoiceById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select({ invoice: invoices, client: { id: clients.id, firstName: clients.firstName, lastName: clients.lastName, email: clients.email, address: clients.address, city: clients.city } }).from(invoices).leftJoin(clients, eq(invoices.clientId, clients.id)).where(eq(invoices.id, id)).limit(1);
+  const result = await db.select({ invoice: invoices, client: { id: clients.id, firstName: clients.firstName, lastName: clients.lastName, email: clients.email, address: clients.address, postalCode: clients.postalCode, city: clients.city, province: clients.province, country: clients.country, nif: clients.nif, razonSocial: clients.razonSocial } }).from(invoices).leftJoin(clients, eq(invoices.clientId, clients.id)).where(eq(invoices.id, id)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
