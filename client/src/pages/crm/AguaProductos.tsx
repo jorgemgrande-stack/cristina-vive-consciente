@@ -307,8 +307,45 @@ interface ProductFormProps {
   isSaving: boolean;
 }
 
+// Normaliza los valores null de la BD a strings vacíos para evitar errores de validación tRPC
+function normalizeInitial(initial?: Partial<ProductFormData> & { id?: number }): Partial<ProductFormData> {
+  if (!initial) return {};
+  const nullToEmpty = (v: unknown, fallback = "") =>
+    v === null || v === undefined ? fallback : v;
+  return {
+    ...initial,
+    subtitle: nullToEmpty(initial.subtitle) as string,
+    shortDescription: nullToEmpty(initial.shortDescription) as string,
+    longDescription: nullToEmpty(initial.longDescription) as string,
+    claimsHighlighted: nullToEmpty(initial.claimsHighlighted, "[]") as string,
+    benefits: nullToEmpty(initial.benefits, "[]") as string,
+    forWhom: nullToEmpty(initial.forWhom) as string,
+    priceVisible: nullToEmpty(initial.priceVisible) as string,
+    priceFrom: nullToEmpty(initial.priceFrom) as string,
+    priceOrientative: nullToEmpty(initial.priceOrientative) as string,
+    mainImage: nullToEmpty(initial.mainImage) as string,
+    galleryImages: nullToEmpty(initial.galleryImages, "[]") as string,
+    badge: nullToEmpty(initial.badge) as string,
+    badgeColor: nullToEmpty(initial.badgeColor) as string,
+    technicalSpecs: nullToEmpty(initial.technicalSpecs, "[]") as string,
+    installationText: nullToEmpty(initial.installationText) as string,
+    maintenanceText: nullToEmpty(initial.maintenanceText) as string,
+    warrantyText: nullToEmpty(initial.warrantyText) as string,
+    bulletAdvantages: nullToEmpty(initial.bulletAdvantages, "[]") as string,
+    whyChooseBlock: nullToEmpty(initial.whyChooseBlock) as string,
+    expertBlock: nullToEmpty(initial.expertBlock) as string,
+    faqBlock: nullToEmpty(initial.faqBlock, "[]") as string,
+    testimonialsBlock: nullToEmpty(initial.testimonialsBlock, "[]") as string,
+    trustBlock: nullToEmpty(initial.trustBlock) as string,
+    ctaPrimaryLabel: nullToEmpty(initial.ctaPrimaryLabel, "Reservar sistema") as string,
+    ctaSecondaryLabel: nullToEmpty(initial.ctaSecondaryLabel, "Conocer más detalles") as string,
+    seoTitle: nullToEmpty(initial.seoTitle) as string,
+    seoDescription: nullToEmpty(initial.seoDescription) as string,
+  };
+}
+
 function ProductForm({ initial, categories, onSave, onCancel, isSaving }: ProductFormProps) {
-  const [form, setForm] = useState<ProductFormData>({ ...EMPTY_FORM, ...initial });
+  const [form, setForm] = useState<ProductFormData>({ ...EMPTY_FORM, ...normalizeInitial(initial) });
   const [section, setSection] = useState<"basic" | "content" | "technical" | "blocks" | "seo">("basic");
 
   const set = (key: keyof ProductFormData, value: unknown) =>
@@ -686,7 +723,16 @@ function ProductForm({ initial, categories, onSave, onCancel, isSaving }: Produc
       {/* Footer con acciones */}
       <div className="bg-[#FAFAF7] px-6 py-4 border-t border-[#E8E4DC] flex gap-3">
         <button
-          onClick={() => onSave(form)}
+          onClick={() => {
+            // Normaliza strings vacíos a undefined para que tRPC los trate como opcionales
+            const cleanData = Object.fromEntries(
+              Object.entries(form).map(([k, v]) => [
+                k,
+                v === "" ? undefined : v,
+              ])
+            ) as ProductFormData;
+            onSave(cleanData);
+          }}
           disabled={isSaving || !form.title || !form.slug}
           className="flex items-center gap-2 px-5 py-2 bg-[#3A5A3A] text-white rounded-lg text-sm hover:bg-[#2E4A2E] transition-colors disabled:opacity-50"
         >

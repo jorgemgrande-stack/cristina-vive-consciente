@@ -272,3 +272,6 @@
 - [x] Bloques de autoridad de Cristina en la parte pública
 - [x] Integrar /sistemas-agua en la navegación principal
 - [x] Notificación WhatsApp + email al admin en nueva solicitud de sistema de agua
+
+## Bugfix — Formulario Productos de Agua
+- [x] Corregir validación tRPC: campos opcionales (secondaryCategories, priceFrom, galleryImages, testimonialsBlock) deben aceptar null además de string

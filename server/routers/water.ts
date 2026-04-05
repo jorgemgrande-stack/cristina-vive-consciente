@@ -58,38 +58,43 @@ const categorySchema = z.object({
   status: z.enum(["active", "inactive"]).default("active"),
 });
 
+// Helper: acepta string, string vacío, null o undefined — normaliza a undefined para no persistir basura
+const optStr = () => z.string().nullable().optional().transform((v) => (v === null || v === "" ? undefined : v));
+const optJson = (fallback = "[]") =>
+  z.string().nullable().optional().transform((v) => (v === null || v === undefined ? fallback : v === "" ? fallback : v));
+
 const productSchema = z.object({
   title: z.string().min(1),
   slug: z.string().min(1).regex(/^[a-z0-9-]+$/, "Solo letras minúsculas, números y guiones"),
-  subtitle: z.string().optional(),
-  categoryId: z.number().int().optional(),
-  secondaryCategories: z.string().optional(), // JSON array
-  shortDescription: z.string().optional(),
-  longDescription: z.string().optional(),
-  claimsHighlighted: z.string().optional(), // JSON array
-  benefits: z.string().optional(), // JSON array
-  forWhom: z.string().optional(),
-  priceVisible: z.string().optional(),
-  priceFrom: z.string().optional(),
-  priceOrientative: z.string().optional(),
-  mainImage: z.string().optional(),
-  galleryImages: z.string().optional(), // JSON array
-  badge: z.string().optional(),
-  badgeColor: z.string().optional(),
-  technicalSpecs: z.string().optional(), // JSON array [{key, value}]
-  installationText: z.string().optional(),
-  maintenanceText: z.string().optional(),
-  warrantyText: z.string().optional(),
-  bulletAdvantages: z.string().optional(), // JSON array
-  whyChooseBlock: z.string().optional(),
-  expertBlock: z.string().optional(),
-  faqBlock: z.string().optional(), // JSON [{q,a}]
-  testimonialsBlock: z.string().optional(), // JSON [{name,text,rating}]
-  trustBlock: z.string().optional(),
-  ctaPrimaryLabel: z.string().optional(),
-  ctaSecondaryLabel: z.string().optional(),
-  seoTitle: z.string().optional(),
-  seoDescription: z.string().optional(),
+  subtitle: optStr(),
+  categoryId: z.number().int().nullable().optional().transform((v) => v ?? undefined),
+  secondaryCategories: optJson(), // JSON array
+  shortDescription: optStr(),
+  longDescription: optStr(),
+  claimsHighlighted: optJson(), // JSON array
+  benefits: optJson(), // JSON array
+  forWhom: optStr(),
+  priceVisible: optStr(),
+  priceFrom: optStr(),
+  priceOrientative: optStr(),
+  mainImage: optStr(),
+  galleryImages: optJson(), // JSON array
+  badge: optStr(),
+  badgeColor: optStr(),
+  technicalSpecs: optJson(), // JSON array [{key, value}]
+  installationText: optStr(),
+  maintenanceText: optStr(),
+  warrantyText: optStr(),
+  bulletAdvantages: optJson(), // JSON array
+  whyChooseBlock: optStr(),
+  expertBlock: optStr(),
+  faqBlock: optJson(), // JSON [{q,a}]
+  testimonialsBlock: optJson(), // JSON [{name,text,rating}]
+  trustBlock: optStr(),
+  ctaPrimaryLabel: optStr(),
+  ctaSecondaryLabel: optStr(),
+  seoTitle: optStr(),
+  seoDescription: optStr(),
   sortOrder: z.number().int().default(0),
   visibleEnPublico: z.number().int().min(0).max(1).default(1),
   destacadoEnHome: z.number().int().min(0).max(1).default(0),
