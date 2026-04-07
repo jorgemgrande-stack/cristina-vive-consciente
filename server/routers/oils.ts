@@ -28,6 +28,7 @@ import {
   createOilProduct,
   updateOilProduct,
   deleteOilProduct,
+  reorderOilProducts,
   createOilConsultation,
   listOilConsultations,
   updateOilConsultation,
@@ -248,6 +249,26 @@ export const oilsRouter = router({
       .mutation(async ({ ctx, input }) => {
         if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
         await deleteOilProduct(input.id);
+        return { success: true };
+      }),
+
+    /**
+     * Mueve un producto hacia arriba o hacia abajo en el orden.
+     * Recibe el id del producto a mover, su sortOrder actual,
+     * el id del vecino con el que intercambiar y su sortOrder.
+     */
+    reorderProduct: protectedProcedure
+      .input(
+        z.object({
+          idA: z.number().int(),
+          sortA: z.number().int(),
+          idB: z.number().int(),
+          sortB: z.number().int(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        await reorderOilProducts(input.idA, input.sortA, input.idB, input.sortB);
         return { success: true };
       }),
 

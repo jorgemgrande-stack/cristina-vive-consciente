@@ -309,7 +309,12 @@
 - [x] Sin precios, sin compra directa, sin checkout
 
 ## Actualización Productos Aceites — Datos Reales Shopify
-- [ ] Extraer nombre, descripción e imágenes de las 23 URLs de Shopify
-- [ ] Subir imágenes al CDN (manus-upload-file --webdev)
-- [ ] Actualizar/crear cada producto en la BD con datos reales
-- [ ] Productos nuevos a añadir si no existen en el portfolio
+- [x] Extraer nombre, descripción e imágenes de las 23 URLs de Shopify
+- [x] Subir imágenes al CDN (manus-upload-file --webdev)
+- [x] Actualizar/crear cada producto en la BD con datos reales
+- [x] Productos nuevos añadidos: Deep Blue Roll-On, Veggie Caps, Herramienta Roll-On, Caja Madera, Recovery Bomb
+
+## Reordenación Aceites Esenciales en CRM
+- [x] Procedimiento tRPC oils.admin.reorderProduct (intercambia sortOrder entre dos productos)
+- [x] Botones arriba/abajo en listado CRM de aceites (con feedback visual)
+- [x] Verificar que la landing /aceites-esenciales ordena por sortOrder ASC

@@ -125,6 +125,18 @@ export async function deleteOilProduct(id: number) {
   await db.delete(oilProducts).where(eq(oilProducts.id, id));
 }
 
+/**
+ * Intercambia el sortOrder de dos productos para reordenarlos.
+ * idA sube (se mueve hacia arriba) y idB baja.
+ */
+export async function reorderOilProducts(idA: number, sortA: number, idB: number, sortB: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Intercambiar los sortOrder de los dos productos
+  await db.update(oilProducts).set({ sortOrder: sortB, updatedAt: new Date() }).where(eq(oilProducts.id, idA));
+  await db.update(oilProducts).set({ sortOrder: sortA, updatedAt: new Date() }).where(eq(oilProducts.id, idB));
+}
+
 // ─── CONSULTAS ────────────────────────────────────────────────────────────────
 
 export async function createOilConsultation(data: InsertOilConsultation) {

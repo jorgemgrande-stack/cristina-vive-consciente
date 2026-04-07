@@ -160,6 +160,25 @@ export default function AceiteProductos() {
     onError: (e) => toast.error(e.message),
   });
 
+  const reorderMutation = trpc.oils.admin.reorderProduct.useMutation({
+    onSuccess: () => utils.oils.admin.listProducts.invalidate(),
+    onError: (e) => toast.error("Error al reordenar: " + e.message),
+  });
+
+  function moveProduct(index: number, direction: "up" | "down") {
+    const sorted = [...products].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= sorted.length) return;
+    const a = sorted[index];
+    const b = sorted[targetIndex];
+    reorderMutation.mutate({
+      idA: a.id,
+      sortA: a.sortOrder,
+      idB: b.id,
+      sortB: b.sortOrder,
+    });
+  }
+
   function resetForm() {
     setForm(EMPTY_FORM);
     setEditingId(null);
@@ -492,7 +511,15 @@ export default function AceiteProductos() {
           </div>
         ) : (
           <div className="space-y-2">
-            {products.map((p) => (
+            {/* Nota: los botones de orden solo funcionan sin filtros activos */}
+            {(!search && !filterCategory && !filterTipo) && (
+              <p className="text-xs text-[oklch(0.52_0.04_80)] font-body italic">
+                Usa las flechas ↑↓ para cambiar el orden de aparición en la web.
+              </p>
+            )}
+            {[...products]
+              .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+              .map((p, idx, arr) => (
               <div
                 key={p.id}
                 className="bg-white border border-[oklch(0.92_0.01_80)] flex items-center gap-4 px-4 py-3"
@@ -533,6 +560,27 @@ export default function AceiteProductos() {
 
                 {/* Acciones */}
                 <div className="flex items-center gap-1">
+                  {/* Botones de reordenación — solo visibles sin filtros */}
+                  {(!search && !filterCategory && !filterTipo) && (
+                    <div className="flex flex-col gap-0.5 mr-1">
+                      <button
+                        onClick={() => moveProduct(idx, "up")}
+                        disabled={idx === 0 || reorderMutation.isPending}
+                        className="p-0.5 text-[oklch(0.52_0.04_80)] hover:text-[oklch(0.18_0.018_55)] disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                        title="Mover arriba"
+                      >
+                        <ChevronUp size={13} />
+                      </button>
+                      <button
+                        onClick={() => moveProduct(idx, "down")}
+                        disabled={idx === arr.length - 1 || reorderMutation.isPending}
+                        className="p-0.5 text-[oklch(0.52_0.04_80)] hover:text-[oklch(0.18_0.018_55)] disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                        title="Mover abajo"
+                      >
+                        <ChevronDown size={13} />
+                      </button>
+                    </div>
+                  )}
                   <button
                     onClick={() => updateMutation.mutate({ id: p.id, data: { destacado: p.destacado === 1 ? 0 : 1 } })}
                     className="p-1.5 text-amber-400 hover:text-amber-600 transition-colors"
