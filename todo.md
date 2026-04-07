@@ -321,3 +321,10 @@
 
 ## Bugfix — Flechas reordenación aceites CRM
 - [x] Diagnosticar y corregir el fallo de los botones ↑↓ en el gestor de aceites
+
+## Bugfix + Rediseño Servicios/Masajes
+- [x] Corregir error INSERT en servicios: slug duplicado detectado antes de enviar + mensaje de error claro
+- [x] Auto-generar slug desde el nombre del servicio con validación en tiempo real
+- [x] Mostrar slugs existentes dinámicamente desde la BD en el formulario
+- [x] Rediseñar página pública /masajes con listado dinámico desde BD
+- [x] Tarjetas de masaje: imagen, nombre, descripción, duración, modalidad, precio, CTA individual
