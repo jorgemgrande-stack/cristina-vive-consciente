@@ -234,9 +234,9 @@ export default function Masajes() {
                */
               <div className={`grid gap-6 ${
                 masajes.length === 1
-                  ? "grid-cols-1 max-w-sm mx-auto"
+                  ? "grid-cols-1"
                   : masajes.length === 2
-                  ? "grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto"
+                  ? "grid-cols-1 sm:grid-cols-2"
                   : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
               }`}>
                 {masajes.map((masaje) => {
