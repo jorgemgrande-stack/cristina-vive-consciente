@@ -116,8 +116,12 @@ export default function ServicioForm() {
         price: existing.price ?? "",
         durationMinutes: existing.durationMinutes ?? 60,
         durationLabel: existing.durationLabel ?? "",
-        type: existing.type as FormData["type"],
-        modality: existing.modality as FormData["modality"],
+        type: (["consulta", "masaje", "otro"] as const).includes(existing.type as any)
+          ? (existing.type as FormData["type"])
+          : "consulta",
+        modality: (["online", "presencial", "ambos"] as const).includes(existing.modality as any)
+          ? (existing.modality as FormData["modality"])
+          : "ambos",
         imageUrl: existing.imageUrl ?? "",
         detailImage: (existing as any).detailImage ?? "",
         longDescription: (existing as any).longDescription ?? "",
@@ -189,8 +193,8 @@ export default function ServicioForm() {
       price: form.price.trim() || null,
       durationMinutes: form.durationMinutes,
       durationLabel: form.durationLabel.trim() || undefined,
-      type: form.type,
-      modality: form.modality,
+      type: (["consulta", "masaje", "otro"] as const).includes(form.type) ? form.type : "consulta",
+      modality: (["online", "presencial", "ambos"] as const).includes(form.modality) ? form.modality : "ambos",
       imageUrl: form.imageUrl.trim() || null,
       detailImage: form.detailImage.trim() || null,
       longDescription: form.longDescription.trim() || null,

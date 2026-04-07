@@ -31,8 +31,26 @@ const serviceInput = z.object({
   price: z.string().regex(/^\d+(\.\d{1,2})?$/).optional().nullable(),
   durationMinutes: z.number().int().min(1).default(60),
   durationLabel: z.string().max(100).optional(),
-  type: z.enum(["consulta", "masaje", "otro"]).default("consulta"),
-  modality: z.enum(["online", "presencial", "ambos"]).default("ambos"),
+  type: z.preprocess(
+    (v) => {
+      // Normalizar valores legacy
+      if (v === "Consulta" || v === "consulta") return "consulta";
+      if (v === "Masaje" || v === "masaje") return "masaje";
+      if (v === "Otro" || v === "otro") return "otro";
+      return v;
+    },
+    z.enum(["consulta", "masaje", "otro"]).default("consulta")
+  ),
+  modality: z.preprocess(
+    (v) => {
+      // Normalizar valores legacy (label en lugar de value)
+      if (v === "Presencial / Online" || v === "ambos") return "ambos";
+      if (v === "Solo Online" || v === "online") return "online";
+      if (v === "Solo Presencial" || v === "Presencial" || v === "presencial") return "presencial";
+      return v;
+    },
+    z.enum(["online", "presencial", "ambos"]).default("ambos")
+  ),
   imageUrl: z.string().url().optional().nullable().or(z.literal("")),
   detailImage: z.string().url().optional().nullable().or(z.literal("")),
   longDescription: z.string().optional().nullable(),

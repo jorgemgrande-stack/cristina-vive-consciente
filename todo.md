@@ -364,3 +364,6 @@
 - [x] Página pública /masajes/:slug: detalle completo del masaje
 - [x] Actualizar formulario CRM de servicios con campos de detalle editables
 - [x] Registrar ruta /masajes/:slug en App.tsx
+
+## Bugfix — Error al editar masajes (invalid_value type/modality)
+- [x] Corregir error de validación tRPC: invalid_value en campos type y modality al guardar cambios en servicios
