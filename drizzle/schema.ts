@@ -444,3 +444,74 @@ export const waterInquiries = mysqlTable("water_inquiries", {
 
 export type WaterInquiry = typeof waterInquiries.$inferSelect;
 export type InsertWaterInquiry = typeof waterInquiries.$inferInsert;
+
+// ─── ACEITES ESENCIALES — CATEGORÍAS ─────────────────────────────────────────
+export const oilCategories = mysqlTable("oil_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  slug: varchar("slug", { length: 120 }).notNull().unique(),
+  description: varchar("description", { length: 500 }),
+  imageUrl: text("imageUrl"),
+  icon: varchar("icon", { length: 50 }),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OilCategory = typeof oilCategories.$inferSelect;
+export type InsertOilCategory = typeof oilCategories.$inferInsert;
+
+// ─── ACEITES ESENCIALES — PRODUCTOS ──────────────────────────────────────────
+export const oilProducts = mysqlTable("oil_products", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  slug: varchar("slug", { length: 120 }).notNull().unique(),
+  /** Categoría principal (nombre de la categoría) */
+  category: varchar("category", { length: 100 }).notNull().default("aceites-esenciales"),
+  /** Tipo de producto */
+  tipoProducto: mysqlEnum("tipoProducto", ["aceite", "mezcla", "base", "pack", "accesorio"]).default("aceite").notNull(),
+  descripcion: text("descripcion"),
+  /** JSON array de strings — beneficios clave */
+  beneficios: text("beneficios"),
+  /** JSON array de strings — indicaciones de uso */
+  indicaciones: text("indicaciones"),
+  usoGeneral: text("usoGeneral"),
+  /** Mensaje personalizado de consulta que aparece en la ficha */
+  mensajeConsulta: text("mensajeConsulta"),
+  imagen: text("imagen"),
+  /** JSON array de strings — etiquetas para filtrado */
+  tags: text("tags"),
+  /** 1 = producto destacado */
+  destacado: int("destacado").default(0).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  /** 1 = visible en la parte pública */
+  visibleEnPublico: int("visibleEnPublico").default(1).notNull(),
+  status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type OilProduct = typeof oilProducts.$inferSelect;
+export type InsertOilProduct = typeof oilProducts.$inferInsert;
+
+// ─── ACEITES ESENCIALES — CONSULTAS ──────────────────────────────────────────
+export const oilConsultations = mysqlTable("oil_consultations", {
+  id: int("id").autoincrement().primaryKey(),
+  nombre: varchar("nombre", { length: 200 }).notNull(),
+  email: varchar("email", { length: 200 }).notNull(),
+  telefono: varchar("telefono", { length: 30 }),
+  mensaje: text("mensaje"),
+  /** JSON array de objetos {id, name, slug} — productos seleccionados */
+  productsList: text("productsList"),
+  status: mysqlEnum("status", ["new", "contacted", "qualified", "closed"]).default("new").notNull(),
+  internalNotes: text("internalNotes"),
+  /** Vinculación con cliente del CRM */
+  clientId: int("clientId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OilConsultation = typeof oilConsultations.$inferSelect;
+export type InsertOilConsultation = typeof oilConsultations.$inferInsert;

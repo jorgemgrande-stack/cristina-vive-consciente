@@ -10,6 +10,7 @@ import { automationsRouter } from "./routers/automations";
 import { servicesRouter } from "./routers/services";
 import { ebooksAdminRouter } from "./routers/ebooksAdmin";
 import { waterRouter } from "./routers/water";
+import { oilsRouter } from "./routers/oils";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -33,6 +34,7 @@ export const appRouter = router({
   services: servicesRouter,
   ebooksAdmin: ebooksAdminRouter,
   water: waterRouter,
+  oils: oilsRouter,
 
   // TODO: add feature routers here, e.g.
   // todo: router({

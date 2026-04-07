@@ -275,3 +275,35 @@
 
 ## Bugfix — Formulario Productos de Agua
 - [x] Corregir validación tRPC: campos opcionales (secondaryCategories, priceFrom, galleryImages, testimonialsBlock) deben aceptar null además de string
+
+## Módulo Aceites Esenciales — Catálogo Consultivo
+
+### BD y Backend
+- [x] Tabla `oil_categories` (id, name, slug, description, imageUrl, sortOrder, status)
+- [x] Tabla `oil_products` (id, name, slug, category, tipoProducto, descripcion, beneficios JSON, indicaciones JSON, usoGeneral, mensajeConsulta, imagen, tags JSON, destacado, sortOrder, status)
+- [x] Tabla `oil_consultations` (id, nombre, email, telefono, mensaje, productsList JSON, status, createdAt)
+- [x] Migrar BD con pnpm db:push
+- [x] Helpers de BD en server/oilsDb.ts
+- [x] Router tRPC oils.admin: CRUD categorías y productos
+- [x] Router tRPC oils público: listCategories, listProducts (con filtros), getProduct
+- [x] Router tRPC oils.submitConsultation: guardar consulta + notificar admin + crear lead en CRM
+
+### Dashboard CRM
+- [x] Menú CRM: añadir sección Aceites Esenciales con submenú (Productos, Categorías, Consultas)
+- [x] Página CRM /crm/aceites/categorias: CRUD con ImageUploader
+- [x] Página CRM /crm/aceites/productos: listado con filtros, formulario completo con ImageUploader
+- [x] Página CRM /crm/aceites/consultas: listado de consultas recibidas con productos seleccionados
+
+### Carga inicial de productos
+- [x] Cargar 5 categorías iniciales (Aceites esenciales, Mezclas terapéuticas, Bases y dilución, Packs y guías, Accesorios)
+- [x] Cargar 27 productos iniciales con textos comerciales completos
+
+### Parte pública
+- [x] Landing /aceites-esenciales: hero consultivo, filtros por categoría/tipo/tag, tarjetas de producto
+- [x] Tarjetas: imagen, nombre, 3 beneficios, indicaciones, botones "Ver detalle" y "Añadir a mi consulta"
+- [x] Ficha /aceites-esenciales/:slug: descripción, beneficios, indicaciones, bloque de personalización, CTAs
+- [x] Carrito terapéutico /mi-consulta: lista de productos seleccionados (localStorage), eliminar, resumen
+- [x] Formulario final en /mi-consulta: nombre, email, teléfono, mensaje + lista de productos automática
+- [x] Icono contador de consulta en la navegación (visible en todas las páginas)
+- [x] Integrar /aceites-esenciales en la navegación principal
+- [x] Sin precios, sin compra directa, sin checkout

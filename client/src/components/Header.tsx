@@ -7,8 +7,9 @@
 
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ShoppingBag } from "lucide-react";
 import BookingModal from "./BookingModal";
+import { useConsultaCart } from "@/contexts/ConsultaCartContext";
 
 const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/logo-bion_ba8968f6.avif";
 
@@ -42,6 +43,7 @@ export default function Header() {
 
   const isHome = location === "/";
   const solidBg = scrolled || menuOpen || !isHome;
+  const { count: cartCount } = useConsultaCart();
 
   return (
     <>
@@ -92,6 +94,20 @@ export default function Header() {
 
             {/* CTA */}
             <div className="hidden lg:flex items-center gap-4">
+              {/* Carrito terapéutico */}
+              {cartCount > 0 && (
+                <Link href="/mi-consulta" className="relative">
+                  <button
+                    className={`p-2 transition-colors duration-300 ${solidBg ? "text-[oklch(0.42_0.08_148)]" : "text-white/90 hover:text-white"}`}
+                    aria-label={`Mi consulta (${cartCount} aceites)`}
+                  >
+                    <ShoppingBag size={18} />
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-[oklch(0.52_0.08_148)] text-white text-[0.55rem] font-bold flex items-center justify-center rounded-full">
+                      {cartCount}
+                    </span>
+                  </button>
+                </Link>
+              )}
               <Link
                 href="/contacto"
                 className={`text-[0.75rem] tracking-widest uppercase transition-colors duration-300 ${

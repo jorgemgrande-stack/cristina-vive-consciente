@@ -26,6 +26,8 @@ import {
   FolderOpen,
   Package,
   ClipboardList,
+  Leaf,
+  MessageSquare,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
@@ -51,6 +53,12 @@ const WATER_SUBITEMS = [
   { href: "/crm/agua/solicitudes", label: "Solicitudes", icon: ClipboardList },
 ];
 
+const OILS_SUBITEMS = [
+  { href: "/crm/aceites/productos", label: "Productos", icon: Package },
+  { href: "/crm/aceites/categorias", label: "Categorías", icon: FolderOpen },
+  { href: "/crm/aceites/consultas", label: "Consultas", icon: MessageSquare },
+];
+
 interface CRMLayoutProps {
   children: React.ReactNode;
   title?: string;
@@ -61,6 +69,8 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
   const [location] = useLocation();
   const isWaterSection = location.startsWith("/crm/agua");
   const [waterExpanded, setWaterExpanded] = useState(isWaterSection);
+  const isOilsSection = location.startsWith("/crm/aceites");
+  const [oilsExpanded, setOilsExpanded] = useState(isOilsSection);
 
   const { data: user, isLoading } = trpc.auth.me.useQuery();
   const logoutMutation = trpc.auth.logout.useMutation({
@@ -174,6 +184,48 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
             {waterExpanded && (
               <div className="ml-4 mt-1 space-y-0.5">
                 {WATER_SUBITEMS.map(({ href, label, icon: Icon }) => {
+                  const isSubActive = location === href || location.startsWith(href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2 text-xs font-body transition-all duration-200 no-underline group ${
+                        isSubActive
+                          ? "text-white bg-white/15"
+                          : "text-white/50 hover:text-white hover:bg-white/8"
+                      }`}
+                      style={{ borderRadius: 0, fontWeight: isSubActive ? 500 : 400 }}
+                    >
+                      <Icon size={13} className={isSubActive ? "text-white" : "text-white/40 group-hover:text-white/70"} />
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Aceites Esenciales — con submenú */}
+          <div>
+            <button
+              onClick={() => setOilsExpanded(!oilsExpanded)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-body transition-all duration-200 group ${
+                isOilsSection
+                  ? "bg-[oklch(0.52_0.08_148)] text-white"
+                  : "text-white/60 hover:text-white hover:bg-white/8"
+              }`}
+              style={{ borderRadius: 0, fontWeight: isOilsSection ? 500 : 400 }}
+            >
+              <Leaf size={16} className={isOilsSection ? "text-white" : "text-white/50 group-hover:text-white/80"} />
+              Aceites Esenciales
+              <span className="ml-auto">
+                {oilsExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              </span>
+            </button>
+            {oilsExpanded && (
+              <div className="ml-4 mt-1 space-y-0.5">
+                {OILS_SUBITEMS.map(({ href, label, icon: Icon }) => {
                   const isSubActive = location === href || location.startsWith(href);
                   return (
                     <Link

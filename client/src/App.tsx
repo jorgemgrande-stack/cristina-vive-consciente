@@ -27,6 +27,18 @@ import EbookDescarga from "./pages/EbookDescarga";
 // Water System Pages
 import SistemaAguaDetalle from "./pages/SistemaAguaDetalle";
 
+// Oils Pages
+import AceiteDetalle from "./pages/AceiteDetalle";
+import MiConsulta from "./pages/MiConsulta";
+
+// Oils CRM Pages
+import AceiteCategorias from "./pages/crm/AceiteCategorias";
+import AceiteProductos from "./pages/crm/AceiteProductos";
+import AceiteConsultas from "./pages/crm/AceiteConsultas";
+
+// Contexts
+import { ConsultaCartProvider } from "./contexts/ConsultaCartContext";
+
 // CRM Pages
 import CRMDashboard from "./pages/crm/Dashboard";
 import CRMClientes from "./pages/crm/Clientes";
@@ -59,6 +71,8 @@ function Router() {
       <Route path="/sistemas-agua" component={SistemasAgua} />
       <Route path="/sistemas-agua/:slug" component={SistemaAguaDetalle} />
       <Route path="/aceites-esenciales" component={AceitesEsenciales} />
+      <Route path="/aceites-esenciales/:slug" component={AceiteDetalle} />
+      <Route path="/mi-consulta" component={MiConsulta} />
       <Route path="/guias-digitales" component={GuiasDigitales} />
       <Route path="/recomendados" component={Recomendados} />
       <Route path="/contacto" component={Contacto} />
@@ -110,6 +124,11 @@ function Router() {
       <Route path="/crm/agua/productos" component={AguaProductos} />
       <Route path="/crm/agua/solicitudes" component={AguaSolicitudes} />
 
+      {/* Oils CRM */}
+      <Route path="/crm/aceites/categorias" component={AceiteCategorias} />
+      <Route path="/crm/aceites/productos" component={AceiteProductos} />
+      <Route path="/crm/aceites/consultas" component={AceiteConsultas} />
+
       {/* Automations */}
       <Route path="/crm/automatizaciones" component={Automatizaciones} />
 
@@ -123,6 +142,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
+      <ConsultaCartProvider>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster
@@ -139,6 +159,7 @@ function App() {
           <Router />
         </TooltipProvider>
       </ThemeProvider>
+      </ConsultaCartProvider>
     </ErrorBoundary>
   );
 }
