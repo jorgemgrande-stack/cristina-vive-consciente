@@ -307,3 +307,9 @@
 - [x] Icono contador de consulta en la navegación (visible en todas las páginas)
 - [x] Integrar /aceites-esenciales en la navegación principal
 - [x] Sin precios, sin compra directa, sin checkout
+
+## Actualización Productos Aceites — Datos Reales Shopify
+- [ ] Extraer nombre, descripción e imágenes de las 23 URLs de Shopify
+- [ ] Subir imágenes al CDN (manus-upload-file --webdev)
+- [ ] Actualizar/crear cada producto en la BD con datos reales
+- [ ] Productos nuevos a añadir si no existen en el portfolio
