@@ -354,3 +354,13 @@
 - [x] Módulo CRM /crm/blog/categorias: CRUD de categorías
 - [x] Sección Blog añadida al sidebar del CRM
 - [x] Rutas CRM del blog registradas en App.tsx
+
+## Rediseño /masajes — Grid 3 columnas + Detalle de masaje
+- [x] Añadir campos de detalle al schema `services`: longDescription, benefits (JSON), includes (JSON), contraindications, detailImage
+- [x] Migrar BD con pnpm db:push
+- [x] Actualizar router tRPC services con campos de detalle
+- [x] Rediseñar /masajes: grid 3 columnas (2 masajes → expand, 3+ → 3 col), tarjetas verticales con más contenido
+- [x] Botón "Ver detalle" en cada tarjeta → /masajes/:slug
+- [x] Página pública /masajes/:slug: detalle completo del masaje
+- [x] Actualizar formulario CRM de servicios con campos de detalle editables
+- [x] Registrar ruta /masajes/:slug en App.tsx

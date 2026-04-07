@@ -1,11 +1,12 @@
 /**
  * Masajes — Cristina Vive Consciente
  * Design: "Luz Botánica"
- * Layout compacto: hero + masajes visibles sin scroll excesivo
+ * Grid 3 columnas con tarjetas verticales ricas en contenido + botón Ver detalle
  */
 
 import { useState } from "react";
-import { ArrowRight, MapPin, Clock, Euro, Star, Loader2, ChevronDown, ChevronUp, Leaf } from "lucide-react";
+import { Link } from "wouter";
+import { ArrowRight, MapPin, Clock, Euro, Star, Loader2, ChevronDown, ChevronUp, Leaf, CheckCircle, Eye } from "lucide-react";
 import Layout from "@/components/Layout";
 import BookingModal from "@/components/BookingModal";
 import { trpc } from "@/lib/trpc";
@@ -29,6 +30,14 @@ const ACEITES = [
   { nombre: "Onguard", accion: "Inmunológico" },
 ];
 
+// Beneficios por defecto cuando no hay datos en BD
+const DEFAULT_BENEFITS = [
+  "Reduce el estrés y la tensión acumulada",
+  "Mejora la circulación y el drenaje linfático",
+  "Equilibra el sistema nervioso",
+  "Potencia el sistema inmunológico",
+];
+
 export default function Masajes() {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<string>("masaje");
@@ -39,6 +48,30 @@ export default function Masajes() {
   function handleReservar(slug: string) {
     setSelectedService(slug);
     setBookingOpen(true);
+  }
+
+  // Parsear beneficios del JSON almacenado en BD
+  function parseBenefits(raw: string | null | undefined): string[] {
+    if (!raw) return DEFAULT_BENEFITS;
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      return DEFAULT_BENEFITS;
+    } catch {
+      return DEFAULT_BENEFITS;
+    }
+  }
+
+  // Parsear "qué incluye" del JSON almacenado en BD
+  function parseIncludes(raw: string | null | undefined): string[] {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+      return [];
+    } catch {
+      return [];
+    }
   }
 
   return (
@@ -52,7 +85,6 @@ export default function Masajes() {
 
         {/* ── HERO compacto con intro integrada ── */}
         <section className="relative min-h-[52vh] flex items-end overflow-hidden">
-          {/* Imagen de fondo */}
           <div className="absolute inset-0">
             <img
               src={HERO}
@@ -62,7 +94,6 @@ export default function Masajes() {
             <div className="absolute inset-0 bg-gradient-to-r from-[oklch(0.12_0.018_55)]/85 via-[oklch(0.12_0.018_55)]/60 to-transparent" />
           </div>
 
-          {/* Contenido superpuesto */}
           <div className="relative z-10 container pb-12 pt-32">
             <div className="max-w-xl">
               <p className="text-[oklch(0.72_0.08_148)] text-xs tracking-[0.25em] uppercase mb-4 font-body" style={{ fontWeight: 500 }}>
@@ -101,7 +132,6 @@ export default function Masajes() {
           <section className="bg-[oklch(0.96_0.008_80)] border-b border-[oklch(0.88_0.015_75)]">
             <div className="container py-10">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-                {/* Descripción de la técnica */}
                 <div className="space-y-6">
                   <div>
                     <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-2 font-body" style={{ fontWeight: 500 }}>
@@ -133,7 +163,6 @@ export default function Masajes() {
                   </div>
                 </div>
 
-                {/* Los 8 aceites */}
                 <div>
                   <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-3 font-body" style={{ fontWeight: 500 }}>
                     Los 8 aceites esenciales
@@ -164,7 +193,7 @@ export default function Masajes() {
         <section className="section-padding bg-white">
           <div className="container">
 
-            {/* Cabecera de sección compacta */}
+            {/* Cabecera de sección */}
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
               <div>
                 <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-2 font-body" style={{ fontWeight: 500 }}>
@@ -174,7 +203,6 @@ export default function Masajes() {
                   Elige tu sesión
                 </h2>
               </div>
-              <div className="section-divider sm:hidden" />
               <button
                 onClick={() => handleReservar("masaje")}
                 className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 border border-[oklch(0.52_0.08_148)] text-[oklch(0.52_0.08_148)] text-xs tracking-widest uppercase font-body hover:bg-[oklch(0.52_0.08_148)] hover:text-white transition-all duration-300"
@@ -198,99 +226,151 @@ export default function Masajes() {
                 </p>
               </div>
             ) : (
-              /* Layout horizontal compacto: imagen pequeña a la izquierda + contenido a la derecha */
-              /* Reduce el scroll en móvil y da vista de todos los productos de un vistazo */
-              <div className="space-y-4">
-                {masajes.map((masaje) => (
-                  <article
-                    key={masaje.id}
-                    className={`relative flex flex-row border bg-white transition-all duration-300 hover:shadow-md group overflow-hidden ${
-                      masaje.featured ? "border-[oklch(0.52_0.08_148)]" : "border-[oklch(0.88_0.015_75)]"
-                    }`}
-                  >
-                    {/* Badge destacado */}
-                    {masaje.featured === 1 && (
-                      <div className="absolute top-3 right-3 z-10">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[oklch(0.52_0.08_148)] text-white text-[10px] font-body tracking-wider uppercase" style={{ fontWeight: 500 }}>
-                          <Star size={9} fill="currentColor" />
-                          Popular
-                        </span>
-                      </div>
-                    )}
+              /*
+               * Grid 3 columnas:
+               * - 1 masaje → centrado max-w-sm
+               * - 2 masajes → 2 columnas que se expanden (max-w-3xl centrado)
+               * - 3+ masajes → 3 columnas completas
+               */
+              <div className={`grid gap-6 ${
+                masajes.length === 1
+                  ? "grid-cols-1 max-w-sm mx-auto"
+                  : masajes.length === 2
+                  ? "grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto"
+                  : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+              }`}>
+                {masajes.map((masaje) => {
+                  const benefits = parseBenefits((masaje as any).benefits);
+                  const includes = parseIncludes((masaje as any).includes);
+                  return (
+                    <article
+                      key={masaje.id}
+                      className={`relative flex flex-col border bg-white transition-all duration-300 hover:shadow-lg group overflow-hidden ${
+                        masaje.featured ? "border-[oklch(0.52_0.08_148)]" : "border-[oklch(0.88_0.015_75)]"
+                      }`}
+                    >
+                      {/* Badge destacado */}
+                      {masaje.featured === 1 && (
+                        <div className="absolute top-3 left-3 z-10">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[oklch(0.52_0.08_148)] text-white text-[10px] font-body tracking-wider uppercase" style={{ fontWeight: 500 }}>
+                            <Star size={9} fill="currentColor" />
+                            Más popular
+                          </span>
+                        </div>
+                      )}
 
-                    {/* Imagen cuadrada compacta */}
-                    {masaje.imageUrl ? (
-                      <div className="w-32 sm:w-44 flex-shrink-0 overflow-hidden">
-                        <img
-                          src={masaje.imageUrl}
-                          alt={masaje.name}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-32 sm:w-44 flex-shrink-0 bg-[oklch(0.94_0.012_80)] flex items-center justify-center">
-                        <Leaf size={28} className="text-[oklch(0.52_0.08_148)]/30" />
-                      </div>
-                    )}
+                      {/* Imagen con aspect-ratio 4/3 */}
+                      {masaje.imageUrl ? (
+                        <div className="aspect-[4/3] overflow-hidden flex-shrink-0">
+                          <img
+                            src={masaje.imageUrl}
+                            alt={masaje.name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        </div>
+                      ) : (
+                        <div className="aspect-[4/3] bg-[oklch(0.94_0.012_80)] flex items-center justify-center flex-shrink-0">
+                          <Leaf size={40} className="text-[oklch(0.52_0.08_148)]/30" />
+                        </div>
+                      )}
 
-                    {/* Contenido */}
-                    <div className="flex flex-col flex-1 p-4 sm:p-5 min-w-0">
-                      <div className="flex-1">
-                        {/* Nombre */}
-                        <h3 className="font-display text-[oklch(0.18_0.018_55)] mb-2" style={{ fontWeight: 400, fontSize: "1.05rem" }}>
-                          {masaje.name}
-                        </h3>
+                      {/* Contenido */}
+                      <div className="flex flex-col flex-1 p-5">
 
-                        {/* Meta chips: duración, modalidad, precio */}
-                        <div className="flex flex-wrap gap-1.5 mb-2">
+                        {/* Meta chips */}
+                        <div className="flex flex-wrap gap-1.5 mb-3">
                           {masaje.durationLabel && (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-0.5 font-body">
+                            <span className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-1 font-body">
                               <Clock size={9} className="text-[oklch(0.52_0.08_148)]" />
                               {masaje.durationLabel}
                             </span>
                           )}
                           {masaje.modality && (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-0.5 font-body">
+                            <span className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-1 font-body">
                               <MapPin size={9} className="text-[oklch(0.52_0.08_148)]" />
                               {MODALITY_LABEL[masaje.modality] ?? masaje.modality}
                             </span>
                           )}
                           {masaje.price && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-body text-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]/8 px-2 py-0.5" style={{ fontWeight: 600 }}>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-body text-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]/8 px-2 py-1" style={{ fontWeight: 600 }}>
                               <Euro size={9} />
                               {masaje.price} €
                             </span>
                           )}
                         </div>
 
-                        {/* Descripción corta — limitada a 2 líneas */}
+                        {/* Nombre */}
+                        <h3 className="font-display text-[oklch(0.18_0.018_55)] mb-2" style={{ fontWeight: 400, fontSize: "1.1rem" }}>
+                          {masaje.name}
+                        </h3>
+
+                        {/* Descripción corta */}
                         {masaje.shortDescription && (
-                          <p className="text-[oklch(0.42_0.02_55)] text-sm leading-relaxed font-body line-clamp-2" style={{ fontWeight: 300 }}>
+                          <p className="text-[oklch(0.42_0.02_55)] text-sm leading-relaxed font-body mb-4" style={{ fontWeight: 300 }}>
                             {masaje.shortDescription}
                           </p>
                         )}
-                      </div>
 
-                      {/* CTA */}
-                      <div className="mt-3">
-                        <button
-                          onClick={() => handleReservar(masaje.slug)}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-[oklch(0.52_0.08_148)] text-white text-[10px] tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body"
-                          style={{ borderRadius: 0, letterSpacing: "0.1em" }}
-                        >
-                          Reservar
-                          <ArrowRight size={11} />
-                        </button>
+                        {/* Beneficios (hasta 4) */}
+                        <div className="mb-4 space-y-1.5">
+                          {benefits.slice(0, 4).map((benefit, i) => (
+                            <div key={i} className="flex items-start gap-2">
+                              <CheckCircle size={13} className="text-[oklch(0.52_0.08_148)] mt-0.5 flex-shrink-0" />
+                              <span className="text-[oklch(0.42_0.02_55)] text-xs font-body leading-relaxed" style={{ fontWeight: 300 }}>
+                                {benefit}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Qué incluye (si hay datos) */}
+                        {includes.length > 0 && (
+                          <div className="mb-4 p-3 bg-[oklch(0.96_0.008_80)] border-l-2 border-[oklch(0.52_0.08_148)]">
+                            <p className="text-[oklch(0.52_0.08_148)] text-[10px] tracking-widest uppercase font-body mb-1.5" style={{ fontWeight: 500 }}>
+                              Incluye
+                            </p>
+                            <ul className="space-y-1">
+                              {includes.slice(0, 3).map((item, i) => (
+                                <li key={i} className="text-[oklch(0.42_0.02_55)] text-xs font-body" style={{ fontWeight: 300 }}>
+                                  · {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Spacer */}
+                        <div className="flex-1" />
+
+                        {/* CTAs */}
+                        <div className="flex gap-2 mt-4">
+                          <Link
+                            href={`/masajes/${masaje.slug}`}
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 border border-[oklch(0.52_0.08_148)] text-[oklch(0.52_0.08_148)] text-[10px] tracking-widest uppercase font-body hover:bg-[oklch(0.52_0.08_148)]/5 transition-all duration-200 no-underline"
+                            style={{ borderRadius: 0, letterSpacing: "0.08em" }}
+                          >
+                            <Eye size={11} />
+                            Ver detalle
+                          </Link>
+                          <button
+                            onClick={() => handleReservar(masaje.slug)}
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-[oklch(0.52_0.08_148)] text-white text-[10px] tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body"
+                            style={{ borderRadius: 0, letterSpacing: "0.08em" }}
+                          >
+                            Reservar
+                            <ArrowRight size={11} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  );
+                })}
               </div>
             )}
           </div>
         </section>
 
-        {/* ── CTA final compacto ── */}
+        {/* ── CTA final ── */}
         <section className="py-14 bg-[oklch(0.18_0.018_55)]">
           <div className="container">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6">

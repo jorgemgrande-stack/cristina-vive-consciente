@@ -288,6 +288,16 @@ export const services = mysqlTable("services", {
   /** Modalidad disponible */
   modality: mysqlEnum("modality", ["online", "presencial", "ambos"]).default("ambos").notNull(),
   imageUrl: text("imageUrl"),
+  /** Imagen adicional para la página de detalle */
+  detailImage: text("detailImage"),
+  /** Descripción larga para la página de detalle (puede incluir HTML básico) */
+  longDescription: text("longDescription"),
+  /** Beneficios del servicio (JSON array de strings) */
+  benefits: text("benefits"),
+  /** Qué incluye la sesión (JSON array de strings) */
+  includes: text("includes"),
+  /** Contraindicaciones o notas importantes */
+  contraindications: text("contraindications"),
   /** Mostrar como destacado / más popular */
   featured: int("featured").default(0).notNull(),
   status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
