@@ -328,3 +328,10 @@
 - [x] Mostrar slugs existentes dinámicamente desde la BD en el formulario
 - [x] Rediseñar página pública /masajes con listado dinámico desde BD
 - [x] Tarjetas de masaje: imagen, nombre, descripción, duración, modalidad, precio, CTA individual
+
+## Rediseño Compacto /masajes
+- [x] Reducir scroll excesivo: hero compacto con fondo imagen + masajes visibles inmediatamente debajo
+- [x] Sección técnica (aceites + descripción) colapsable con botón "Cómo funciona"
+- [x] Grid adaptativo: 1 masaje centrado, 2 en 2 columnas, 3+ en 3 columnas
+- [x] Tarjetas compactas con chips de metadatos (duración, modalidad, precio)
+- [x] CTA final en fila horizontal (no centrado apilado)
