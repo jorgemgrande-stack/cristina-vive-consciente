@@ -198,90 +198,90 @@ export default function Masajes() {
                 </p>
               </div>
             ) : (
-              /* Grid adaptativo: 1 masaje → centrado, 2 → 2 col, 3+ → 3 col */
-              <div className={`grid gap-6 ${
-                masajes.length === 1
-                  ? "grid-cols-1 max-w-lg mx-auto"
-                  : masajes.length === 2
-                  ? "grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto"
-                  : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-              }`}>
+              /* Layout horizontal compacto: imagen pequeña a la izquierda + contenido a la derecha */
+              /* Reduce el scroll en móvil y da vista de todos los productos de un vistazo */
+              <div className="space-y-4">
                 {masajes.map((masaje) => (
                   <article
                     key={masaje.id}
-                    className={`relative flex flex-col border bg-white transition-all duration-300 hover:shadow-md group ${
+                    className={`relative flex flex-row border bg-white transition-all duration-300 hover:shadow-md group overflow-hidden ${
                       masaje.featured ? "border-[oklch(0.52_0.08_148)]" : "border-[oklch(0.88_0.015_75)]"
                     }`}
                   >
                     {/* Badge destacado */}
                     {masaje.featured === 1 && (
-                      <div className="absolute -top-3 left-5 z-10">
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-[oklch(0.52_0.08_148)] text-white text-[10px] font-body tracking-wider uppercase" style={{ fontWeight: 500 }}>
+                      <div className="absolute top-3 right-3 z-10">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[oklch(0.52_0.08_148)] text-white text-[10px] font-body tracking-wider uppercase" style={{ fontWeight: 500 }}>
                           <Star size={9} fill="currentColor" />
-                          Más popular
+                          Popular
                         </span>
                       </div>
                     )}
 
-                    {/* Imagen con aspect-ratio fijo */}
+                    {/* Imagen cuadrada compacta */}
                     {masaje.imageUrl ? (
-                      <div className="aspect-[4/3] overflow-hidden flex-shrink-0">
+                      <div className="w-32 sm:w-44 flex-shrink-0 overflow-hidden">
                         <img
                           src={masaje.imageUrl}
                           alt={masaje.name}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       </div>
                     ) : (
-                      <div className="aspect-[4/3] bg-[oklch(0.94_0.012_80)] flex items-center justify-center flex-shrink-0">
-                        <Leaf size={32} className="text-[oklch(0.52_0.08_148)]/30" />
+                      <div className="w-32 sm:w-44 flex-shrink-0 bg-[oklch(0.94_0.012_80)] flex items-center justify-center">
+                        <Leaf size={28} className="text-[oklch(0.52_0.08_148)]/30" />
                       </div>
                     )}
 
-                    <div className="flex flex-col flex-1 p-5 space-y-3">
-                      {/* Nombre */}
-                      <h3 className="font-display text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 400, fontSize: "1.05rem" }}>
-                        {masaje.name}
-                      </h3>
+                    {/* Contenido */}
+                    <div className="flex flex-col flex-1 p-4 sm:p-5 min-w-0">
+                      <div className="flex-1">
+                        {/* Nombre */}
+                        <h3 className="font-display text-[oklch(0.18_0.018_55)] mb-2" style={{ fontWeight: 400, fontSize: "1.05rem" }}>
+                          {masaje.name}
+                        </h3>
 
-                      {/* Meta chips: duración, modalidad, precio */}
-                      <div className="flex flex-wrap gap-2">
-                        {masaje.durationLabel && (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-1 font-body">
-                            <Clock size={10} className="text-[oklch(0.52_0.08_148)]" />
-                            {masaje.durationLabel}
-                          </span>
-                        )}
-                        {masaje.modality && (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-1 font-body">
-                            <MapPin size={10} className="text-[oklch(0.52_0.08_148)]" />
-                            {MODALITY_LABEL[masaje.modality] ?? masaje.modality}
-                          </span>
-                        )}
-                        {masaje.price && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-body text-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]/8 px-2 py-1" style={{ fontWeight: 600 }}>
-                            <Euro size={10} />
-                            {masaje.price} €
-                          </span>
+                        {/* Meta chips: duración, modalidad, precio */}
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {masaje.durationLabel && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-0.5 font-body">
+                              <Clock size={9} className="text-[oklch(0.52_0.08_148)]" />
+                              {masaje.durationLabel}
+                            </span>
+                          )}
+                          {masaje.modality && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-0.5 font-body">
+                              <MapPin size={9} className="text-[oklch(0.52_0.08_148)]" />
+                              {MODALITY_LABEL[masaje.modality] ?? masaje.modality}
+                            </span>
+                          )}
+                          {masaje.price && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-body text-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]/8 px-2 py-0.5" style={{ fontWeight: 600 }}>
+                              <Euro size={9} />
+                              {masaje.price} €
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Descripción corta — limitada a 2 líneas */}
+                        {masaje.shortDescription && (
+                          <p className="text-[oklch(0.42_0.02_55)] text-sm leading-relaxed font-body line-clamp-2" style={{ fontWeight: 300 }}>
+                            {masaje.shortDescription}
+                          </p>
                         )}
                       </div>
 
-                      {/* Descripción corta */}
-                      {masaje.shortDescription && (
-                        <p className="text-[oklch(0.42_0.02_55)] text-sm leading-relaxed font-body flex-1" style={{ fontWeight: 300 }}>
-                          {masaje.shortDescription}
-                        </p>
-                      )}
-
                       {/* CTA */}
-                      <button
-                        onClick={() => handleReservar(masaje.slug)}
-                        className="mt-auto w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body"
-                        style={{ borderRadius: 0, letterSpacing: "0.1em" }}
-                      >
-                        Reservar sesión
-                        <ArrowRight size={12} />
-                      </button>
+                      <div className="mt-3">
+                        <button
+                          onClick={() => handleReservar(masaje.slug)}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-[oklch(0.52_0.08_148)] text-white text-[10px] tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body"
+                          style={{ borderRadius: 0, letterSpacing: "0.1em" }}
+                        >
+                          Reservar
+                          <ArrowRight size={11} />
+                        </button>
+                      </div>
                     </div>
                   </article>
                 ))}

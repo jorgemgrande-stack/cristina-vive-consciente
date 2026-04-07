@@ -21,6 +21,10 @@ import GuiasDigitales from "./pages/GuiasDigitales";
 import Recomendados from "./pages/Recomendados";
 import Contacto from "./pages/Contacto";
 import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
+import BlogArticulos from "./pages/crm/BlogArticulos";
+import BlogArticuloForm from "./pages/crm/BlogArticuloForm";
+import BlogCategorias from "./pages/crm/BlogCategorias";
 import EbookGracias from "./pages/EbookGracias";
 import EbookDescarga from "./pages/EbookDescarga";
 
@@ -77,6 +81,7 @@ function Router() {
       <Route path="/recomendados" component={Recomendados} />
       <Route path="/contacto" component={Contacto} />
       <Route path="/blog" component={Blog} />
+      <Route path="/blog/:slug" component={BlogPost} />
 
       {/* ── Ebooks ── */}
       <Route path="/ebooks/gracias" component={EbookGracias} />
@@ -128,6 +133,12 @@ function Router() {
       <Route path="/crm/aceites/categorias" component={AceiteCategorias} />
       <Route path="/crm/aceites/productos" component={AceiteProductos} />
       <Route path="/crm/aceites/consultas" component={AceiteConsultas} />
+
+      {/* Blog CRM */}
+      <Route path="/crm/blog/articulos" component={BlogArticulos} />
+      <Route path="/crm/blog/articulos/nuevo" component={BlogArticuloForm} />
+      <Route path="/crm/blog/articulos/:id/editar" component={BlogArticuloForm} />
+      <Route path="/crm/blog/categorias" component={BlogCategorias} />
 
       {/* Automations */}
       <Route path="/crm/automatizaciones" component={Automatizaciones} />

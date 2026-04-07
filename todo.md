@@ -335,3 +335,22 @@
 - [x] Grid adaptativo: 1 masaje centrado, 2 en 2 columnas, 3+ en 3 columnas
 - [x] Tarjetas compactas con chips de metadatos (duración, modalidad, precio)
 - [x] CTA final en fila horizontal (no centrado apilado)
+
+## Rediseño Layout /masajes — Tarjetas Horizontales
+- [x] Cambiar tarjetas verticales (aspect-ratio 4/3) por tarjetas horizontales compactas (imagen 128-176px + contenido)
+- [x] Descripción limitada a 2 líneas (line-clamp-2) para uniformidad
+- [x] Badge "Popular" reposicionado a esquina superior derecha
+- [x] Reducción del scroll: todos los masajes visibles sin necesidad de scroll excesivo
+
+## Módulo Blog — Dinámico con CRM
+- [x] Tablas `blog_categories` y `blog_posts` en BD
+- [x] Migración db:push ejecutada
+- [x] Router tRPC blog: list, getBySlug, categories (públicos)
+- [x] Router tRPC blog.admin: CRUD categorías y artículos, reordenar
+- [x] Página pública /blog: listado dinámico con filtros por categoría y búsqueda
+- [x] Página pública /blog/:slug: detalle de artículo
+- [x] Módulo CRM /crm/blog/articulos: listado con filtros, crear, editar, eliminar, reordenar
+- [x] Módulo CRM /crm/blog/articulos/nuevo y /:id/editar: formulario completo
+- [x] Módulo CRM /crm/blog/categorias: CRUD de categorías
+- [x] Sección Blog añadida al sidebar del CRM
+- [x] Rutas CRM del blog registradas en App.tsx

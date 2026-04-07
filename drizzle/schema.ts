@@ -515,3 +515,37 @@ export const oilConsultations = mysqlTable("oil_consultations", {
 
 export type OilConsultation = typeof oilConsultations.$inferSelect;
 export type InsertOilConsultation = typeof oilConsultations.$inferInsert;
+
+// ─── BLOG ─────────────────────────────────────────────────────────────────────
+export const blogCategories = mysqlTable("blog_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 120 }).notNull().unique(),
+  description: text("description"),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type BlogCategory = typeof blogCategories.$inferSelect;
+export type InsertBlogCategory = typeof blogCategories.$inferInsert;
+
+export const blogPosts = mysqlTable("blog_posts", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 200 }).notNull(),
+  slug: varchar("slug", { length: 220 }).notNull().unique(),
+  excerpt: text("excerpt"),
+  content: text("content"),
+  coverImage: text("coverImage"),
+  categoryId: int("categoryId"),
+  /** Tiempo estimado de lectura en minutos */
+  readTimeMinutes: int("readTimeMinutes").default(5),
+  /** 1 = destacado (aparece en hero/featured) */
+  featured: int("featured").default(0).notNull(),
+  status: mysqlEnum("status", ["draft", "published", "archived"]).default("draft").notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  publishedAt: timestamp("publishedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy"),
+});
+export type BlogPost = typeof blogPosts.$inferSelect;
+export type InsertBlogPost = typeof blogPosts.$inferInsert;

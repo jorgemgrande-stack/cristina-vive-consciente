@@ -1,0 +1,145 @@
+/**
+ * BlogPost — Cristina Vive Consciente
+ * Página pública de detalle de artículo del blog
+ * Design: "Luz Botánica"
+ */
+import { useRoute, Link } from "wouter";
+import { ArrowLeft, Clock, Tag, Calendar } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import Layout from "@/components/Layout";
+
+const FALLBACK_IMG = "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1200&q=80";
+
+export default function BlogPost() {
+  const [, params] = useRoute("/blog/:slug");
+  const slug = params?.slug ?? "";
+
+  const { data: post, isLoading, error } = trpc.blog.getBySlug.useQuery(
+    { slug },
+    { enabled: !!slug }
+  );
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <p className="text-[oklch(0.55_0.04_75)] font-body text-sm">Cargando artículo...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error || !post) {
+    return (
+      <Layout>
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+          <p className="text-[oklch(0.55_0.04_75)] font-body text-sm">Artículo no encontrado.</p>
+          <Link href="/blog" className="text-[oklch(0.52_0.08_148)] font-body text-sm underline no-underline hover:underline">
+            Volver al blog
+          </Link>
+        </div>
+      </Layout>
+    );
+  }
+
+  const dateStr = post.publishedAt
+    ? new Date(post.publishedAt).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })
+    : new Date(post.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
+
+  return (
+    <Layout>
+      {/* Hero image */}
+      <div className="relative h-72 sm:h-96 overflow-hidden">
+        <img
+          src={post.coverImage || FALLBACK_IMG}
+          alt={post.title}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+        {/* Back button */}
+        <Link
+          href="/blog"
+          className="absolute top-6 left-6 flex items-center gap-2 text-white/90 hover:text-white text-sm font-body no-underline bg-black/20 px-3 py-1.5 backdrop-blur-sm transition-colors"
+          style={{ borderRadius: 0 }}
+        >
+          <ArrowLeft size={14} />
+          Blog
+        </Link>
+      </div>
+
+      {/* Article */}
+      <article className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
+        {/* Meta */}
+        <div className="flex flex-wrap items-center gap-4 mb-6 text-xs text-[oklch(0.55_0.04_75)] font-body">
+          {post.categoryName && (
+            <span className="flex items-center gap-1.5 text-[oklch(0.52_0.08_148)] uppercase tracking-wide font-medium">
+              <Tag size={11} />
+              {post.categoryName}
+            </span>
+          )}
+          <span className="flex items-center gap-1.5">
+            <Calendar size={11} />
+            {dateStr}
+          </span>
+          {post.readTimeMinutes && (
+            <span className="flex items-center gap-1.5">
+              <Clock size={11} />
+              {post.readTimeMinutes} min de lectura
+            </span>
+          )}
+        </div>
+
+        {/* Title */}
+        <h1 className="font-heading text-3xl sm:text-4xl text-[oklch(0.22_0.03_75)] leading-tight mb-6">
+          {post.title}
+        </h1>
+
+        {/* Excerpt */}
+        {post.excerpt && (
+          <p className="text-lg font-body text-[oklch(0.45_0.03_75)] leading-relaxed mb-8 border-l-2 border-[oklch(0.52_0.08_148)] pl-4 italic">
+            {post.excerpt}
+          </p>
+        )}
+
+        {/* Divider */}
+        <div className="w-12 h-px bg-[oklch(0.52_0.08_148)] mb-8" />
+
+        {/* Content */}
+        {post.content ? (
+          <div
+            className="prose prose-stone max-w-none font-body text-[oklch(0.35_0.03_75)] leading-relaxed"
+            style={{
+              fontSize: "1rem",
+              lineHeight: "1.8",
+            }}
+            dangerouslySetInnerHTML={{
+              __html: post.content
+                // Basic Markdown-like rendering
+                .replace(/^## (.+)$/gm, '<h2 class="font-heading text-2xl text-[oklch(0.25_0.04_75)] mt-10 mb-4">$1</h2>')
+                .replace(/^### (.+)$/gm, '<h3 class="font-heading text-xl text-[oklch(0.25_0.04_75)] mt-8 mb-3">$1</h3>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" class="text-[oklch(0.52_0.08_148)] underline hover:text-[oklch(0.38_0.07_148)]" target="_blank" rel="noopener">$1</a>')
+                .replace(/^- (.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
+                .replace(/\n\n/g, '</p><p class="mb-4">')
+                .replace(/^(?!<[h|l])(.+)$/gm, (match) => match.startsWith('<') ? match : match)
+            }}
+          />
+        ) : (
+          <p className="text-[oklch(0.55_0.04_75)] font-body italic">Contenido próximamente...</p>
+        )}
+
+        {/* Footer */}
+        <div className="mt-16 pt-8 border-t border-[oklch(0.90_0.01_75)]">
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-2 text-[oklch(0.52_0.08_148)] text-sm font-body no-underline hover:gap-3 transition-all"
+          >
+            <ArrowLeft size={14} />
+            Volver a todos los artículos
+          </Link>
+        </div>
+      </article>
+    </Layout>
+  );
+}
