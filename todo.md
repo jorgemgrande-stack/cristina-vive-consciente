@@ -373,3 +373,9 @@
 - [x] Actualizar router tRPC blog.admin con campo featuredImage en create/update
 - [x] Añadir ImageUploader para featuredImage en el formulario CRM de artículos
 - [x] Mostrar featuredImage centrada en BlogPost.tsx después del bloque de extracto
+
+## Blog — Autor y fecha de escritura editables
+- [x] Añadir campos `author` (varchar) y `writtenAt` (timestamp) a la tabla `blog_posts` en el schema y migrar BD
+- [x] Actualizar router tRPC blog con campos author y writtenAt en schema Zod, selects y mutations
+- [x] Añadir campos author y writtenAt en el formulario CRM de artículos
+- [x] Mostrar author y writtenAt en el encabezado del post público BlogPost.tsx

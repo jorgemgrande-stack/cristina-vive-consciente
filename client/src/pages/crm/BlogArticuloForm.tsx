@@ -28,6 +28,8 @@ interface FormData {
   featuredImage: string;
   content: string;
   coverImage: string;
+  author: string;
+  writtenAt: string; // ISO date string YYYY-MM-DD
   categoryId: string;
   readTimeMinutes: number;
   featured: number;
@@ -42,6 +44,8 @@ const INITIAL: FormData = {
   featuredImage: "",
   content: "",
   coverImage: "",
+  author: "",
+  writtenAt: "",
   categoryId: "",
   readTimeMinutes: 5,
   featured: 0,
@@ -80,6 +84,10 @@ export default function BlogArticuloForm() {
         featuredImage: (existingPost as any).featuredImage ?? "",
         content: existingPost.content ?? "",
         coverImage: existingPost.coverImage ?? "",
+        author: (existingPost as any).author ?? "",
+        writtenAt: (existingPost as any).writtenAt
+          ? new Date((existingPost as any).writtenAt).toISOString().split("T")[0]
+          : "",
         categoryId: existingPost.categoryId ? String(existingPost.categoryId) : "",
         readTimeMinutes: existingPost.readTimeMinutes ?? 5,
         featured: existingPost.featured ?? 0,
@@ -149,6 +157,8 @@ export default function BlogArticuloForm() {
       featuredImage: form.featuredImage.trim() || undefined,
       content: form.content.trim() || undefined,
       coverImage: form.coverImage.trim() || undefined,
+      author: form.author.trim() || undefined,
+      writtenAt: form.writtenAt ? new Date(form.writtenAt) : undefined,
       categoryId: form.categoryId ? Number(form.categoryId) : undefined,
       readTimeMinutes: form.readTimeMinutes,
       featured: form.featured,
@@ -264,6 +274,33 @@ export default function BlogArticuloForm() {
             placeholder="Escribe el contenido completo del artículo aquí. Puedes usar Markdown: **negrita**, *cursiva*, ## Título, etc."
           />
           <p className="text-xs text-gray-400 mt-1">Soporta Markdown básico: **negrita**, *cursiva*, ## Título, [enlace](url)</p>
+        </div>
+
+        {/* Author + Written At */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 font-body mb-1">Autor</label>
+            <input
+              type="text"
+              value={form.author}
+              onChange={(e) => set("author", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 text-sm font-body focus:outline-none focus:border-[oklch(0.52_0.08_148)]"
+              style={{ borderRadius: 0 }}
+              placeholder="Ej: Cristina Vive Consciente"
+            />
+            <p className="text-xs text-gray-400 mt-1">Aparece en el encabezado del artículo</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 font-body mb-1">Fecha de escritura</label>
+            <input
+              type="date"
+              value={form.writtenAt}
+              onChange={(e) => set("writtenAt", e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 text-sm font-body focus:outline-none focus:border-[oklch(0.52_0.08_148)]"
+              style={{ borderRadius: 0 }}
+            />
+            <p className="text-xs text-gray-400 mt-1">Fecha real en que se escribió el artículo</p>
+          </div>
         </div>
 
         {/* Category + Read time */}

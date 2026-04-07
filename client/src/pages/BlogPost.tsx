@@ -42,9 +42,10 @@ export default function BlogPost() {
     );
   }
 
-  const dateStr = post.publishedAt
-    ? new Date(post.publishedAt).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })
-    : new Date(post.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
+  // Prioridad: writtenAt (fecha real de escritura) > publishedAt > createdAt
+  const displayDate = (post as any).writtenAt || post.publishedAt || post.createdAt;
+  const dateStr = new Date(displayDate).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
+  const authorName = (post as any).author as string | null | undefined;
 
   return (
     <Layout>
@@ -81,6 +82,12 @@ export default function BlogPost() {
             <Calendar size={11} />
             {dateStr}
           </span>
+          {authorName && (
+            <span className="flex items-center gap-1.5">
+              <span className="text-[oklch(0.55_0.04_75)]">Por</span>
+              <span className="font-medium text-[oklch(0.35_0.04_75)]">{authorName}</span>
+            </span>
+          )}
           {post.readTimeMinutes && (
             <span className="flex items-center gap-1.5">
               <Clock size={11} />

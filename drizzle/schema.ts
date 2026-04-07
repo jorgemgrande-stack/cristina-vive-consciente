@@ -547,6 +547,10 @@ export const blogPosts = mysqlTable("blog_posts", {
   coverImage: text("coverImage"),
   /** Imagen centrada que aparece después del extracto en el artículo */
   featuredImage: text("featuredImage"),
+  /** Nombre del autor del artículo */
+  author: varchar("author", { length: 150 }),
+  /** Fecha real en la que se escribió el artículo (editable manualmente) */
+  writtenAt: timestamp("writtenAt"),
   categoryId: int("categoryId"),
   /** Tiempo estimado de lectura en minutos */
   readTimeMinutes: int("readTimeMinutes").default(5),
