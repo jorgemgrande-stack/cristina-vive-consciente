@@ -545,6 +545,8 @@ export const blogPosts = mysqlTable("blog_posts", {
   excerpt: text("excerpt"),
   content: text("content"),
   coverImage: text("coverImage"),
+  /** Imagen centrada que aparece después del extracto en el artículo */
+  featuredImage: text("featuredImage"),
   categoryId: int("categoryId"),
   /** Tiempo estimado de lectura en minutos */
   readTimeMinutes: int("readTimeMinutes").default(5),

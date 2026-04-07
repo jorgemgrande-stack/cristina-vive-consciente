@@ -25,6 +25,7 @@ interface FormData {
   title: string;
   slug: string;
   excerpt: string;
+  featuredImage: string;
   content: string;
   coverImage: string;
   categoryId: string;
@@ -38,6 +39,7 @@ const INITIAL: FormData = {
   title: "",
   slug: "",
   excerpt: "",
+  featuredImage: "",
   content: "",
   coverImage: "",
   categoryId: "",
@@ -75,6 +77,7 @@ export default function BlogArticuloForm() {
         title: existingPost.title,
         slug: existingPost.slug,
         excerpt: existingPost.excerpt ?? "",
+        featuredImage: (existingPost as any).featuredImage ?? "",
         content: existingPost.content ?? "",
         coverImage: existingPost.coverImage ?? "",
         categoryId: existingPost.categoryId ? String(existingPost.categoryId) : "",
@@ -143,6 +146,7 @@ export default function BlogArticuloForm() {
       title: form.title.trim(),
       slug: form.slug.trim() || toSlug(form.title),
       excerpt: form.excerpt.trim() || undefined,
+      featuredImage: form.featuredImage.trim() || undefined,
       content: form.content.trim() || undefined,
       coverImage: form.coverImage.trim() || undefined,
       categoryId: form.categoryId ? Number(form.categoryId) : undefined,
@@ -235,6 +239,16 @@ export default function BlogArticuloForm() {
             className="w-full px-3 py-2 border border-gray-200 text-sm font-body focus:outline-none focus:border-[oklch(0.52_0.08_148)] resize-none"
             style={{ borderRadius: 0 }}
             placeholder="Breve descripción del artículo (aparece en el listado del blog)"
+          />
+        </div>
+
+        {/* Featured Image (after excerpt) */}
+        <div>
+          <ImageUploader
+            value={form.featuredImage}
+            onChange={(url) => set("featuredImage", url)}
+            label="Imagen destacada del artículo"
+            hint="Aparece centrada después del extracto. JPG, PNG, WEBP hasta 20 MB."
           />
         </div>
 

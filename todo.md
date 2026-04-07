@@ -367,3 +367,9 @@
 
 ## Bugfix — Error al editar masajes (invalid_value type/modality)
 - [x] Corregir error de validación tRPC: invalid_value en campos type y modality al guardar cambios en servicios
+
+## Blog — Imagen centrada después del extracto
+- [x] Añadir campo `featuredImage` a la tabla `blog_posts` en el schema y migrar BD
+- [x] Actualizar router tRPC blog.admin con campo featuredImage en create/update
+- [x] Añadir ImageUploader para featuredImage en el formulario CRM de artículos
+- [x] Mostrar featuredImage centrada en BlogPost.tsx después del bloque de extracto

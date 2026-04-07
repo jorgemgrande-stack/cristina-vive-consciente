@@ -101,6 +101,18 @@ export default function BlogPost() {
           </p>
         )}
 
+        {/* Featured Image (after excerpt) */}
+        {(post as any).featuredImage && (
+          <div className="my-8 flex justify-center">
+            <img
+              src={(post as any).featuredImage}
+              alt={post.title}
+              className="w-full max-w-2xl rounded-sm object-cover shadow-md"
+              style={{ maxHeight: "480px" }}
+            />
+          </div>
+        )}
+
         {/* Divider */}
         <div className="w-12 h-px bg-[oklch(0.52_0.08_148)] mb-8" />
 
