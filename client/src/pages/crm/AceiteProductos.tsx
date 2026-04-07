@@ -165,17 +165,24 @@ export default function AceiteProductos() {
     onError: (e) => toast.error("Error al reordenar: " + e.message),
   });
 
-  function moveProduct(index: number, direction: "up" | "down") {
-    const sorted = [...products].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= sorted.length) return;
-    const a = sorted[index];
-    const b = sorted[targetIndex];
+  // sortedProducts es el array ordenado que se usa en el render
+  const sortedProducts = [...products].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+
+  function moveProduct(productId: number, direction: "up" | "down") {
+    const idx = sortedProducts.findIndex((p) => p.id === productId);
+    if (idx < 0) return;
+    const targetIndex = direction === "up" ? idx - 1 : idx + 1;
+    if (targetIndex < 0 || targetIndex >= sortedProducts.length) return;
+    const a = sortedProducts[idx];
+    const b = sortedProducts[targetIndex];
+    // Si tienen el mismo sortOrder, asignar valores distintos antes de intercambiar
+    const sortA = a.sortOrder === b.sortOrder ? idx * 10 : a.sortOrder;
+    const sortB = a.sortOrder === b.sortOrder ? targetIndex * 10 : b.sortOrder;
     reorderMutation.mutate({
       idA: a.id,
-      sortA: a.sortOrder,
+      sortA,
       idB: b.id,
-      sortB: b.sortOrder,
+      sortB,
     });
   }
 
@@ -517,9 +524,7 @@ export default function AceiteProductos() {
                 Usa las flechas ↑↓ para cambiar el orden de aparición en la web.
               </p>
             )}
-            {[...products]
-              .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
-              .map((p, idx, arr) => (
+            {sortedProducts.map((p, idx, arr) => (
               <div
                 key={p.id}
                 className="bg-white border border-[oklch(0.92_0.01_80)] flex items-center gap-4 px-4 py-3"
@@ -564,7 +569,7 @@ export default function AceiteProductos() {
                   {(!search && !filterCategory && !filterTipo) && (
                     <div className="flex flex-col gap-0.5 mr-1">
                       <button
-                        onClick={() => moveProduct(idx, "up")}
+                        onClick={() => moveProduct(p.id, "up")}
                         disabled={idx === 0 || reorderMutation.isPending}
                         className="p-0.5 text-[oklch(0.52_0.04_80)] hover:text-[oklch(0.18_0.018_55)] disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
                         title="Mover arriba"
@@ -572,7 +577,7 @@ export default function AceiteProductos() {
                         <ChevronUp size={13} />
                       </button>
                       <button
-                        onClick={() => moveProduct(idx, "down")}
+                        onClick={() => moveProduct(p.id, "down")}
                         disabled={idx === arr.length - 1 || reorderMutation.isPending}
                         className="p-0.5 text-[oklch(0.52_0.04_80)] hover:text-[oklch(0.18_0.018_55)] disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
                         title="Mover abajo"

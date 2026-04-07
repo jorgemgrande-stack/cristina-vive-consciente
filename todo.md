@@ -318,3 +318,6 @@
 - [x] Procedimiento tRPC oils.admin.reorderProduct (intercambia sortOrder entre dos productos)
 - [x] Botones arriba/abajo en listado CRM de aceites (con feedback visual)
 - [x] Verificar que la landing /aceites-esenciales ordena por sortOrder ASC
+
+## Bugfix — Flechas reordenación aceites CRM
+- [x] Diagnosticar y corregir el fallo de los botones ↑↓ en el gestor de aceites
