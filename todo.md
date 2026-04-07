@@ -379,3 +379,6 @@
 - [x] Actualizar router tRPC blog con campos author y writtenAt en schema Zod, selects y mutations
 - [x] Añadir campos author y writtenAt en el formulario CRM de artículos
 - [x] Mostrar author y writtenAt en el encabezado del post público BlogPost.tsx
+
+## Home — Módulo últimas entradas del blog
+- [x] Añadir sección "Del blog" en Home.tsx debajo de la sección de filosofía con los 3 últimos posts publicados y enlace al blog completo

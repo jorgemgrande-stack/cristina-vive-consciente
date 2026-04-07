@@ -6,9 +6,10 @@
 
 import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowRight, Leaf, Droplets, BookOpen, Star, ChevronRight } from "lucide-react";
+import { ArrowRight, Leaf, Droplets, BookOpen, Star, ChevronRight, Calendar, Clock } from "lucide-react";
 import Layout from "@/components/Layout";
 import BookingModal from "@/components/BookingModal";
+import { trpc } from "@/lib/trpc";
 
 const HERO_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-main-T6UmVzyg8XHyq4zLvU5RfZ.webp";
 const CONSULTAS_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-consultas-VRAFvns5UX68Kqd64cBawH.webp";
@@ -87,8 +88,15 @@ const testimonials = [
   },
 ];
 
+const BLOG_FALLBACK = "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80";
+
 export default function Home() {
   const [bookingOpen, setBookingOpen] = useState(false);
+
+  const { data: latestPosts = [] } = trpc.blog.list.useQuery(
+    { limit: 3 },
+    { staleTime: 5 * 60 * 1000 }
+  );
 
   return (
     <>
@@ -378,6 +386,125 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── BLOG PREVIEW ─────────────────────────────────────── */}
+      {latestPosts.length > 0 && (
+        <section className="section-padding bg-[oklch(0.97_0.008_85)]">
+          <div className="container">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12">
+              <div>
+                <p
+                  className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-3 font-body"
+                  style={{ fontWeight: 500 }}
+                >
+                  Del blog
+                </p>
+                <h2 className="font-display text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 400 }}>
+                  Últimas reflexiones
+                </h2>
+              </div>
+              <Link
+                href="/blog"
+                className="inline-flex items-center gap-2 text-[oklch(0.52_0.08_148)] text-sm font-body no-underline hover:gap-3 transition-all group"
+                style={{ fontWeight: 500 }}
+              >
+                Ver todos los artículos
+                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+
+            {/* Cards grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+              {latestPosts.map((post) => {
+                const displayDate = (post as any).writtenAt || post.publishedAt || post.createdAt;
+                const dateStr = new Date(displayDate).toLocaleDateString("es-ES", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                });
+                return (
+                  <Link
+                    key={post.id}
+                    href={`/blog/${post.slug}`}
+                    className="group block no-underline"
+                  >
+                    <article className="bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 h-full flex flex-col">
+                      {/* Image */}
+                      <div className="relative overflow-hidden" style={{ aspectRatio: "16/9" }}>
+                        <img
+                          src={post.coverImage || BLOG_FALLBACK}
+                          alt={post.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        {post.categoryName && (
+                          <span
+                            className="absolute top-3 left-3 text-[oklch(0.52_0.08_148)] text-[10px] tracking-[0.15em] uppercase font-body px-2.5 py-1 bg-white/90 backdrop-blur-sm"
+                            style={{ fontWeight: 600 }}
+                          >
+                            {post.categoryName}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="p-6 flex flex-col flex-1">
+                        <h3
+                          className="font-display text-[oklch(0.18_0.018_55)] mb-3 leading-snug group-hover:text-[oklch(0.38_0.07_148)] transition-colors"
+                          style={{ fontWeight: 500, fontSize: "1.1rem" }}
+                        >
+                          {post.title}
+                        </h3>
+
+                        {post.excerpt && (
+                          <p
+                            className="text-[oklch(0.52_0.02_60)] text-sm leading-relaxed font-body mb-4 flex-1"
+                            style={{ fontWeight: 300 }}
+                          >
+                            {post.excerpt.length > 110
+                              ? post.excerpt.slice(0, 110) + "…"
+                              : post.excerpt}
+                          </p>
+                        )}
+
+                        {/* Meta footer */}
+                        <div className="flex items-center gap-4 mt-auto pt-4 border-t border-[oklch(0.92_0.01_75)] text-[oklch(0.60_0.02_60)] text-xs font-body">
+                          <span className="flex items-center gap-1.5">
+                            <Calendar size={11} />
+                            {dateStr}
+                          </span>
+                          {post.readTimeMinutes && (
+                            <span className="flex items-center gap-1.5">
+                              <Clock size={11} />
+                              {post.readTimeMinutes} min
+                            </span>
+                          )}
+                          <span className="ml-auto flex items-center gap-1 text-[oklch(0.52_0.08_148)] font-medium group-hover:gap-2 transition-all">
+                            Leer
+                            <ArrowRight size={11} />
+                          </span>
+                        </div>
+                      </div>
+                    </article>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Bottom CTA */}
+            <div className="text-center mt-10">
+              <Link
+                href="/blog"
+                className="inline-flex items-center gap-2 border border-[oklch(0.52_0.08_148)] text-[oklch(0.52_0.08_148)] px-8 py-3 text-sm font-body no-underline hover:bg-[oklch(0.52_0.08_148)] hover:text-white transition-all duration-300"
+                style={{ fontWeight: 500 }}
+              >
+                Explorar todos los artículos
+                <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── TESTIMONIALS ─────────────────────────────────────── */}
       <section className="section-padding bg-[oklch(0.18_0.018_55)]">
