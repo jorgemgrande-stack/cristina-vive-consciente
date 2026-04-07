@@ -25,6 +25,7 @@ import BlogPost from "./pages/BlogPost";
 import BlogArticulos from "./pages/crm/BlogArticulos";
 import BlogArticuloForm from "./pages/crm/BlogArticuloForm";
 import BlogCategorias from "./pages/crm/BlogCategorias";
+import BlogComentarios from "./pages/crm/BlogComentarios";
 import EbookGracias from "./pages/EbookGracias";
 import EbookDescarga from "./pages/EbookDescarga";
 
@@ -141,6 +142,7 @@ function Router() {
       <Route path="/crm/blog/articulos/nuevo" component={BlogArticuloForm} />
       <Route path="/crm/blog/articulos/:id/editar" component={BlogArticuloForm} />
       <Route path="/crm/blog/categorias" component={BlogCategorias} />
+      <Route path="/crm/blog/comentarios" component={BlogComentarios} />
 
       {/* Automations */}
       <Route path="/crm/automatizaciones" component={Automatizaciones} />

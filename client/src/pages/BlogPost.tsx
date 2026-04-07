@@ -4,9 +4,11 @@
  * Design: "Luz Botánica"
  */
 import { useRoute, Link } from "wouter";
-import { ArrowLeft, Clock, Tag, Calendar } from "lucide-react";
+import { ArrowLeft, Clock, Tag, Calendar, MessageCircle, User, Send, CheckCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import Layout from "@/components/Layout";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const FALLBACK_IMG = "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1200&q=80";
 
@@ -148,6 +150,9 @@ export default function BlogPost() {
           <p className="text-[oklch(0.55_0.04_75)] font-body italic">Contenido próximamente...</p>
         )}
 
+        {/* ── Sección de Comentarios ──────────────────────────────────── */}
+        <CommentsSection postId={post.id} />
+
         {/* Footer */}
         <div className="mt-16 pt-8 border-t border-[oklch(0.90_0.01_75)]">
           <Link
@@ -160,5 +165,127 @@ export default function BlogPost() {
         </div>
       </article>
     </Layout>
+  );
+}
+
+// ── CommentsSection ────────────────────────────────────────────────────────────
+function CommentsSection({ postId }: { postId: number }) {
+  const [name, setName] = useState("");
+  const [content, setContent] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const { data: comments = [], refetch } = trpc.blogComments.listApproved.useQuery({ postId });
+
+  const submitMutation = trpc.blogComments.submit.useMutation({
+    onSuccess: () => {
+      setSubmitted(true);
+      setName("");
+      setContent("");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Error al enviar el comentario");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !content.trim()) {
+      toast.error("Por favor, rellena tu nombre y comentario");
+      return;
+    }
+    submitMutation.mutate({ postId, authorName: name.trim(), content: content.trim() });
+  };
+
+  return (
+    <section className="mt-16 pt-10 border-t border-[oklch(0.90_0.01_75)]">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-8">
+        <MessageCircle size={20} className="text-[oklch(0.52_0.08_148)]" />
+        <h3 className="font-heading text-xl text-[oklch(0.25_0.04_75)]">
+          {comments.length > 0 ? `${comments.length} comentario${comments.length !== 1 ? "s" : ""}` : "Comentarios"}
+        </h3>
+      </div>
+
+      {/* Lista de comentarios aprobados */}
+      {comments.length > 0 && (
+        <div className="space-y-6 mb-12">
+          {comments.map((c) => (
+            <div key={c.id} className="flex gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[oklch(0.93_0.03_148)] flex items-center justify-center">
+                <User size={16} className="text-[oklch(0.52_0.08_148)]" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-1">
+                  <span className="font-heading text-sm font-semibold text-[oklch(0.25_0.04_75)]">{c.authorName}</span>
+                  <span className="text-xs text-[oklch(0.65_0.02_75)]">
+                    {new Date(c.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
+                  </span>
+                </div>
+                <p className="font-body text-sm text-[oklch(0.40_0.03_75)] leading-relaxed">{c.content}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Formulario de comentario */}
+      <div className="bg-[oklch(0.97_0.01_75)] rounded-2xl p-6 border border-[oklch(0.91_0.01_75)]">
+        {submitted ? (
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <CheckCircle size={32} className="text-[oklch(0.52_0.08_148)]" />
+            <p className="font-heading text-base text-[oklch(0.25_0.04_75)]">¡Gracias por tu comentario!</p>
+            <p className="font-body text-sm text-[oklch(0.55_0.04_75)]">Está pendiente de moderación y aparecerá pronto.</p>
+            <button
+              onClick={() => setSubmitted(false)}
+              className="mt-2 text-xs text-[oklch(0.52_0.08_148)] underline font-body"
+            >
+              Escribir otro comentario
+            </button>
+          </div>
+        ) : (
+          <>
+            <h4 className="font-heading text-base text-[oklch(0.25_0.04_75)] mb-5">Deja tu comentario</h4>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block font-body text-xs text-[oklch(0.50_0.03_75)] mb-1.5 uppercase tracking-wide">Tu nombre</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ej: María García"
+                  maxLength={100}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[oklch(0.88_0.01_75)] bg-white font-body text-sm text-[oklch(0.25_0.04_75)] placeholder:text-[oklch(0.75_0.02_75)] focus:outline-none focus:ring-2 focus:ring-[oklch(0.52_0.08_148)] focus:border-transparent transition"
+                />
+              </div>
+              <div>
+                <label className="block font-body text-xs text-[oklch(0.50_0.03_75)] mb-1.5 uppercase tracking-wide">Comentario</label>
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Comparte tu reflexión sobre este artículo..."
+                  rows={4}
+                  maxLength={2000}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[oklch(0.88_0.01_75)] bg-white font-body text-sm text-[oklch(0.25_0.04_75)] placeholder:text-[oklch(0.75_0.02_75)] focus:outline-none focus:ring-2 focus:ring-[oklch(0.52_0.08_148)] focus:border-transparent transition resize-none"
+                />
+                <p className="text-right text-xs text-[oklch(0.70_0.02_75)] mt-1">{content.length}/2000</p>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={submitMutation.isPending}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-[oklch(0.52_0.08_148)] text-white font-body text-sm rounded-xl hover:bg-[oklch(0.44_0.07_148)] disabled:opacity-60 transition-colors"
+                >
+                  {submitMutation.isPending ? (
+                    <span>Enviando...</span>
+                  ) : (
+                    <><Send size={14} /> Enviar comentario</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+      </div>
+    </section>
   );
 }

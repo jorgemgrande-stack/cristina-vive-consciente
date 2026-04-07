@@ -565,3 +565,16 @@ export const blogPosts = mysqlTable("blog_posts", {
 });
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;
+
+// ── BLOG COMMENTS ────────────────────────────────────────────────────────────
+export const blogComments = mysqlTable("blog_comments", {
+  id: int("id").autoincrement().primaryKey(),
+  postId: int("postId").notNull(),
+  authorName: varchar("authorName", { length: 100 }).notNull(),
+  content: text("content").notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type BlogComment = typeof blogComments.$inferSelect;
+export type InsertBlogComment = typeof blogComments.$inferInsert;

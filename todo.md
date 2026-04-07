@@ -382,3 +382,10 @@
 
 ## Home — Módulo últimas entradas del blog
 - [x] Añadir sección "Del blog" en Home.tsx debajo de la sección de filosofía con los 3 últimos posts publicados y enlace al blog completo
+
+## Blog — Sistema de comentarios con moderación
+- [ ] Crear tabla `blog_comments` en schema (id, postId, authorName, content, status: pending/approved/rejected, createdAt) y migrar BD
+- [ ] Crear router tRPC `blog.comments`: público (submit, listApproved); admin (listAll, approve, reject, delete)
+- [ ] Añadir sección de comentarios en BlogPost.tsx: formulario (nombre + comentario) + listado de aprobados
+- [ ] Crear página CRM `/crm/blog/comentarios` con tabla de moderación (aprobar/rechazar/eliminar)
+- [ ] Registrar ruta y enlace en CRMLayout sidebar y App.tsx

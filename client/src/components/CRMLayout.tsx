@@ -63,6 +63,7 @@ const OILS_SUBITEMS = [
 const BLOG_SUBITEMS = [
   { href: "/crm/blog/articulos", label: "Artículos", icon: PenSquare },
   { href: "/crm/blog/categorias", label: "Categorías", icon: FolderOpen },
+  { href: "/crm/blog/comentarios", label: "Comentarios", icon: MessageSquare },
 ];
 
 interface CRMLayoutProps {

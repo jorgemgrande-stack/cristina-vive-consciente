@@ -120,6 +120,13 @@
       "when": 1775599433545,
       "tag": "0016_nebulous_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1775601340211,
+      "tag": "0017_big_goblin_queen",
+      "breakpoints": true
     }
   ]
 }
