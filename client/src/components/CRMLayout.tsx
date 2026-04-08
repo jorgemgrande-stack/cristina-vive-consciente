@@ -31,7 +31,6 @@ import {
   PenSquare,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
 
 const LOGO_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/logo-bion-original_f6b56924.avif";
@@ -82,9 +81,11 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
   const [blogExpanded, setBlogExpanded] = useState(isBlogSection);
 
   const { data: user, isLoading } = trpc.auth.me.useQuery();
-  const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: () => { window.location.href = "/"; },
-  });
+
+  async function handleLogout() {
+    await fetch("/api/admin/logout", { method: "POST", credentials: "include" });
+    window.location.href = "/";
+  }
 
   // Auth guard
   if (isLoading) {
@@ -96,19 +97,8 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[oklch(0.97_0.006_85)] gap-6">
-        <img src={LOGO_URL} alt="BION — Cristina Vive Consciente" className="w-36 object-contain" />
-        <p className="text-[oklch(0.38_0.02_55)] font-body text-sm">Acceso restringido. Inicia sesión para continuar.</p>
-        <a
-          href={getLoginUrl("/crm")}
-          className="px-6 py-3 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-body hover:bg-[oklch(0.38_0.07_148)] transition-colors"
-          style={{ letterSpacing: "0.1em" }}
-        >
-          Iniciar sesión
-        </a>
-      </div>
-    );
+    window.location.href = "/admin/login";
+    return null;
   }
 
   if (user.role !== "admin") {
@@ -311,7 +301,7 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
             Ver web pública
           </Link>
           <button
-            onClick={() => logoutMutation.mutate()}
+            onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 text-white/50 hover:text-white text-sm font-body transition-colors"
             style={{ fontWeight: 300 }}
           >

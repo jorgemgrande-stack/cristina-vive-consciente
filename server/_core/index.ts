@@ -108,6 +108,38 @@ async function startServer() {
   // File upload endpoint (admin only)
   app.use("/api/upload", uploadRouter);
 
+  // ─── Admin Login / Logout ────────────────────────────────────────────────────
+  app.post("/api/admin/login", async (req: any, res: any) => {
+    const { email, password } = req.body ?? {};
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminEmail || !adminPassword) {
+      return res.status(500).json({ error: "Credenciales de admin no configuradas" });
+    }
+    if (email !== adminEmail || password !== adminPassword) {
+      return res.status(401).json({ error: "Email o contraseña incorrectos" });
+    }
+
+    const OPEN_ID = "admin-local";
+    const { upsertUser, getDb } = await import("../db");
+    const { users } = await import("../../drizzle/schema");
+    const { eq } = await import("drizzle-orm");
+    await upsertUser({ openId: OPEN_ID, name: "Admin", email: adminEmail, loginMethod: "password", lastSignedIn: new Date() });
+    const db2 = await getDb();
+    if (db2) await db2.update(users).set({ role: "admin" }).where(eq(users.openId, OPEN_ID));
+
+    const appId = process.env.VITE_APP_ID || "local-dev";
+    const token = await sdk.signSession({ openId: OPEN_ID, appId, name: "Admin" });
+    res.cookie("app_session_id", token, { httpOnly: true, maxAge: 1000 * 60 * 60 * 24 * 365, path: "/" });
+    return res.json({ ok: true });
+  });
+
+  app.post("/api/admin/logout", (_: any, res: any) => {
+    res.clearCookie("app_session_id", { path: "/" });
+    res.json({ ok: true });
+  });
+
   // ─── Dev Login (solo desarrollo local) ──────────────────────────────────────
   if (process.env.NODE_ENV === "development") {
     app.get("/api/dev-login", async (req: any, res: any) => {

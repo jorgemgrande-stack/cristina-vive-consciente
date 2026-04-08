@@ -45,6 +45,8 @@ import AceiteConsultas from "./pages/crm/AceiteConsultas";
 // Contexts
 import { ConsultaCartProvider } from "./contexts/ConsultaCartContext";
 
+import AdminLogin from "./pages/AdminLogin";
+
 // CRM Pages
 import CRMDashboard from "./pages/crm/Dashboard";
 import CRMClientes from "./pages/crm/Clientes";
@@ -89,6 +91,9 @@ function Router() {
       {/* ── Ebooks ── */}
       <Route path="/ebooks/gracias" component={EbookGracias} />
       <Route path="/ebooks/descarga" component={EbookDescarga} />
+
+      {/* ── Admin Login ── */}
+      <Route path="/admin/login" component={AdminLogin} />
 
       {/* ── CRM (admin protected) ── */}
       <Route path="/crm" component={CRMDashboard} />
