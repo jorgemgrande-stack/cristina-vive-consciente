@@ -109,15 +109,34 @@ async function startServer() {
   app.use("/api/upload", uploadRouter);
 
   // ─── Admin Login / Logout ────────────────────────────────────────────────────
+  // Diagnóstico temporal (eliminar tras confirmar login funciona)
+  app.get("/api/admin/diag", (_: any, res: any) => {
+    const e = process.env.ADMIN_EMAIL ?? "";
+    const p = process.env.ADMIN_PASSWORD ?? "";
+    res.json({
+      emailSet: e.length > 0,
+      emailLen: e.length,
+      emailStart: e.slice(0, 3),
+      passwordSet: p.length > 0,
+      passwordLen: p.length,
+      passwordStart: p.slice(0, 2),
+    });
+  });
+
   app.post("/api/admin/login", async (req: any, res: any) => {
     const { email, password } = req.body ?? {};
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const adminPassword = process.env.ADMIN_PASSWORD;
+    const adminEmail = (process.env.ADMIN_EMAIL ?? "").trim();
+    const adminPassword = (process.env.ADMIN_PASSWORD ?? "").trim();
+
+    console.log(`[Login] email recibido: "${email}" (len=${email?.length})`);
+    console.log(`[Login] ADMIN_EMAIL en env: len=${adminEmail.length}, empieza por: ${adminEmail.slice(0,3)}`);
+    console.log(`[Login] password len=${password?.length}, ADMIN_PASSWORD len=${adminPassword.length}`);
 
     if (!adminEmail || !adminPassword) {
       return res.status(500).json({ error: "Credenciales de admin no configuradas" });
     }
-    if (email.trim() !== adminEmail.trim() || password.trim() !== adminPassword.trim()) {
+    if ((email ?? "").trim() !== adminEmail || (password ?? "").trim() !== adminPassword) {
+      console.log(`[Login] FALLO — email match: ${(email ?? "").trim() === adminEmail}, pass match: ${(password ?? "").trim() === adminPassword}`);
       return res.status(401).json({ error: "Email o contraseña incorrectos" });
     }
 
