@@ -117,7 +117,7 @@ async function startServer() {
     if (!adminEmail || !adminPassword) {
       return res.status(500).json({ error: "Credenciales de admin no configuradas" });
     }
-    if (email !== adminEmail || password !== adminPassword) {
+    if (email.trim() !== adminEmail.trim() || password.trim() !== adminPassword.trim()) {
       return res.status(401).json({ error: "Email o contraseña incorrectos" });
     }
 
