@@ -136,8 +136,16 @@ async function startServer() {
       return res.status(500).json({ error: "Credenciales de admin no configuradas" });
     }
     if ((email ?? "").trim() !== adminEmail || (password ?? "").trim() !== adminPassword) {
-      console.log(`[Login] FALLO — email match: ${(email ?? "").trim() === adminEmail}, pass match: ${(password ?? "").trim() === adminPassword}`);
-      return res.status(401).json({ error: "Email o contraseña incorrectos" });
+      return res.status(401).json({
+        error: "Email o contraseña incorrectos",
+        debug: {
+          receivedEmailLen: (email ?? "").length,
+          receivedPassLen: (password ?? "").length,
+          emailMatch: (email ?? "").trim() === adminEmail,
+          passMatch: (password ?? "").trim() === adminPassword,
+          bodyType: typeof req.body,
+        }
+      });
     }
 
     const OPEN_ID = "admin-local";
