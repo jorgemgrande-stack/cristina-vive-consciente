@@ -41,7 +41,7 @@ function toSlug(name: string): string {
 const productInput = z.object({
   name: z.string().min(1).max(200),
   description: z.string().optional(),
-  imageUrl: z.string().url().optional().or(z.literal("")),
+  imageUrl: z.string().optional(),
   category: z.string().min(1).max(100),
   affiliateUrl: z.string().url(),
   provider: z.string().max(100).optional(),
