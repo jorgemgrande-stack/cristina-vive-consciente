@@ -5,6 +5,8 @@ if (!globalThis.crypto) (globalThis as any).crypto = webcrypto;
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import fs from "fs";
+import path from "path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
@@ -39,6 +41,13 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  // ─── Uploads — serve files from disk ────────────────────────────────────────
+  const uploadDir = process.env.UPLOAD_DIR
+    ? path.resolve(process.env.UPLOAD_DIR)
+    : path.resolve(import.meta.dirname, "..", "..", "uploads");
+  fs.mkdirSync(uploadDir, { recursive: true });
+  app.use("/uploads", express.static(uploadDir));
 
   // ─── Stripe Webhook (MUST be before express.json) ───────────────────────────
   // Stripe requires the raw body for signature verification
