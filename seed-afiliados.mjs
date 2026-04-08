@@ -24,7 +24,7 @@ function cleanName(name) {
 }
 
 const productos = JSON.parse(
-  readFileSync("/tmp/productos_afiliados.json", "utf-8")
+  readFileSync(join(__dirname, "productos_afiliados.json"), "utf-8")
 );
 
 async function seed() {
