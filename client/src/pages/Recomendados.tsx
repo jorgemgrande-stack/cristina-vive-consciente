@@ -129,8 +129,8 @@ function ProductCard({ product }: { product: Product }) {
           </span>
         </div>
 
-        {/* Botón — solo si tiene URL de afiliado */}
-        {product.isAffiliate && product.affiliateUrl ? (
+        {/* Botón — si tiene URL de afiliado */}
+        {product.affiliateUrl ? (
           <a
             href={product.affiliateUrl}
             target="_blank"
