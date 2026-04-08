@@ -160,18 +160,34 @@ async function startServer() {
       });
     }
 
-    const OPEN_ID = "admin-local";
-    const { upsertUser, getDb } = await import("../db");
-    const { users } = await import("../../drizzle/schema");
-    const { eq } = await import("drizzle-orm");
-    await upsertUser({ openId: OPEN_ID, name: "Admin", email: adminEmail, loginMethod: "password", lastSignedIn: new Date() });
-    const db2 = await getDb();
-    if (db2) await db2.update(users).set({ role: "admin" }).where(eq(users.openId, OPEN_ID));
+    try {
+      const OPEN_ID = "admin-local";
+      const appId = process.env.VITE_APP_ID || "local-dev";
+      console.log(`[Login] signing session appId=${appId}`);
+      const token = await sdk.signSession({ openId: OPEN_ID, appId, name: "Admin" });
+      console.log(`[Login] token signed ok`);
+      res.cookie("app_session_id", token, { httpOnly: true, maxAge: 1000 * 60 * 60 * 24 * 365, path: "/" });
 
-    const appId = process.env.VITE_APP_ID || "local-dev";
-    const token = await sdk.signSession({ openId: OPEN_ID, appId, name: "Admin" });
-    res.cookie("app_session_id", token, { httpOnly: true, maxAge: 1000 * 60 * 60 * 24 * 365, path: "/" });
-    return res.json({ ok: true });
+      // DB upsert — non-blocking, errors don't fail the login
+      (async () => {
+        try {
+          const { upsertUser, getDb } = await import("../db");
+          const { users } = await import("../../drizzle/schema");
+          const { eq } = await import("drizzle-orm");
+          await upsertUser({ openId: OPEN_ID, name: "Admin", email: adminEmail, loginMethod: "password", lastSignedIn: new Date() });
+          const db2 = await getDb();
+          if (db2) await db2.update(users).set({ role: "admin" }).where(eq(users.openId, OPEN_ID));
+        } catch (dbErr) {
+          console.error("[Login] DB upsert error (non-fatal):", dbErr);
+        }
+      })();
+
+      console.log(`[Login] login OK, sending cookie`);
+      return res.json({ ok: true });
+    } catch (err: any) {
+      console.error("[Login] Error creating session:", err);
+      return res.status(500).json({ error: err.message ?? "Error creando sesión" });
+    }
   });
 
   app.post("/api/admin/logout", (_: any, res: any) => {
