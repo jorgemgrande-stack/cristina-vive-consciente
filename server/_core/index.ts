@@ -123,27 +123,39 @@ async function startServer() {
     });
   });
 
-  app.post("/api/admin/login", async (req: any, res: any) => {
-    const { email, password } = req.body ?? {};
+  app.post("/api/admin/login", express.json(), async (req: any, res: any) => {
+    // Parse body — supports JSON and urlencoded
+    let body: any = req.body;
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      // Try manual JSON parse from raw string
+      try {
+        const raw = req.body?.toString?.() ?? "";
+        if (raw) body = JSON.parse(raw);
+      } catch {}
+    }
+    const email = (body?.email ?? "").toString().trim();
+    const password = (body?.password ?? "").toString().trim();
     const adminEmail = (process.env.ADMIN_EMAIL ?? "").trim();
     const adminPassword = (process.env.ADMIN_PASSWORD ?? "").trim();
 
-    console.log(`[Login] email recibido: "${email}" (len=${email?.length})`);
-    console.log(`[Login] ADMIN_EMAIL en env: len=${adminEmail.length}, empieza por: ${adminEmail.slice(0,3)}`);
-    console.log(`[Login] password len=${password?.length}, ADMIN_PASSWORD len=${adminPassword.length}`);
+    console.log(`[Login] bodyType=${typeof req.body} email="${email}" emailLen=${email.length} passLen=${password.length}`);
+    console.log(`[Login] envEmailLen=${adminEmail.length} envPassLen=${adminPassword.length} envEmailStart=${adminEmail.slice(0,3)}`);
+    console.log(`[Login] emailMatch=${email === adminEmail} passMatch=${password === adminPassword}`);
 
     if (!adminEmail || !adminPassword) {
       return res.status(500).json({ error: "Credenciales de admin no configuradas" });
     }
-    if ((email ?? "").trim() !== adminEmail || (password ?? "").trim() !== adminPassword) {
+    if (email !== adminEmail || password !== adminPassword) {
       return res.status(401).json({
         error: "Email o contraseña incorrectos",
         debug: {
-          receivedEmailLen: (email ?? "").length,
-          receivedPassLen: (password ?? "").length,
-          emailMatch: (email ?? "").trim() === adminEmail,
-          passMatch: (password ?? "").trim() === adminPassword,
           bodyType: typeof req.body,
+          receivedEmailLen: email.length,
+          receivedPassLen: password.length,
+          emailMatch: email === adminEmail,
+          passMatch: password === adminPassword,
+          envEmailLen: adminEmail.length,
+          envPassLen: adminPassword.length,
         }
       });
     }
