@@ -32,8 +32,8 @@ const ebookInput = z.object({
   priceCents: z.number().int().min(1),
   currency: z.string().length(3).default("EUR"),
   stripePriceId: z.string().max(100).optional().nullable(),
-  pdfUrl: z.string().url().optional().nullable().or(z.literal("")),
-  coverImage: z.string().url().optional().nullable().or(z.literal("")),
+  pdfUrl: z.string().optional().nullable(),
+  coverImage: z.string().optional().nullable(),
   galleryImages: z.string().optional().nullable(), // JSON array string
   downloadExpiryHours: z.number().int().min(1).default(72),
   crmTag: z.string().max(100).optional().nullable(),

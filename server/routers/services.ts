@@ -51,8 +51,8 @@ const serviceInput = z.object({
     },
     z.enum(["online", "presencial", "ambos"]).default("ambos")
   ),
-  imageUrl: z.string().url().optional().nullable().or(z.literal("")),
-  detailImage: z.string().url().optional().nullable().or(z.literal("")),
+  imageUrl: z.string().optional().nullable(),
+  detailImage: z.string().optional().nullable(),
   longDescription: z.string().optional().nullable(),
   benefits: z.string().optional().nullable(),
   includes: z.string().optional().nullable(),
