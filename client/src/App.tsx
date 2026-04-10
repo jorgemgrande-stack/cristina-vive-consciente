@@ -36,6 +36,7 @@ import SistemaAguaDetalle from "./pages/SistemaAguaDetalle";
 import AceiteDetalle from "./pages/AceiteDetalle";
 import MiConsulta from "./pages/MiConsulta";
 import MasajeDetalle from "./pages/MasajeDetalle";
+import ConsultaDetalle from "./pages/ConsultaDetalle";
 
 // Oils CRM Pages
 import AceiteCategorias from "./pages/crm/AceiteCategorias";
@@ -76,6 +77,7 @@ function Router() {
       {/* ── Public ── */}
       <Route path="/" component={Home} />
       <Route path="/consultas" component={Consultas} />
+      <Route path="/consultas/:slug" component={ConsultaDetalle} />
       <Route path="/masajes" component={Masajes} />
       <Route path="/masajes/:slug" component={MasajeDetalle} />
       <Route path="/sistemas-agua" component={SistemasAgua} />

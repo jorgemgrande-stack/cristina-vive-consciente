@@ -469,11 +469,15 @@ export default function ServicioForm() {
           </div>
 
           {/* ── SECCIÓN 2: Contenido de la página de detalle ── */}
+          {form.type !== "otro" && (
           <div className="bg-white rounded-xl border border-stone-100 p-6 space-y-5">
             <div className="border-b border-stone-100 pb-3">
               <h2 className="text-sm font-semibold text-stone-700">Página de detalle</h2>
               <p className="text-xs text-stone-400 mt-0.5">
-                Este contenido aparece en la página <code className="bg-stone-100 px-1 rounded">/masajes/{form.slug || "slug"}</code>
+                Este contenido aparece en{" "}
+                <code className="bg-stone-100 px-1 rounded">
+                  /{form.type === "masaje" ? "masajes" : "consultas"}/{form.slug || "slug"}
+                </code>
               </p>
             </div>
 
@@ -500,11 +504,11 @@ export default function ServicioForm() {
               hint="Imagen adicional para la ficha de detalle. JPG, PNG, WEBP hasta 20 MB"
             />
 
-            {/* Beneficios */}
+            {/* Beneficios / Ideal para */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>
-                  Beneficios
+                  {form.type === "consulta" ? "Ideal para (beneficiarios)" : "Beneficios"}
                   <span className="text-xs text-stone-400 ml-2 font-normal">Uno por línea — aparecen como lista con check</span>
                 </Label>
                 <button
@@ -576,21 +580,26 @@ export default function ServicioForm() {
               </div>
             </div>
 
-            {/* Contraindicaciones */}
+            {/* Contraindicaciones / Notas */}
             <div className="space-y-1.5">
               <Label htmlFor="contraindications">
-                Contraindicaciones / Notas importantes
+                {form.type === "consulta" ? "Notas importantes / Garantía" : "Contraindicaciones / Notas importantes"}
                 <span className="text-xs text-stone-400 ml-2 font-normal">Opcional — aparece con icono de aviso</span>
               </Label>
               <Textarea
                 id="contraindications"
                 value={form.contraindications}
                 onChange={(e) => set("contraindications", e.target.value)}
-                placeholder="Ej: No recomendado durante el embarazo, en caso de fiebre o infecciones activas..."
+                placeholder={
+                  form.type === "consulta"
+                    ? "Ej: Si no quedas satisfecho te haré devolución..."
+                    : "Ej: No recomendado durante el embarazo, en caso de fiebre o infecciones activas..."
+                }
                 rows={3}
               />
             </div>
           </div>
+          )}
 
           {/* Botones */}
           <div className="flex gap-3">
