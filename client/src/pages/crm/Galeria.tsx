@@ -3,7 +3,7 @@
  * Muestra todos los archivos alojados en el servidor con opción de copiar URL y eliminar.
  */
 import { useState } from "react";
-import { Copy, Trash2, ImageIcon, FileIcon, Search, Check } from "lucide-react";
+import { Copy, Trash2, ImageIcon, FileIcon, Search, Check, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import CRMLayout from "@/components/CRMLayout";
@@ -125,7 +125,11 @@ export default function Galeria() {
             {filtered.map((file) => (
               <div
                 key={file.key}
-                className="group relative border border-gray-200 bg-white flex flex-col overflow-hidden hover:border-[oklch(0.52_0.08_148)] transition-colors"
+                className={`group relative border bg-white flex flex-col overflow-hidden transition-colors ${
+                  (file as any).inUse
+                    ? "border-[oklch(0.52_0.08_148)]/40"
+                    : "border-gray-200 hover:border-[oklch(0.52_0.08_148)]"
+                }`}
               >
                 {/* Preview */}
                 <div className="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
@@ -143,6 +147,17 @@ export default function Galeria() {
                     <FileIcon size={32} className="text-gray-300" />
                   )}
                 </div>
+
+                {/* In-use badge */}
+                {(file as any).inUse && (
+                  <div
+                    className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 bg-[oklch(0.52_0.08_148)] text-white"
+                    title="Imagen en uso en la web"
+                  >
+                    <ShieldCheck size={10} />
+                    <span className="text-[9px] font-body tracking-wide">En uso</span>
+                  </div>
+                )}
 
                 {/* Info */}
                 <div className="p-2 flex flex-col gap-0.5 flex-1">
@@ -175,11 +190,15 @@ export default function Galeria() {
                   <button
                     type="button"
                     onClick={() => setConfirmDelete(file.key)}
-                    title="Eliminar"
-                    className="w-7 h-7 flex items-center justify-center bg-white border border-gray-200 shadow-sm hover:bg-red-50 hover:border-red-200 transition-colors"
+                    title={(file as any).inUse ? "Imagen en uso — ver opciones" : "Eliminar"}
+                    className={`w-7 h-7 flex items-center justify-center bg-white border shadow-sm transition-colors ${
+                      (file as any).inUse
+                        ? "border-amber-200 hover:bg-amber-50 cursor-not-allowed"
+                        : "border-gray-200 hover:bg-red-50 hover:border-red-200"
+                    }`}
                     style={{ borderRadius: 0 }}
                   >
-                    <Trash2 size={12} className="text-red-400" />
+                    <Trash2 size={12} className={(file as any).inUse ? "text-amber-400" : "text-red-400"} />
                   </button>
                 </div>
               </div>
@@ -189,38 +208,55 @@ export default function Galeria() {
       </div>
 
       {/* Delete confirm modal */}
-      {confirmDelete && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-gray-200 p-6 max-w-sm w-full space-y-4 shadow-lg" style={{ borderRadius: 0 }}>
-            <h2 className="font-heading text-[oklch(0.35_0.05_148)] text-lg">Eliminar archivo</h2>
-            <p className="text-sm font-body text-gray-600">
-              ¿Eliminar permanentemente este archivo del servidor? Esta acción no se puede deshacer.
-            </p>
-            <p className="text-xs font-body text-gray-400 bg-gray-50 px-3 py-2 break-all">
-              {confirmDelete}
-            </p>
-            <div className="flex gap-3 justify-end pt-1">
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(null)}
-                className="px-4 py-2 border border-gray-200 text-sm font-body text-gray-600 hover:bg-gray-50 transition-colors"
-                style={{ borderRadius: 0 }}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={deleteMutation.isPending}
-                onClick={() => deleteMutation.mutate({ key: confirmDelete })}
-                className="px-4 py-2 bg-red-500 text-white text-sm font-body hover:bg-red-600 disabled:opacity-50 transition-colors"
-                style={{ borderRadius: 0 }}
-              >
-                {deleteMutation.isPending ? "Eliminando..." : "Eliminar"}
-              </button>
+      {confirmDelete && (() => {
+        const confirmFile = files.find((f) => f.key === confirmDelete);
+        const isInUse = (confirmFile as any)?.inUse ?? false;
+        return (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+            <div className="bg-white border border-gray-200 p-6 max-w-sm w-full space-y-4 shadow-lg" style={{ borderRadius: 0 }}>
+              <h2 className="font-heading text-[oklch(0.35_0.05_148)] text-lg">Eliminar archivo</h2>
+
+              {isInUse ? (
+                <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200">
+                  <ShieldCheck size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm font-body text-amber-800 leading-snug">
+                    Esta imagen está siendo utilizada en la web (productos, consultas, blog u otras secciones). No puedes eliminarla mientras esté en uso.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm font-body text-gray-600">
+                  ¿Eliminar permanentemente este archivo del servidor? Esta acción no se puede deshacer.
+                </p>
+              )}
+
+              <p className="text-xs font-body text-gray-400 bg-gray-50 px-3 py-2 break-all">
+                {confirmDelete}
+              </p>
+              <div className="flex gap-3 justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(null)}
+                  className="px-4 py-2 border border-gray-200 text-sm font-body text-gray-600 hover:bg-gray-50 transition-colors"
+                  style={{ borderRadius: 0 }}
+                >
+                  {isInUse ? "Entendido" : "Cancelar"}
+                </button>
+                {!isInUse && (
+                  <button
+                    type="button"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => deleteMutation.mutate({ key: confirmDelete })}
+                    className="px-4 py-2 bg-red-500 text-white text-sm font-body hover:bg-red-600 disabled:opacity-50 transition-colors"
+                    style={{ borderRadius: 0 }}
+                  >
+                    {deleteMutation.isPending ? "Eliminando..." : "Eliminar"}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </CRMLayout>
   );
 }
