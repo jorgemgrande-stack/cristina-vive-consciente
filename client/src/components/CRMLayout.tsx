@@ -29,6 +29,7 @@ import {
   Leaf,
   MessageSquare,
   PenSquare,
+  Images,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -45,6 +46,7 @@ const NAV_ITEMS = [
   { href: "/crm/servicios", label: "Servicios", icon: Stethoscope },
   { href: "/crm/ebooks", label: "Ebooks", icon: BookOpen },
   { href: "/crm/automatizaciones", label: "Automatizaciones", icon: Zap },
+  { href: "/crm/galeria", label: "Galería", icon: Images },
 ];
 
 const WATER_SUBITEMS = [

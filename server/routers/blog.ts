@@ -264,10 +264,33 @@ export const blogRouter = router({
         const db = await requireDb();
         const slug = input.data.slug || toSlug(input.data.title);
         const publishedAt = input.data.status === "published" && !input.data.publishedAt ? new Date() : input.data.publishedAt;
+
+        // Preserve existing image URLs if the incoming values are absent —
+        // prevents accidental overwrites when the form submits without image fields.
+        const [existing] = await db
+          .select({ coverImage: blogPosts.coverImage, featuredImage: blogPosts.featuredImage })
+          .from(blogPosts)
+          .where(eq(blogPosts.id, input.id))
+          .limit(1);
+
+        // undefined  = field absent from JSON (shouldn't normally happen) → preserve existing
+        // null       = user explicitly cleared the image → set to null in DB
+        // string     = new URL uploaded or unchanged URL → update DB
+        const coverImage =
+          input.data.coverImage !== undefined
+            ? (input.data.coverImage || null)
+            : (existing?.coverImage ?? null);
+        const featuredImage =
+          input.data.featuredImage !== undefined
+            ? (input.data.featuredImage || null)
+            : (existing?.featuredImage ?? null);
+
         await db.update(blogPosts).set({
           ...input.data,
           slug,
           publishedAt: publishedAt ?? null,
+          coverImage,
+          featuredImage,
         }).where(eq(blogPosts.id, input.id));
         return { success: true };
       }),

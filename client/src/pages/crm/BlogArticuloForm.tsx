@@ -2,9 +2,9 @@
  * BlogArticuloForm — Formulario CRM para crear/editar artículos del blog
  * Cristina Vive Consciente
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useRoute } from "wouter";
-import { ArrowLeft, Loader2, Save, Eye } from "lucide-react";
+import { ArrowLeft, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import CRMLayout from "@/components/CRMLayout";
@@ -62,6 +62,8 @@ export default function BlogArticuloForm() {
   const [slugManual, setSlugManual] = useState(false);
   const [slugError, setSlugError] = useState("");
   const [saving, setSaving] = useState(false);
+  // Prevent background refetches from overwriting user edits (e.g. after uploading an image)
+  const formInitialized = useRef(false);
 
   const utils = trpc.useUtils();
 
@@ -75,8 +77,16 @@ export default function BlogArticuloForm() {
     { enabled: !!editId }
   );
 
+  // Reset the initialization flag when navigating between different articles
   useEffect(() => {
-    if (existingPost) {
+    formInitialized.current = false;
+  }, [editId]);
+
+  useEffect(() => {
+    // Only initialize the form once — prevent background refetches from
+    // overwriting user edits (e.g. a newly uploaded image).
+    if (existingPost && !formInitialized.current) {
+      formInitialized.current = true;
       setForm({
         title: existingPost.title,
         slug: existingPost.slug,
@@ -154,9 +164,11 @@ export default function BlogArticuloForm() {
       title: form.title.trim(),
       slug: form.slug.trim() || toSlug(form.title),
       excerpt: form.excerpt.trim() || undefined,
-      featuredImage: form.featuredImage.trim() || undefined,
+      // Send null (not undefined) so the server can distinguish "user cleared"
+      // from "field absent" — prevents accidental image preservation on delete.
+      featuredImage: form.featuredImage.trim() || null,
       content: form.content.trim() || undefined,
-      coverImage: form.coverImage.trim() || undefined,
+      coverImage: form.coverImage.trim() || null,
       author: form.author.trim() || undefined,
       writtenAt: form.writtenAt ? new Date(form.writtenAt) : undefined,
       categoryId: form.categoryId ? Number(form.categoryId) : undefined,

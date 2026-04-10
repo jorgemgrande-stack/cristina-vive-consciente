@@ -68,6 +68,7 @@ import EbookForm from "./pages/crm/EbookForm";
 import AguaCategorias from "./pages/crm/AguaCategorias";
 import AguaProductos from "./pages/crm/AguaProductos";
 import AguaSolicitudes from "./pages/crm/AguaSolicitudes";
+import Galeria from "./pages/crm/Galeria";
 
 function Router() {
   return (
@@ -148,6 +149,9 @@ function Router() {
       <Route path="/crm/blog/articulos/:id/editar" component={BlogArticuloForm} />
       <Route path="/crm/blog/categorias" component={BlogCategorias} />
       <Route path="/crm/blog/comentarios" component={BlogComentarios} />
+
+      {/* Gallery */}
+      <Route path="/crm/galeria" component={Galeria} />
 
       {/* Automations */}
       <Route path="/crm/automatizaciones" component={Automatizaciones} />
