@@ -1,5 +1,5 @@
-import { useRef, useState, useCallback } from "react";
-import { Upload, X, ImageIcon, Loader2 } from "lucide-react";
+import { useRef, useState, useCallback, useEffect } from "react";
+import { Upload, X, ImageIcon, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface ImageUploaderProps {
@@ -24,6 +24,17 @@ export function ImageUploader({
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging] = useState(false);
+  // Track image load state independently from the URL value
+  const [imgState, setImgState] = useState<"idle" | "loading" | "loaded" | "error">("idle");
+
+  // Reset image state whenever the URL changes so we re-attempt to load it
+  useEffect(() => {
+    if (value) {
+      setImgState("loading");
+    } else {
+      setImgState("idle");
+    }
+  }, [value]);
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -86,17 +97,46 @@ export function ImageUploader({
       {value && (
         <div className="relative group inline-block">
           {isImage && !isPdf ? (
-            <img
-              src={value}
-              alt="Preview"
-              className="h-32 w-auto max-w-xs rounded-lg border border-border object-cover shadow-sm"
-            />
+            <>
+              {/* Spinner while the image is loading */}
+              {imgState === "loading" && (
+                <div className="h-32 w-32 rounded-lg border border-border bg-muted flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
+
+              {/* Error state — image URL is kept so it can still be saved/replaced */}
+              {imgState === "error" && (
+                <div className="h-32 w-auto max-w-xs rounded-lg border border-orange-200 bg-orange-50 flex flex-col items-center justify-center gap-1.5 px-4 py-3">
+                  <AlertCircle className="h-5 w-5 text-orange-400 shrink-0" />
+                  <span className="text-xs text-orange-600 text-center font-medium">
+                    Imagen no disponible
+                  </span>
+                  <span className="text-xs text-orange-400 truncate max-w-[180px]" title={value}>
+                    {value.split("/").pop()}
+                  </span>
+                </div>
+              )}
+
+              {/* Actual image — hidden until loaded to avoid showing the broken-image icon */}
+              <img
+                key={value}
+                src={value}
+                alt="Vista previa"
+                className={`h-32 w-auto max-w-xs rounded-lg border border-border object-cover shadow-sm ${
+                  imgState === "loaded" ? "block" : "hidden"
+                }`}
+                onLoad={() => setImgState("loaded")}
+                onError={() => setImgState("error")}
+              />
+            </>
           ) : (
             <div className="flex items-center gap-2 rounded-lg border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
               <ImageIcon className="h-4 w-4 shrink-0" />
               <span className="truncate max-w-[200px]">{value.split("/").pop()}</span>
             </div>
           )}
+
           <button
             type="button"
             onClick={() => onChange("")}
@@ -115,7 +155,7 @@ export function ImageUploader({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         className={`
-          relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed 
+          relative flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed
           px-6 py-5 text-center cursor-pointer transition-colors
           ${dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/50"}
           ${uploading ? "pointer-events-none opacity-60" : ""}

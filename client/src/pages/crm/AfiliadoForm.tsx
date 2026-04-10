@@ -3,7 +3,7 @@
  * Usado tanto para crear como para editar.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import CRMLayout from "@/components/CRMLayout";
@@ -53,6 +53,7 @@ export default function AfiliadoForm() {
   const productId = isEdit ? parseInt(params.id!) : null;
 
   const [form, setForm] = useState<FormData>(emptyForm);
+  const formInitialized = useRef(false);
   const utils = trpc.useUtils();
 
   // Cargar categorías dinámicas desde la base de datos
@@ -66,7 +67,8 @@ export default function AfiliadoForm() {
   );
 
   useEffect(() => {
-    if (existing) {
+    if (existing && !formInitialized.current) {
+      formInitialized.current = true;
       setForm({
         name: existing.name,
         description: existing.description ?? "",

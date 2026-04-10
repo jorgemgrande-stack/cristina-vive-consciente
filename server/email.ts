@@ -21,7 +21,12 @@ const SMTP_FROM = process.env.SMTP_FROM ?? "Cristina Vive Consciente <hola@crist
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "";
 
 // URL base de la web (para enlaces en emails)
-const BASE_URL = "https://cristinawell-hmjhx75n.manus.space";
+const BASE_URL = "https://cristinaviveconsciente.es";
+
+// Logo de marca — AVIF alojado en CloudFront (soportado por Apple Mail, Gmail web, Outlook moderno)
+// Fallback visual mediante alt text + estructura de tabla para clientes sin imágenes
+const LOGO_URL =
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/logo-bion-original_f6b56924.avif";
 
 function getTransporter() {
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
@@ -40,26 +45,48 @@ function getTransporter() {
 
 // ─── HELPERS DE PLANTILLA ─────────────────────────────────────────────────────
 
-function emailHeader(title: string = "BION") {
+// Cabecera unificada con logo para todos los emails
+function emailHeader() {
   return `
     <tr>
-      <td style="background:#3A5A3A;padding:32px 40px;text-align:center;">
-        <p style="margin:0;color:#FFFFFF;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-family:'DM Sans',Arial,sans-serif;">BION</p>
-        <p style="margin:4px 0 0;color:rgba(255,255,255,0.7);font-size:10px;letter-spacing:2px;text-transform:uppercase;font-family:'DM Sans',Arial,sans-serif;">Cristina Vive Consciente</p>
+      <td style="background:#FFFFFF;padding:28px 40px 20px;text-align:center;border-bottom:3px solid #3A5A3A;">
+        <!--[if !mso]><!-->
+        <img src="${LOGO_URL}"
+             alt="BION | Cristina Vive Consciente"
+             width="160" height="auto"
+             style="display:block;margin:0 auto;max-width:160px;height:auto;" />
+        <!--<![endif]-->
+        <!--[if mso]>
+        <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+          <p style="margin:0;font-size:18px;font-weight:bold;color:#4A5A2A;font-family:Georgia,serif;letter-spacing:4px;">BION</p>
+          <p style="margin:2px 0 0;font-size:10px;color:#6B7A4A;font-family:Arial,sans-serif;letter-spacing:2px;text-transform:uppercase;">Cristina Vive Consciente</p>
+        </td></tr></table>
+        <![endif]-->
       </td>
     </tr>`;
 }
 
+// Pie de página unificado para todos los emails
 function emailFooter() {
   return `
     <tr>
-      <td style="padding:20px 40px;border-top:1px solid #E8E4DC;text-align:center;">
+      <td style="padding:20px 40px;background:#F5F2EC;border-top:1px solid #E8E4DC;text-align:center;">
         <p style="margin:0;font-size:11px;color:#A09080;font-family:'DM Sans',Arial,sans-serif;letter-spacing:1px;">
           BION — Cristina Vive Consciente &nbsp;·&nbsp; hola@cristinaviveconsciente.es
         </p>
         <p style="margin:6px 0 0;font-size:10px;color:#C0B8A8;font-family:'DM Sans',Arial,sans-serif;">
           <a href="${BASE_URL}" style="color:#A09080;text-decoration:none;">cristinaviveconsciente.es</a>
         </p>
+      </td>
+    </tr>`;
+}
+
+// Badge para emails de administración (aparece debajo del header)
+function adminBadge(label: string) {
+  return `
+    <tr>
+      <td style="background:#3A5A3A;padding:10px 40px;text-align:center;">
+        <p style="margin:0;color:#FFFFFF;font-size:10px;letter-spacing:3px;text-transform:uppercase;font-family:'DM Sans',Arial,sans-serif;font-weight:500;">${label}</p>
       </td>
     </tr>`;
 }
@@ -247,13 +274,10 @@ export async function sendAdminNotificationEmail(data: BookingEmailData): Promis
   const subject = `Nueva solicitud de cita — ${data.firstName} ${data.lastName}`;
 
   const html = wrapEmail(`
+    ${emailHeader()}
+    ${adminBadge("Nueva solicitud de cita")}
     <tr>
-      <td style="background:#1A1208;padding:20px 32px;">
-        <p style="margin:0;color:#FFFFFF;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-family:'DM Sans',Arial,sans-serif;">BION — NUEVA SOLICITUD DE CITA</p>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:32px;">
+      <td style="padding:32px 40px;">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr><td colspan="2" style="padding-bottom:16px;border-bottom:1px solid #E8E4DC;">
             <p style="margin:0;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#3A5A3A;font-family:'DM Sans',Arial,sans-serif;font-weight:500;">Datos del cliente</p>
@@ -302,11 +326,7 @@ export async function sendAdminNotificationEmail(data: BookingEmailData): Promis
         ${ctaButton(`${BASE_URL}/crm`, "Gestionar en el CRM")}
       </td>
     </tr>
-    <tr>
-      <td style="padding:16px 32px;background:#F5F2EC;text-align:center;">
-        <p style="margin:0;font-size:11px;color:#A09080;font-family:'DM Sans',Arial,sans-serif;letter-spacing:1px;">BION — Cristina Vive Consciente</p>
-      </td>
-    </tr>
+    ${emailFooter()}
   `);
 
   await sendEmail({ to: ADMIN_EMAIL, subject, html });
@@ -429,13 +449,10 @@ export async function sendAdminLeadNotificationEmail(data: LeadEmailData): Promi
   const subject = `Nuevo lead — ${data.firstName} ${data.lastName}`;
 
   const html = wrapEmail(`
+    ${emailHeader()}
+    ${adminBadge("Nuevo lead")}
     <tr>
-      <td style="background:#1A1208;padding:20px 32px;">
-        <p style="margin:0;color:#FFFFFF;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-family:'DM Sans',Arial,sans-serif;">BION — NUEVO LEAD</p>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:32px;">
+      <td style="padding:32px 40px;">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="padding:6px 0;font-size:13px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;width:140px;">Nombre</td>
@@ -466,11 +483,7 @@ export async function sendAdminLeadNotificationEmail(data: LeadEmailData): Promi
         ${ctaButton(`${BASE_URL}/crm/clientes`, "Ver en el CRM")}
       </td>
     </tr>
-    <tr>
-      <td style="padding:16px 32px;background:#F5F2EC;text-align:center;">
-        <p style="margin:0;font-size:11px;color:#A09080;font-family:'DM Sans',Arial,sans-serif;letter-spacing:1px;">BION — Cristina Vive Consciente</p>
-      </td>
-    </tr>
+    ${emailFooter()}
   `);
 
   await sendEmail({ to: ADMIN_EMAIL, subject, html });
@@ -651,13 +664,6 @@ export async function sendInvoiceEmail(data: InvoiceEmailData): Promise<void> {
         <p style="margin:24px 0 0;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
           Con cariño,<br>
           <strong style="color:#3A5A3A;font-weight:500;">Cristina</strong>
-        </p>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding:16px 40px;background:#F5F2EC;border-top:1px solid #E8E4DC;">
-        <p style="margin:0;font-size:11px;color:#A09080;font-family:'DM Sans',Arial,sans-serif;text-align:center;">
-          BION — Cristina Vive Consciente &nbsp;·&nbsp; hola@cristinaviveconsciente.es
         </p>
       </td>
     </tr>
