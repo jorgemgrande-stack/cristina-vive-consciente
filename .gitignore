@@ -101,6 +101,9 @@ jspm_packages/
 tmp/
 temp/
 
+# Uploaded files (served from Railway Volume, never commit to git)
+uploads/
+
 # Database
 *.db
 *.sqlite
