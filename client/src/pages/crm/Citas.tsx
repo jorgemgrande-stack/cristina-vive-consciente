@@ -217,9 +217,9 @@ export default function CRMCitas() {
                       </Link>
                     )}
                   </div>
-                </div>
 
                 {/* Botones de acción rápida para citas PENDIENTES */}
+
                 {isPending && (
                   <div className="grid grid-cols-1 md:grid-cols-[1.5fr_2fr_1fr_1fr_1fr_auto] gap-2 md:gap-4 px-5 pb-3">
                     <div className="md:col-start-2 flex flex-wrap gap-2">
@@ -252,6 +252,7 @@ export default function CRMCitas() {
                     </div>
                   </div>
                 )}
+                </div>
               );
             })}
           </div>
