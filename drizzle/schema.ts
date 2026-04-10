@@ -82,10 +82,41 @@ export const appointments = mysqlTable("appointments", {
   price: decimal("price", { precision: 10, scale: 2 }),
   currency: varchar("currency", { length: 3 }).default("EUR"),
   internalNotes: text("internalNotes"),
+  /** Motivo de cancelación (relleno cuando status = cancelled) */
+  cancellationReason: text("cancellationReason"),
+  /** Token único para que el cliente seleccione entre slots propuestos */
+  rescheduleToken: varchar("rescheduleToken", { length: 100 }),
+  /** JSON array de {date: "YYYY-MM-DD", time: "HH:MM"} — slots propuestos por admin */
+  proposedSlots: text("proposedSlots"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy"),
 });
+
+// ─── EVENTOS DE CALENDARIO ────────────────────────────────────────────────────
+export const calendarEvents = mysqlTable("calendar_events", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 200 }).notNull(),
+  notes: text("notes"),
+  eventAt: bigint("eventAt", { mode: "number" }).notNull(),
+  durationMinutes: int("durationMinutes").default(60),
+  /** Tipo de evento para colorearlo en el calendario */
+  type: mysqlEnum("type", [
+    "bloqueo",      // Bloqueo de agenda (vacaciones, no disponible)
+    "formacion",    // Formación / evento profesional
+    "recordatorio", // Recordatorio / tarea pendiente
+    "reunion",      // Reunión, llamada, gestión
+    "personal",     // Nota personal
+  ]).default("recordatorio").notNull(),
+  /** Color CSS opcional para override visual */
+  color: varchar("color", { length: 30 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy"),
+});
+
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type InsertCalendarEvent = typeof calendarEvents.$inferInsert;
 
 export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = typeof appointments.$inferInsert;

@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Users,
   CalendarDays,
+  Calendar,
   FileText,
   Star,
   Tag,
@@ -30,6 +31,7 @@ import {
   MessageSquare,
   PenSquare,
   Images,
+  List,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -39,7 +41,6 @@ const LOGO_URL =
 const NAV_ITEMS = [
   { href: "/crm", label: "Dashboard", icon: LayoutDashboard },
   { href: "/crm/clientes", label: "Clientes", icon: Users },
-  { href: "/crm/citas", label: "Citas", icon: CalendarDays },
   { href: "/crm/facturas", label: "Facturas", icon: FileText },
   { href: "/crm/afiliados", label: "Afiliados", icon: Star },
   { href: "/crm/categorias", label: "Categorías", icon: Tag },
@@ -47,6 +48,11 @@ const NAV_ITEMS = [
   { href: "/crm/ebooks", label: "Ebooks", icon: BookOpen },
   { href: "/crm/automatizaciones", label: "Automatizaciones", icon: Zap },
   { href: "/crm/galeria", label: "Galería", icon: Images },
+];
+
+const CITAS_SUBITEMS = [
+  { href: "/crm/citas", label: "Listado", icon: List },
+  { href: "/crm/calendario", label: "Calendario", icon: Calendar },
 ];
 
 const WATER_SUBITEMS = [
@@ -75,6 +81,8 @@ interface CRMLayoutProps {
 export default function CRMLayout({ children, title }: CRMLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [location] = useLocation();
+  const isCitasSection = location.startsWith("/crm/citas") || location.startsWith("/crm/calendario");
+  const [citasExpanded, setCitasExpanded] = useState(isCitasSection);
   const isWaterSection = location.startsWith("/crm/agua");
   const [waterExpanded, setWaterExpanded] = useState(isWaterSection);
   const isOilsSection = location.startsWith("/crm/aceites");
@@ -164,6 +172,48 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
               </Link>
             );
           })}
+
+          {/* Citas — con submenú */}
+          <div>
+            <button
+              onClick={() => setCitasExpanded(!citasExpanded)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-body transition-all duration-200 group ${
+                isCitasSection
+                  ? "bg-[oklch(0.52_0.08_148)] text-white"
+                  : "text-white/60 hover:text-white hover:bg-white/8"
+              }`}
+              style={{ borderRadius: 0, fontWeight: isCitasSection ? 500 : 400 }}
+            >
+              <CalendarDays size={16} className={isCitasSection ? "text-white" : "text-white/50 group-hover:text-white/80"} />
+              Citas
+              <span className="ml-auto">
+                {citasExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              </span>
+            </button>
+            {citasExpanded && (
+              <div className="ml-4 mt-1 space-y-0.5">
+                {CITAS_SUBITEMS.map(({ href, label, icon: Icon }) => {
+                  const isSubActive = location === href || location.startsWith(href + "/");
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2 text-xs font-body transition-all duration-200 no-underline group ${
+                        isSubActive
+                          ? "text-white bg-white/15"
+                          : "text-white/50 hover:text-white hover:bg-white/8"
+                      }`}
+                      style={{ borderRadius: 0, fontWeight: isSubActive ? 500 : 400 }}
+                    >
+                      <Icon size={13} className={isSubActive ? "text-white" : "text-white/40 group-hover:text-white/70"} />
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Máquinas de Agua — con submenú */}
           <div>

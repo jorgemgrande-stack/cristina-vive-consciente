@@ -55,6 +55,8 @@ import ClienteDetalle from "./pages/crm/ClienteDetalle";
 import ClienteForm from "./pages/crm/ClienteForm";
 import CRMCitas from "./pages/crm/Citas";
 import CitaForm from "./pages/crm/CitaForm";
+import Calendario from "./pages/crm/Calendario";
+import SeleccionarSlot from "./pages/SeleccionarSlot";
 import CRMFacturas from "./pages/crm/Facturas";
 import FacturaForm from "./pages/crm/FacturaForm";
 import FacturaDetalle from "./pages/crm/FacturaDetalle";
@@ -111,6 +113,10 @@ function Router() {
       {/* Appointments */}
       <Route path="/crm/citas" component={CRMCitas} />
       <Route path="/crm/citas/nueva" component={CitaForm} />
+      <Route path="/crm/calendario" component={Calendario} />
+
+      {/* Public — Selección de slot de reprogramación */}
+      <Route path="/cita/seleccionar/:token" component={SeleccionarSlot} />
 
       {/* Invoices */}
       <Route path="/crm/facturas" component={CRMFacturas} />

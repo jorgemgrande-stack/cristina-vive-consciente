@@ -26,6 +26,8 @@ import {
   ebooks,
   type Ebook,
   type InsertEbook,
+  calendarEvents,
+  type InsertCalendarEvent,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -642,4 +644,49 @@ export async function toggleEbookStatus(id: number): Promise<"active" | "inactiv
   const newStatus = current.status === "active" ? "inactive" : "active";
   await db.update(ebooks).set({ status: newStatus }).where(eq(ebooks.id, id));
   return newStatus;
+}
+
+// ─── APPOINTMENTS — por token de reprogramación ───────────────────────────────
+
+export async function getAppointmentByRescheduleToken(token: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select({ appointment: appointments, client: { id: clients.id, firstName: clients.firstName, lastName: clients.lastName, email: clients.email, phone: clients.phone } })
+    .from(appointments)
+    .leftJoin(clients, eq(appointments.clientId, clients.id))
+    .where(eq(appointments.rescheduleToken, token))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// ─── CALENDAR EVENTS ──────────────────────────────────────────────────────────
+
+export async function getCalendarEvents(from: number, to: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(calendarEvents)
+    .where(and(gte(calendarEvents.eventAt, from), lte(calendarEvents.eventAt, to)))
+    .orderBy(asc(calendarEvents.eventAt));
+}
+
+export async function createCalendarEvent(data: InsertCalendarEvent): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(calendarEvents).values(data);
+  return (result as any).insertId as number;
+}
+
+export async function updateCalendarEvent(id: number, data: Partial<InsertCalendarEvent>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(calendarEvents).set(data).where(eq(calendarEvents.id, id));
+}
+
+export async function deleteCalendarEvent(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(calendarEvents).where(eq(calendarEvents.id, id));
 }

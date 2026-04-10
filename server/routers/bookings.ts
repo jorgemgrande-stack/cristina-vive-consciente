@@ -15,7 +15,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
-import { createClient, createAppointment, findClientByEmail } from "../db";
+import { createClient, createAppointment, findClientByEmail, getAppointmentByRescheduleToken, updateAppointment } from "../db";
 import { notifyOwner } from "../_core/notification";
 import { sendClientConfirmationEmail, sendAdminNotificationEmail } from "../email";
 import { notifyAdminNewBooking } from "../whatsapp";
@@ -165,6 +165,60 @@ export const bookingsRouter = router({
         success: true,
         whatsappUrl,
         message: "Tu solicitud ha sido recibida. Cristina se pondrá en contacto contigo en las próximas 24–48 horas.",
+      };
+    }),
+
+  /** El cliente selecciona uno de los slots propuestos por la admin */
+  selectSlot: publicProcedure
+    .input(z.object({ token: z.string(), slotIndex: z.number().min(0).max(4) }))
+    .mutation(async ({ input }) => {
+      const row = await getAppointmentByRescheduleToken(input.token);
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Enlace no válido o expirado" });
+      const { appointment: appt } = row;
+
+      const slots: Array<{ date: string; time: string }> = appt.proposedSlots
+        ? JSON.parse(appt.proposedSlots as string)
+        : [];
+      if (!slots[input.slotIndex]) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Opción no válida" });
+      }
+
+      const chosen = slots[input.slotIndex];
+      const [year, month, day] = chosen.date.split("-").map(Number);
+      const [hour, minute] = chosen.time.split(":").map(Number);
+      const newScheduledAt = new Date(year, month - 1, day, hour, minute).getTime();
+
+      await updateAppointment(appt.id, {
+        scheduledAt: newScheduledAt,
+        status: "pending",
+        rescheduleToken: null as any,
+        proposedSlots: null as any,
+      });
+
+      // Datos del slot seleccionado para la respuesta
+      return {
+        success: true,
+        serviceLabel: appt.serviceLabel ?? appt.serviceType,
+        chosenDate: chosen.date,
+        chosenTime: chosen.time,
+      };
+    }),
+
+  /** Devuelve los slots propuestos para mostrarlos en la página pública */
+  getSlots: publicProcedure
+    .input(z.object({ token: z.string() }))
+    .query(async ({ input }) => {
+      const row = await getAppointmentByRescheduleToken(input.token);
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Enlace no válido o expirado" });
+      const { appointment: appt, client } = row;
+      const slots: Array<{ date: string; time: string }> = appt.proposedSlots
+        ? JSON.parse(appt.proposedSlots as string)
+        : [];
+      return {
+        serviceLabel: appt.serviceLabel ?? appt.serviceType,
+        clientFirstName: client?.firstName ?? "",
+        slots,
+        status: appt.status,
       };
     }),
 });

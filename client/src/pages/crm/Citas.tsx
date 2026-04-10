@@ -4,8 +4,9 @@
 
 import { useState } from "react";
 import { Link } from "wouter";
-import { Plus, CalendarDays, MessageCircle, ChevronDown, Clock, ArrowRight } from "lucide-react";
+import { Plus, CalendarDays, MessageCircle, ChevronDown, Clock, ArrowRight, Check, X, RefreshCw, Loader2, AlertCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import CRMLayout from "@/components/CRMLayout";
 
 const SERVICE_LABELS: Record<string, string> = {
@@ -36,6 +37,10 @@ const MODALITY_LABELS: Record<string, string> = {
 
 export default function CRMCitas() {
   const [status, setStatus] = useState("all");
+  const [cancelModal, setCancelModal] = useState<{ apptId: number; scheduledAt: number; serviceLabel: string } | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [proposeModal, setProposeModal] = useState<{ apptId: number; serviceLabel: string } | null>(null);
+  const [slots, setSlots] = useState<Array<{ date: string; time: string }>>([{ date: "", time: "10:00" }]);
 
   const { data: appointments, isLoading, refetch } = trpc.crm.appointments.list.useQuery({
     status: status !== "all" ? status : undefined,
@@ -43,6 +48,21 @@ export default function CRMCitas() {
 
   const updateStatus = trpc.crm.appointments.update.useMutation({
     onSuccess: () => refetch(),
+  });
+
+  const acceptAppt = trpc.crm.appointments.accept.useMutation({
+    onSuccess: () => { refetch(); toast.success("Cita confirmada y email enviado"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const cancelAppt = trpc.crm.appointments.cancelWithReason.useMutation({
+    onSuccess: () => { refetch(); setCancelModal(null); setCancelReason(""); toast.success("Cita cancelada y email enviado"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const proposeSlotsMut = trpc.crm.appointments.proposeSlots.useMutation({
+    onSuccess: () => { refetch(); setProposeModal(null); setSlots([{ date: "", time: "10:00" }]); toast.success("Propuesta enviada al cliente"); },
+    onError: (e) => toast.error(e.message),
   });
 
   return (
@@ -108,10 +128,12 @@ export default function CRMCitas() {
           <div className="divide-y divide-[oklch(0.96_0.006_80)]">
             {appointments.map(({ appointment: appt, client }) => {
               const sc = STATUS_CONFIG[appt.status] ?? STATUS_CONFIG.pending;
+              const isPending = appt.status === "pending";
+              const svcLabel = (appt as any).serviceLabel ?? SERVICE_LABELS[appt.serviceType] ?? appt.serviceType;
               return (
                 <div
                   key={appt.id}
-                  className="grid grid-cols-1 md:grid-cols-[1.5fr_2fr_1fr_1fr_1fr_auto] gap-2 md:gap-4 px-5 py-4 hover:bg-[oklch(0.98_0.004_80)] transition-colors items-center"
+                  className={`px-5 py-4 hover:bg-[oklch(0.98_0.004_80)] transition-colors ${isPending ? "border-l-2 border-l-amber-400" : ""}`}
                 >
                   {/* Date */}
                   <div>
@@ -147,7 +169,7 @@ export default function CRMCitas() {
 
                   {/* Service */}
                   <p className="text-xs text-[oklch(0.38_0.02_55)] font-body" style={{ fontWeight: 300 }}>
-                    {SERVICE_LABELS[appt.serviceType] ?? appt.serviceType}
+                    {svcLabel}
                     {appt.price ? ` · ${appt.price}€` : ""}
                   </p>
 
@@ -196,6 +218,40 @@ export default function CRMCitas() {
                     )}
                   </div>
                 </div>
+
+                {/* Botones de acción rápida para citas PENDIENTES */}
+                {isPending && (
+                  <div className="grid grid-cols-1 md:grid-cols-[1.5fr_2fr_1fr_1fr_1fr_auto] gap-2 md:gap-4 px-5 pb-3">
+                    <div className="md:col-start-2 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => acceptAppt.mutate({ id: appt.id })}
+                        disabled={acceptAppt.isPending}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-600 text-white text-[0.6rem] font-body uppercase tracking-wider hover:bg-green-700 transition-colors disabled:opacity-60"
+                        style={{ borderRadius: 0, letterSpacing: "0.07em" }}
+                        title="Aceptar cita"
+                      >
+                        {acceptAppt.isPending ? <Loader2 size={9} className="animate-spin" /> : <Check size={9} />}
+                        Aceptar
+                      </button>
+                      <button
+                        onClick={() => { setCancelModal({ apptId: appt.id, scheduledAt: appt.scheduledAt, serviceLabel: svcLabel }); setCancelReason(""); }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-100 text-red-700 text-[0.6rem] font-body uppercase tracking-wider hover:bg-red-200 transition-colors border border-red-200"
+                        style={{ borderRadius: 0, letterSpacing: "0.07em" }}
+                        title="Cancelar cita"
+                      >
+                        <X size={9} /> Cancelar
+                      </button>
+                      <button
+                        onClick={() => { setProposeModal({ apptId: appt.id, serviceLabel: svcLabel }); setSlots([{ date: "", time: "10:00" }]); }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100 text-purple-700 text-[0.6rem] font-body uppercase tracking-wider hover:bg-purple-200 transition-colors border border-purple-200"
+                        style={{ borderRadius: 0, letterSpacing: "0.07em" }}
+                        title="Proponer nuevas fechas"
+                      >
+                        <RefreshCw size={9} /> Proponer fechas
+                      </button>
+                    </div>
+                  </div>
+                )}
               );
             })}
           </div>
@@ -209,6 +265,84 @@ export default function CRMCitas() {
           </div>
         )}
       </div>
+
+      {/* ── MODAL CANCELAR ── */}
+      {cancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setCancelModal(null)} />
+          <div className="relative bg-white border border-[oklch(0.92_0.01_80)] w-full max-w-md p-6 space-y-4" style={{ borderRadius: 0 }}>
+            <h3 className="font-display text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 400, fontSize: "1.1rem" }}>Cancelar cita</h3>
+            <p className="text-sm text-[oklch(0.52_0.02_60)] font-body" style={{ fontWeight: 300 }}>
+              <strong>{cancelModal.serviceLabel}</strong> · {new Date(cancelModal.scheduledAt).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}
+            </p>
+            <div>
+              <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
+                Motivo <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={3}
+                placeholder="Explica brevemente el motivo..."
+                className="w-full px-3 py-2.5 text-sm bg-white border border-[oklch(0.92_0.01_80)] text-[oklch(0.18_0.018_55)] focus:outline-none focus:border-red-400 transition-colors font-body resize-none"
+                style={{ borderRadius: 0 }}
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { if (!cancelReason.trim()) { toast.error("Escribe el motivo"); return; } cancelAppt.mutate({ id: cancelModal.apptId, reason: cancelReason }); }}
+                disabled={cancelAppt.isPending || !cancelReason.trim()}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white text-xs font-body uppercase tracking-wider hover:bg-red-700 transition-colors disabled:opacity-60"
+                style={{ borderRadius: 0, letterSpacing: "0.07em" }}
+              >
+                {cancelAppt.isPending ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
+                Confirmar cancelación
+              </button>
+              <button onClick={() => setCancelModal(null)} className="px-4 py-2.5 border border-[oklch(0.92_0.01_80)] text-[oklch(0.38_0.02_55)] text-xs font-body hover:border-[oklch(0.52_0.08_148)] transition-colors" style={{ borderRadius: 0 }}>
+                Volver
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL PROPONER FECHAS ── */}
+      {proposeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setProposeModal(null)} />
+          <div className="relative bg-white border border-[oklch(0.92_0.01_80)] w-full max-w-lg p-6 space-y-4" style={{ borderRadius: 0 }}>
+            <h3 className="font-display text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 400, fontSize: "1.1rem" }}>Proponer nuevas fechas</h3>
+            <p className="text-sm text-[oklch(0.52_0.02_60)] font-body" style={{ fontWeight: 300 }}>El cliente recibirá un email para elegir entre las opciones.</p>
+            <div className="space-y-3">
+              {slots.map((slot, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-[0.65rem] text-[oklch(0.52_0.02_60)] font-body w-14 flex-shrink-0" style={{ fontWeight: 500 }}>Opción {i + 1}</span>
+                  <input type="date" value={slot.date} onChange={(e) => { const u = [...slots]; u[i] = { ...u[i], date: e.target.value }; setSlots(u); }} className="flex-1 px-2 py-2 text-sm border border-[oklch(0.92_0.01_80)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] font-body" style={{ borderRadius: 0 }} />
+                  <input type="time" value={slot.time} onChange={(e) => { const u = [...slots]; u[i] = { ...u[i], time: e.target.value }; setSlots(u); }} className="w-24 px-2 py-2 text-sm border border-[oklch(0.92_0.01_80)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] font-body" style={{ borderRadius: 0 }} />
+                  {slots.length > 1 && <button onClick={() => setSlots(slots.filter((_, idx) => idx !== i))} className="text-[oklch(0.52_0.02_60)] hover:text-red-500 transition-colors"><X size={14} /></button>}
+                </div>
+              ))}
+            </div>
+            {slots.length < 5 && (
+              <button onClick={() => setSlots([...slots, { date: "", time: "10:00" }])} className="inline-flex items-center gap-1.5 text-xs text-[oklch(0.52_0.08_148)] font-body hover:underline">
+                <Plus size={12} /> Añadir opción
+              </button>
+            )}
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => { const v = slots.filter((s) => s.date && s.time); if (!v.length) { toast.error("Añade al menos una fecha"); return; } proposeSlotsMut.mutate({ id: proposeModal.apptId, slots: v }); }}
+                disabled={proposeSlotsMut.isPending}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[oklch(0.52_0.08_148)] text-white text-xs font-body uppercase tracking-wider hover:bg-[oklch(0.38_0.07_148)] transition-colors disabled:opacity-60"
+                style={{ borderRadius: 0, letterSpacing: "0.07em" }}
+              >
+                {proposeSlotsMut.isPending ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                Enviar propuesta
+              </button>
+              <button onClick={() => setProposeModal(null)} className="px-4 py-2.5 border border-[oklch(0.92_0.01_80)] text-[oklch(0.38_0.02_55)] text-xs font-body hover:border-[oklch(0.52_0.08_148)] transition-colors" style={{ borderRadius: 0 }}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </CRMLayout>
   );
 }

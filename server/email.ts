@@ -693,3 +693,241 @@ export async function sendInvoiceEmail(data: InvoiceEmailData): Promise<void> {
     ],
   });
 }
+
+// ─── DATOS COMUNES PARA EMAILS DE GESTIÓN DE CITAS ───────────────────────────
+
+export interface AppointmentActionEmailData {
+  clientFirstName: string;
+  clientEmail: string;
+  serviceLabel: string;
+  scheduledAt: number; // timestamp ms
+  modality: string;
+  cancellationReason?: string;
+  proposedSlots?: Array<{ date: string; time: string }>;
+  rescheduleToken?: string;
+}
+
+// ─── EMAIL: CITA ACEPTADA / CONFIRMADA (al cliente) ──────────────────────────
+
+export async function sendAppointmentAcceptedEmail(data: AppointmentActionEmailData): Promise<void> {
+  const modalityLabel = MODALITY_LABELS[data.modality] ?? data.modality;
+  const dateFormatted = new Date(data.scheduledAt).toLocaleDateString("es-ES", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+  });
+  const timeFormatted = new Date(data.scheduledAt).toLocaleTimeString("es-ES", {
+    hour: "2-digit", minute: "2-digit",
+  });
+
+  const subject = "Tu cita está confirmada — BION";
+
+  const html = wrapEmail(`
+    ${emailHeader()}
+    <tr>
+      <td style="padding:40px 40px 32px;">
+        <h1 style="margin:0 0 8px;font-size:24px;font-weight:400;color:#1A1208;font-family:'Georgia',serif;">
+          ¡Tu cita está confirmada, ${data.clientFirstName}!
+        </h1>
+        <p style="margin:0 0 24px;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
+          Me alegra confirmarte que tu cita está reservada. Aquí tienes todos los detalles:
+        </p>
+
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F2EC;border-left:3px solid #3A5A3A;margin-bottom:24px;">
+          <tr>
+            <td style="padding:20px 24px;">
+              <p style="margin:0 0 12px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#3A5A3A;font-family:'DM Sans',Arial,sans-serif;font-weight:500;">Detalles de tu cita</p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:4px 0;font-size:13px;color:#5A4E3E;font-family:'DM Sans',Arial,sans-serif;width:120px;">Servicio</td>
+                  <td style="padding:4px 0;font-size:13px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:500;">${data.serviceLabel}</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 0;font-size:13px;color:#5A4E3E;font-family:'DM Sans',Arial,sans-serif;">Fecha</td>
+                  <td style="padding:4px 0;font-size:13px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:500;">${dateFormatted}</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 0;font-size:13px;color:#5A4E3E;font-family:'DM Sans',Arial,sans-serif;">Hora</td>
+                  <td style="padding:4px 0;font-size:13px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:500;">${timeFormatted}</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 0;font-size:13px;color:#5A4E3E;font-family:'DM Sans',Arial,sans-serif;">Modalidad</td>
+                  <td style="padding:4px 0;font-size:13px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;">${modalityLabel}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+
+        <p style="margin:0 0 8px;font-size:14px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
+          Si necesitas hacer algún cambio o tienes alguna pregunta, responde directamente a este email.
+        </p>
+        <p style="margin:0;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
+          ¡Hasta pronto!<br>
+          Con cariño,<br>
+          <strong style="color:#3A5A3A;font-weight:500;">Cristina</strong>
+        </p>
+      </td>
+    </tr>
+    ${emailFooter()}
+  `);
+
+  const text = `¡Tu cita está confirmada!\n\nServicio: ${data.serviceLabel}\nFecha: ${dateFormatted}\nHora: ${timeFormatted}\nModalidad: ${modalityLabel}\n\nCon cariño,\nCristina — BION`;
+
+  await sendEmail({ to: data.clientEmail, subject, html, text });
+}
+
+export async function sendAppointmentAcceptedAdminEmail(data: AppointmentActionEmailData & { clientLastName: string; clientPhone?: string }): Promise<void> {
+  if (!ADMIN_EMAIL) return;
+  const dateFormatted = new Date(data.scheduledAt).toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const timeFormatted = new Date(data.scheduledAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  const subject = `Cita confirmada — ${data.clientFirstName} ${data.clientLastName}`;
+  const html = wrapEmail(`
+    ${emailHeader()}
+    ${adminBadge("Cita confirmada")}
+    <tr><td style="padding:32px 40px;">
+      <p style="margin:0 0 16px;font-size:14px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:300;">
+        Has confirmado la cita de <strong>${data.clientFirstName} ${data.clientLastName}</strong>. Se ha enviado confirmación al cliente.
+      </p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F2EC;border-left:3px solid #3A5A3A;">
+        <tr><td style="padding:16px 20px;">
+          <p style="margin:0 0 4px;font-size:12px;color:#5A4E3E;font-family:'DM Sans',Arial,sans-serif;">Servicio: <strong>${data.serviceLabel}</strong></p>
+          <p style="margin:0 0 4px;font-size:12px;color:#5A4E3E;font-family:'DM Sans',Arial,sans-serif;">Fecha: <strong>${dateFormatted} a las ${timeFormatted}</strong></p>
+          <p style="margin:0 0 4px;font-size:12px;color:#5A4E3E;font-family:'DM Sans',Arial,sans-serif;">Email cliente: <a href="mailto:${data.clientEmail}" style="color:#3A5A3A;">${data.clientEmail}</a></p>
+          ${data.clientPhone ? `<p style="margin:0;font-size:12px;color:#5A4E3E;font-family:'DM Sans',Arial,sans-serif;">Teléfono: <a href="tel:${data.clientPhone}" style="color:#3A5A3A;">${data.clientPhone}</a></p>` : ""}
+        </td></tr>
+      </table>
+    </td></tr>
+    ${emailFooter()}
+  `);
+  await sendEmail({ to: ADMIN_EMAIL, subject, html });
+}
+
+// ─── EMAIL: CITA CANCELADA (al cliente) ──────────────────────────────────────
+
+export async function sendAppointmentCancelledEmail(data: AppointmentActionEmailData): Promise<void> {
+  const dateFormatted = new Date(data.scheduledAt).toLocaleDateString("es-ES", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+  });
+
+  const subject = "Tu cita ha sido cancelada — BION";
+
+  const html = wrapEmail(`
+    ${emailHeader()}
+    <tr>
+      <td style="padding:40px 40px 32px;">
+        <h1 style="margin:0 0 8px;font-size:24px;font-weight:400;color:#1A1208;font-family:'Georgia',serif;">
+          Hola, ${data.clientFirstName}
+        </h1>
+        <p style="margin:0 0 24px;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
+          Lamentablemente, la cita de <strong>${data.serviceLabel}</strong> prevista para el <strong>${dateFormatted}</strong> ha tenido que cancelarse.
+        </p>
+
+        ${data.cancellationReason ? `
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF8F0;border-left:3px solid #C87941;margin-bottom:24px;">
+          <tr>
+            <td style="padding:20px 24px;">
+              <p style="margin:0 0 8px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#C87941;font-family:'DM Sans',Arial,sans-serif;font-weight:500;">Motivo</p>
+              <p style="margin:0;font-size:14px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">${data.cancellationReason}</p>
+            </td>
+          </tr>
+        </table>` : ""}
+
+        <p style="margin:0 0 8px;font-size:14px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
+          Si deseas reprogramar, puedes hacerlo directamente respondiendo a este email o contactando conmigo.
+        </p>
+        ${ctaButton(`${BASE_URL}/consultas`, "Ver servicios disponibles")}
+        <p style="margin:0;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
+          Disculpa las molestias.<br>
+          Con cariño,<br>
+          <strong style="color:#3A5A3A;font-weight:500;">Cristina</strong>
+        </p>
+      </td>
+    </tr>
+    ${emailFooter()}
+  `);
+
+  const text = `Hola ${data.clientFirstName},\n\nTu cita de ${data.serviceLabel} para el ${dateFormatted} ha sido cancelada.${data.cancellationReason ? `\n\nMotivo: ${data.cancellationReason}` : ""}\n\nPuedes reprogramar respondiendo a este email.\n\nCon cariño,\nCristina — BION`;
+
+  await sendEmail({ to: data.clientEmail, subject, html, text });
+}
+
+export async function sendAppointmentCancelledAdminEmail(data: AppointmentActionEmailData & { clientLastName: string }): Promise<void> {
+  if (!ADMIN_EMAIL) return;
+  const dateFormatted = new Date(data.scheduledAt).toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const subject = `Cita cancelada — ${data.clientFirstName} ${data.clientLastName}`;
+  const html = wrapEmail(`
+    ${emailHeader()}
+    ${adminBadge("Cita cancelada")}
+    <tr><td style="padding:32px 40px;">
+      <p style="margin:0 0 16px;font-size:14px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:300;">
+        Has cancelado la cita de <strong>${data.clientFirstName} ${data.clientLastName}</strong> (${data.serviceLabel}, ${dateFormatted}).
+      </p>
+      ${data.cancellationReason ? `<p style="margin:0;font-size:13px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;">Motivo: <em>${data.cancellationReason}</em></p>` : ""}
+    </td></tr>
+    ${emailFooter()}
+  `);
+  await sendEmail({ to: ADMIN_EMAIL, subject, html });
+}
+
+// ─── EMAIL: PROPUESTA DE NUEVAS FECHAS (al cliente) ──────────────────────────
+
+export async function sendRescheduleProposalEmail(data: AppointmentActionEmailData): Promise<void> {
+  if (!data.proposedSlots || !data.rescheduleToken) return;
+
+  const selectUrl = `${BASE_URL}/cita/seleccionar/${data.rescheduleToken}`;
+
+  const slotsHtml = data.proposedSlots.map((slot, i) => {
+    const dt = new Date(`${slot.date}T${slot.time}:00`);
+    const dateStr = dt.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const timeStr = slot.time;
+    return `
+      <tr>
+        <td style="padding:8px 0;border-bottom:1px solid #E8E4DC;">
+          <span style="font-size:13px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:500;">Opción ${i + 1}: ${dateStr} a las ${timeStr}</span>
+        </td>
+      </tr>`;
+  }).join("");
+
+  const subject = "Nuevas fechas disponibles para tu cita — BION";
+
+  const html = wrapEmail(`
+    ${emailHeader()}
+    <tr>
+      <td style="padding:40px 40px 32px;">
+        <h1 style="margin:0 0 8px;font-size:24px;font-weight:400;color:#1A1208;font-family:'Georgia',serif;">
+          Hola, ${data.clientFirstName}
+        </h1>
+        <p style="margin:0 0 24px;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
+          Para tu consulta de <strong>${data.serviceLabel}</strong>, te propongo las siguientes fechas disponibles. Por favor, selecciona la que mejor te venga:
+        </p>
+
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F2EC;border-left:3px solid #3A5A3A;margin-bottom:24px;">
+          <tr>
+            <td style="padding:20px 24px;">
+              <p style="margin:0 0 12px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#3A5A3A;font-family:'DM Sans',Arial,sans-serif;font-weight:500;">Fechas disponibles</p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                ${slotsHtml}
+              </table>
+            </td>
+          </tr>
+        </table>
+
+        ${ctaButton(selectUrl, "Seleccionar mi fecha")}
+
+        <p style="margin:0;font-size:12px;color:#A09080;font-family:'DM Sans',Arial,sans-serif;font-weight:300;text-align:center;">
+          Este enlace es válido durante 7 días.
+        </p>
+        <p style="margin:16px 0 0;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
+          Si ninguna fecha te conviene, responde a este email y buscamos otra.<br>
+          Con cariño,<br>
+          <strong style="color:#3A5A3A;font-weight:500;">Cristina</strong>
+        </p>
+      </td>
+    </tr>
+    ${emailFooter()}
+  `);
+
+  const slotsText = data.proposedSlots.map((s, i) => `Opción ${i + 1}: ${s.date} a las ${s.time}`).join("\n");
+  const text = `Hola ${data.clientFirstName},\n\nTe propongo estas fechas para tu cita de ${data.serviceLabel}:\n\n${slotsText}\n\nSelecciona tu fecha aquí: ${selectUrl}\n\nCon cariño,\nCristina — BION`;
+
+  await sendEmail({ to: data.clientEmail, subject, html, text });
+}

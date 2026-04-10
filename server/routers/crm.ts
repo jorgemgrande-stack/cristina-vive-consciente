@@ -4,9 +4,16 @@
  */
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { generateInvoicePdf } from "../invoicePdf";
-import { sendInvoiceEmail } from "../email";
+import {
+  sendInvoiceEmail,
+  sendAppointmentAcceptedEmail,
+  sendAppointmentAcceptedAdminEmail,
+  sendAppointmentCancelledEmail,
+  sendAppointmentCancelledAdminEmail,
+  sendRescheduleProposalEmail,
+} from "../email";
 import {
   getClients,
   getClientById,
@@ -19,6 +26,7 @@ import {
   updateAppointment,
   getTodayAppointments,
   getUpcomingAppointments,
+  getAppointmentByRescheduleToken,
   getClientNotes,
   createClientNote,
   updateClientNote,
@@ -32,7 +40,12 @@ import {
   updateInvoice,
   getNextInvoiceNumber,
   getDashboardStats,
+  getCalendarEvents,
+  createCalendarEvent,
+  updateCalendarEvent,
+  deleteCalendarEvent,
 } from "../db";
+import crypto from "crypto";
 
 // Admin middleware
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -197,6 +210,138 @@ const appointmentsRouter = router({
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
       await updateAppointment(id, data);
+      return { success: true };
+    }),
+
+  /** Acepta una cita pendiente → confirmed + emails */
+  accept: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const row = await getAppointmentById(input.id);
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Cita no encontrada" });
+      const { appointment: appt, client } = row;
+      await updateAppointment(input.id, { status: "confirmed" });
+
+      const emailData = {
+        clientFirstName: client?.firstName ?? "Cliente",
+        clientEmail: client?.email ?? "",
+        serviceLabel: appt.serviceLabel ?? appt.serviceType,
+        scheduledAt: appt.scheduledAt,
+        modality: appt.modality ?? "zoom",
+      };
+
+      if (client?.email) {
+        sendAppointmentAcceptedEmail(emailData).catch((e) =>
+          console.warn("[Email] accept client:", e)
+        );
+      }
+      sendAppointmentAcceptedAdminEmail({
+        ...emailData,
+        clientLastName: client?.lastName ?? "",
+        clientPhone: client?.phone ?? undefined,
+      }).catch((e) => console.warn("[Email] accept admin:", e));
+
+      return { success: true };
+    }),
+
+  /** Cancela una cita con motivo → cancelled + emails */
+  cancelWithReason: adminProcedure
+    .input(z.object({ id: z.number(), reason: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      const row = await getAppointmentById(input.id);
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Cita no encontrada" });
+      const { appointment: appt, client } = row;
+      await updateAppointment(input.id, { status: "cancelled", cancellationReason: input.reason });
+
+      const emailData = {
+        clientFirstName: client?.firstName ?? "Cliente",
+        clientEmail: client?.email ?? "",
+        serviceLabel: appt.serviceLabel ?? appt.serviceType,
+        scheduledAt: appt.scheduledAt,
+        modality: appt.modality ?? "zoom",
+        cancellationReason: input.reason,
+      };
+
+      if (client?.email) {
+        sendAppointmentCancelledEmail(emailData).catch((e) =>
+          console.warn("[Email] cancel client:", e)
+        );
+      }
+      sendAppointmentCancelledAdminEmail({
+        ...emailData,
+        clientLastName: client?.lastName ?? "",
+      }).catch((e) => console.warn("[Email] cancel admin:", e));
+
+      return { success: true };
+    }),
+
+  /** Propone nuevas fechas → rescheduled + genera token + envía email al cliente */
+  proposeSlots: adminProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        slots: z.array(z.object({ date: z.string(), time: z.string() })).min(1).max(5),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const row = await getAppointmentById(input.id);
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Cita no encontrada" });
+      const { appointment: appt, client } = row;
+
+      const token = crypto.randomBytes(24).toString("hex");
+      await updateAppointment(input.id, {
+        status: "rescheduled",
+        rescheduleToken: token,
+        proposedSlots: JSON.stringify(input.slots),
+      });
+
+      const emailData = {
+        clientFirstName: client?.firstName ?? "Cliente",
+        clientEmail: client?.email ?? "",
+        serviceLabel: appt.serviceLabel ?? appt.serviceType,
+        scheduledAt: appt.scheduledAt,
+        modality: appt.modality ?? "zoom",
+        proposedSlots: input.slots,
+        rescheduleToken: token,
+      };
+
+      if (client?.email) {
+        sendRescheduleProposalEmail(emailData).catch((e) =>
+          console.warn("[Email] proposeSlots:", e)
+        );
+      }
+
+      return { success: true, token };
+    }),
+
+  /** Público: el cliente selecciona un slot propuesto */
+  selectSlot: publicProcedure
+    .input(z.object({ token: z.string(), slotIndex: z.number().min(0).max(4) }))
+    .mutation(async ({ input }) => {
+      const row = await getAppointmentByRescheduleToken(input.token);
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Enlace no válido o expirado" });
+      const { appointment: appt } = row;
+
+      const slots: Array<{ date: string; time: string }> = appt.proposedSlots
+        ? JSON.parse(appt.proposedSlots)
+        : [];
+      if (!slots[input.slotIndex]) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Opción no válida" });
+      }
+
+      const chosen = slots[input.slotIndex];
+      const [year, month, day] = chosen.date.split("-").map(Number);
+      const [hour, minute] = chosen.time.split(":").map(Number);
+      const newScheduledAt = new Date(year, month - 1, day, hour, minute).getTime();
+
+      // Nueva cita pending con la fecha elegida, limpia el token
+      await updateAppointment(appt.id, {
+        scheduledAt: newScheduledAt,
+        status: "pending",
+        rescheduleToken: null as any,
+        proposedSlots: null as any,
+      });
+
       return { success: true };
     }),
 });
@@ -377,6 +522,54 @@ const invoicesRouter = router({
     }),
 });
 
+// ─── CALENDAR EVENTS ──────────────────────────────────────────────────────────
+const calendarEventsRouter = router({
+  list: adminProcedure
+    .input(z.object({ from: z.number(), to: z.number() }))
+    .query(({ input }) => getCalendarEvents(input.from, input.to)),
+
+  create: adminProcedure
+    .input(
+      z.object({
+        title: z.string().min(1),
+        notes: z.string().optional(),
+        eventAt: z.number(),
+        durationMinutes: z.number().optional(),
+        type: z.enum(["bloqueo", "formacion", "recordatorio", "reunion", "personal"]).optional(),
+        color: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const id = await createCalendarEvent({ ...input, createdBy: ctx.user.id });
+      return { success: true, id };
+    }),
+
+  update: adminProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        title: z.string().optional(),
+        notes: z.string().optional(),
+        eventAt: z.number().optional(),
+        durationMinutes: z.number().optional(),
+        type: z.enum(["bloqueo", "formacion", "recordatorio", "reunion", "personal"]).optional(),
+        color: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await updateCalendarEvent(id, data);
+      return { success: true };
+    }),
+
+  delete: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      await deleteCalendarEvent(input.id);
+      return { success: true };
+    }),
+});
+
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
 const dashboardRouter = router({
   stats: adminProcedure.query(() => getDashboardStats()),
@@ -394,4 +587,5 @@ export const crmRouter = router({
   notes: notesRouter,
   sessions: sessionsRouter,
   invoices: invoicesRouter,
+  calendarEvents: calendarEventsRouter,
 });

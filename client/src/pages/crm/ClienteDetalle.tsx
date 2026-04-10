@@ -8,7 +8,8 @@ import { useParams, Link } from "wouter";
 import {
   ArrowLeft, Edit, MessageCircle, Mail, Phone, Plus,
   CalendarDays, FileText, StickyNote, Clock, Trash2,
-  ChevronDown, ChevronUp, User,
+  ChevronDown, ChevronUp, User, Check, X, RefreshCw,
+  AlertCircle, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -57,12 +58,43 @@ export default function ClienteDetalle() {
   const [noteType, setNoteType] = useState<"general" | "sesion" | "seguimiento" | "observacion" | "alerta">("general");
   const [showNoteForm, setShowNoteForm] = useState(false);
 
+  // Modales de gestión de citas
+  const [cancelModal, setCancelModal] = useState<{ apptId: number; scheduledAt: number; serviceLabel: string } | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [proposeModal, setProposeModal] = useState<{ apptId: number; serviceLabel: string } | null>(null);
+  const [slots, setSlots] = useState<Array<{ date: string; time: string }>>([{ date: "", time: "10:00" }]);
+
   const utils = trpc.useUtils();
 
   const { data: client, isLoading } = trpc.crm.clients.get.useQuery({ id: clientId });
-  const { data: appointments } = trpc.crm.appointments.list.useQuery({ clientId });
+  const { data: appointments, refetch: refetchAppts } = trpc.crm.appointments.list.useQuery({ clientId });
   const { data: notes, refetch: refetchNotes } = trpc.crm.notes.list.useQuery({ clientId });
   const { data: sessions } = trpc.crm.sessions.list.useQuery({ clientId });
+
+  const acceptAppt = trpc.crm.appointments.accept.useMutation({
+    onSuccess: () => { refetchAppts(); toast.success("Cita confirmada y email enviado"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const cancelAppt = trpc.crm.appointments.cancelWithReason.useMutation({
+    onSuccess: () => {
+      refetchAppts();
+      setCancelModal(null);
+      setCancelReason("");
+      toast.success("Cita cancelada y email enviado");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const proposeSlots = trpc.crm.appointments.proposeSlots.useMutation({
+    onSuccess: () => {
+      refetchAppts();
+      setProposeModal(null);
+      setSlots([{ date: "", time: "10:00" }]);
+      toast.success("Propuesta enviada al cliente");
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const createNote = trpc.crm.notes.create.useMutation({
     onSuccess: () => { setNewNote(""); setShowNoteForm(false); refetchNotes(); toast.success("Nota añadida"); },
@@ -267,34 +299,80 @@ export default function ClienteDetalle() {
                   <p className="text-sm text-[oklch(0.52_0.02_60)] font-body" style={{ fontWeight: 300 }}>Sin citas registradas</p>
                 </div>
               ) : (
-                appointments.map(({ appointment: appt }) => (
-                  <div key={appt.id} className="bg-white border border-[oklch(0.92_0.01_80)] p-4 flex items-start gap-4">
-                    <div className="text-center min-w-[4rem]">
-                      <p className="text-[0.65rem] text-[oklch(0.52_0.08_148)] font-body uppercase tracking-wider">
-                        {new Date(appt.scheduledAt).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
-                      </p>
-                      <p className="font-display text-[oklch(0.18_0.018_55)] text-sm" style={{ fontWeight: 500 }}>
-                        {new Date(appt.scheduledAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
-                      </p>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[oklch(0.18_0.018_55)] font-body" style={{ fontWeight: 500 }}>
-                        {SERVICE_LABELS[appt.serviceType] ?? appt.serviceType}
-                      </p>
-                      <p className="text-xs text-[oklch(0.52_0.02_60)] font-body" style={{ fontWeight: 300 }}>
-                        {appt.modality} · {appt.durationMinutes} min {appt.price ? `· ${appt.price}€` : ""}
-                      </p>
-                      {appt.internalNotes && (
-                        <p className="text-xs text-[oklch(0.52_0.02_60)] font-body mt-1 italic" style={{ fontWeight: 300 }}>
-                          {appt.internalNotes}
-                        </p>
+                appointments.map(({ appointment: appt }) => {
+                  const isPending = appt.status === "pending";
+                  const svcLabel = appt.serviceLabel ?? SERVICE_LABELS[appt.serviceType] ?? appt.serviceType;
+                  return (
+                    <div key={appt.id} className={`bg-white border p-4 ${isPending ? "border-amber-300" : "border-[oklch(0.92_0.01_80)]"}`}>
+                      <div className="flex items-start gap-4">
+                        <div className="text-center min-w-[4rem]">
+                          <p className="text-[0.65rem] text-[oklch(0.52_0.08_148)] font-body uppercase tracking-wider">
+                            {new Date(appt.scheduledAt).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
+                          </p>
+                          <p className="font-display text-[oklch(0.18_0.018_55)] text-sm" style={{ fontWeight: 500 }}>
+                            {new Date(appt.scheduledAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-[oklch(0.18_0.018_55)] font-body" style={{ fontWeight: 500 }}>
+                            {svcLabel}
+                          </p>
+                          <p className="text-xs text-[oklch(0.52_0.02_60)] font-body" style={{ fontWeight: 300 }}>
+                            {appt.modality} · {appt.durationMinutes} min {appt.price ? `· ${appt.price}€` : ""}
+                          </p>
+                          {appt.internalNotes && (
+                            <p className="text-xs text-[oklch(0.52_0.02_60)] font-body mt-1 italic" style={{ fontWeight: 300 }}>
+                              {appt.internalNotes}
+                            </p>
+                          )}
+                          {(appt as any).cancellationReason && (
+                            <p className="text-xs text-red-600 font-body mt-1 flex items-center gap-1" style={{ fontWeight: 300 }}>
+                              <AlertCircle size={10} /> {(appt as any).cancellationReason}
+                            </p>
+                          )}
+                        </div>
+                        <span className={`text-[0.6rem] px-2 py-0.5 font-body uppercase tracking-wider flex-shrink-0 ${STATUS_LABELS[appt.status]?.color ?? "bg-gray-100 text-gray-600"}`}>
+                          {STATUS_LABELS[appt.status]?.label ?? appt.status}
+                        </span>
+                      </div>
+
+                      {/* Panel de acciones para citas PENDIENTES */}
+                      {isPending && (
+                        <div className="mt-3 pt-3 border-t border-amber-200 flex flex-wrap gap-2">
+                          <button
+                            onClick={() => acceptAppt.mutate({ id: appt.id })}
+                            disabled={acceptAppt.isPending}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white text-[0.65rem] font-body uppercase tracking-wider hover:bg-green-700 transition-colors disabled:opacity-60"
+                            style={{ borderRadius: 0, letterSpacing: "0.07em" }}
+                          >
+                            {acceptAppt.isPending ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+                            Aceptar
+                          </button>
+                          <button
+                            onClick={() => {
+                              setCancelModal({ apptId: appt.id, scheduledAt: appt.scheduledAt, serviceLabel: svcLabel });
+                              setCancelReason("");
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-100 text-red-700 text-[0.65rem] font-body uppercase tracking-wider hover:bg-red-200 transition-colors border border-red-200"
+                            style={{ borderRadius: 0, letterSpacing: "0.07em" }}
+                          >
+                            <X size={10} /> Cancelar
+                          </button>
+                          <button
+                            onClick={() => {
+                              setProposeModal({ apptId: appt.id, serviceLabel: svcLabel });
+                              setSlots([{ date: "", time: "10:00" }]);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 text-purple-700 text-[0.65rem] font-body uppercase tracking-wider hover:bg-purple-200 transition-colors border border-purple-200"
+                            style={{ borderRadius: 0, letterSpacing: "0.07em" }}
+                          >
+                            <RefreshCw size={10} /> Proponer fechas
+                          </button>
+                        </div>
                       )}
                     </div>
-                    <span className={`text-[0.6rem] px-2 py-0.5 font-body uppercase tracking-wider flex-shrink-0 ${STATUS_LABELS[appt.status]?.color ?? "bg-gray-100 text-gray-600"}`}>
-                      {STATUS_LABELS[appt.status]?.label ?? appt.status}
-                    </span>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
@@ -441,6 +519,145 @@ export default function ClienteDetalle() {
           )}
         </div>
       </div>
+
+      {/* ── MODAL CANCELAR ── */}
+      {cancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setCancelModal(null)} />
+          <div className="relative bg-white border border-[oklch(0.92_0.01_80)] w-full max-w-md p-6 space-y-4" style={{ borderRadius: 0 }}>
+            <h3 className="font-display text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 400, fontSize: "1.1rem" }}>
+              Cancelar cita
+            </h3>
+            <p className="text-sm text-[oklch(0.52_0.02_60)] font-body" style={{ fontWeight: 300 }}>
+              <strong>{cancelModal.serviceLabel}</strong> · {new Date(cancelModal.scheduledAt).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}
+            </p>
+            <div>
+              <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
+                Motivo de cancelación <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={3}
+                placeholder="Explica brevemente el motivo..."
+                className="w-full px-3 py-2.5 text-sm bg-white border border-[oklch(0.92_0.01_80)] text-[oklch(0.18_0.018_55)] focus:outline-none focus:border-red-400 transition-colors font-body resize-none"
+                style={{ borderRadius: 0 }}
+              />
+              <p className="text-[0.65rem] text-[oklch(0.52_0.02_60)] font-body mt-1" style={{ fontWeight: 300 }}>
+                Este motivo se incluirá en el email al cliente.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  if (!cancelReason.trim()) { toast.error("Escribe el motivo"); return; }
+                  cancelAppt.mutate({ id: cancelModal.apptId, reason: cancelReason });
+                }}
+                disabled={cancelAppt.isPending || !cancelReason.trim()}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white text-xs font-body uppercase tracking-wider hover:bg-red-700 transition-colors disabled:opacity-60"
+                style={{ borderRadius: 0, letterSpacing: "0.07em" }}
+              >
+                {cancelAppt.isPending ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
+                Confirmar cancelación
+              </button>
+              <button
+                onClick={() => setCancelModal(null)}
+                className="px-4 py-2.5 border border-[oklch(0.92_0.01_80)] text-[oklch(0.38_0.02_55)] text-xs font-body hover:border-[oklch(0.52_0.08_148)] transition-colors"
+                style={{ borderRadius: 0 }}
+              >
+                Volver
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL PROPONER FECHAS ── */}
+      {proposeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setProposeModal(null)} />
+          <div className="relative bg-white border border-[oklch(0.92_0.01_80)] w-full max-w-lg p-6 space-y-4" style={{ borderRadius: 0 }}>
+            <h3 className="font-display text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 400, fontSize: "1.1rem" }}>
+              Proponer nuevas fechas
+            </h3>
+            <p className="text-sm text-[oklch(0.52_0.02_60)] font-body" style={{ fontWeight: 300 }}>
+              El cliente recibirá un email con estas opciones y podrá elegir la que más le convenga.
+            </p>
+
+            <div className="space-y-3">
+              {slots.map((slot, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-[0.65rem] text-[oklch(0.52_0.02_60)] font-body w-14 flex-shrink-0" style={{ fontWeight: 500 }}>
+                    Opción {i + 1}
+                  </span>
+                  <input
+                    type="date"
+                    value={slot.date}
+                    onChange={(e) => {
+                      const updated = [...slots];
+                      updated[i] = { ...updated[i], date: e.target.value };
+                      setSlots(updated);
+                    }}
+                    className="flex-1 px-2 py-2 text-sm border border-[oklch(0.92_0.01_80)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] font-body"
+                    style={{ borderRadius: 0 }}
+                  />
+                  <input
+                    type="time"
+                    value={slot.time}
+                    onChange={(e) => {
+                      const updated = [...slots];
+                      updated[i] = { ...updated[i], time: e.target.value };
+                      setSlots(updated);
+                    }}
+                    className="w-24 px-2 py-2 text-sm border border-[oklch(0.92_0.01_80)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] font-body"
+                    style={{ borderRadius: 0 }}
+                  />
+                  {slots.length > 1 && (
+                    <button
+                      onClick={() => setSlots(slots.filter((_, idx) => idx !== i))}
+                      className="text-[oklch(0.52_0.02_60)] hover:text-red-500 transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {slots.length < 5 && (
+              <button
+                onClick={() => setSlots([...slots, { date: "", time: "10:00" }])}
+                className="inline-flex items-center gap-1.5 text-xs text-[oklch(0.52_0.08_148)] font-body hover:underline"
+              >
+                <Plus size={12} /> Añadir otra opción
+              </button>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => {
+                  const valid = slots.filter((s) => s.date && s.time);
+                  if (valid.length === 0) { toast.error("Añade al menos una fecha"); return; }
+                  proposeSlots.mutate({ id: proposeModal.apptId, slots: valid });
+                }}
+                disabled={proposeSlots.isPending}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[oklch(0.52_0.08_148)] text-white text-xs font-body uppercase tracking-wider hover:bg-[oklch(0.38_0.07_148)] transition-colors disabled:opacity-60"
+                style={{ borderRadius: 0, letterSpacing: "0.07em" }}
+              >
+                {proposeSlots.isPending ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                Enviar propuesta
+              </button>
+              <button
+                onClick={() => setProposeModal(null)}
+                className="px-4 py-2.5 border border-[oklch(0.92_0.01_80)] text-[oklch(0.38_0.02_55)] text-xs font-body hover:border-[oklch(0.52_0.08_148)] transition-colors"
+                style={{ borderRadius: 0 }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </CRMLayout>
   );
 }
