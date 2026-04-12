@@ -18,6 +18,7 @@ import { sendLeadSequenceEmail } from "../email";
 import { generateInvoicePdf } from "../invoicePdf";
 import { sdk } from "./sdk";
 import { uploadRouter } from "../upload";
+import { createRedirectMiddleware } from "../redirects";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -233,6 +234,9 @@ async function startServer() {
       createContext,
     })
   );
+  // ─── SEO 301 Redirects (Shopify legacy paths) ───────────────────────────────
+  app.use(createRedirectMiddleware());
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
