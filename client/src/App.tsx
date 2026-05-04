@@ -72,6 +72,7 @@ import AguaCategorias from "./pages/crm/AguaCategorias";
 import AguaProductos from "./pages/crm/AguaProductos";
 import AguaSolicitudes from "./pages/crm/AguaSolicitudes";
 import Galeria from "./pages/crm/Galeria";
+import HeroImagenes from "./pages/crm/HeroImagenes";
 
 function Router() {
   return (
@@ -160,6 +161,7 @@ function Router() {
 
       {/* Gallery */}
       <Route path="/crm/galeria" component={Galeria} />
+      <Route path="/crm/hero" component={HeroImagenes} />
 
       {/* Automations */}
       <Route path="/crm/automatizaciones" component={Automatizaciones} />

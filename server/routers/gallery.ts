@@ -17,6 +17,7 @@ import {
   oilCategories,
   oilProducts,
   blogPosts,
+  heroImages,
 } from "../../drizzle/schema";
 
 /**
@@ -43,6 +44,7 @@ async function getUsedUploadUrls(): Promise<Set<string>> {
     db.select({ v: oilCategories.imageUrl }).from(oilCategories),
     db.select({ v: oilProducts.imagen }).from(oilProducts),
     db.select({ v: blogPosts.coverImage }).from(blogPosts),
+    db.select({ v: heroImages.url }).from(heroImages),
   ]);
 
   const usedUrls = new Set<string>();

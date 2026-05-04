@@ -4,7 +4,7 @@
  * Secciones: Hero, Servicios, Sobre Mí, Filosofía, Testimonios, CTA
  */
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { ArrowRight, Leaf, Droplets, BookOpen, Star, ChevronRight, Calendar, Clock } from "lucide-react";
 import Layout from "@/components/Layout";
@@ -92,6 +92,27 @@ const BLOG_FALLBACK = "https://images.unsplash.com/photo-1506126613408-eca07ce68
 
 export default function Home() {
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [prevIdx, setPrevIdx] = useState<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { data: heroImgs = [] } = trpc.hero.list.useQuery(undefined, { staleTime: 60 * 1000 });
+  const heroUrls = heroImgs.length > 0 ? heroImgs.map((i) => i.url) : [HERO_IMG];
+
+  useEffect(() => {
+    if (heroUrls.length < 2) return;
+    timerRef.current = setTimeout(goNext, 5000);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [activeIdx, heroUrls.length]);
+
+  function goTo(idx: number) {
+    if (idx === activeIdx) return;
+    setPrevIdx(activeIdx);
+    setActiveIdx(idx);
+    setTimeout(() => setPrevIdx(null), 750);
+  }
+
+  function goNext() { goTo((activeIdx + 1) % heroUrls.length); }
 
   const { data: latestPosts = [] } = trpc.blog.list.useQuery(
     { limit: 3 },
@@ -104,14 +125,32 @@ export default function Home() {
     <Layout>
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
-        {/* Background Image */}
+        {/* Background Images */}
         <div className="absolute inset-0">
+          <style>{`
+            @keyframes heroSlideIn  { from { transform: translateX(100%) } to { transform: translateX(0) } }
+            @keyframes heroSlideOut { from { transform: translateX(0) }    to { transform: translateX(-100%) } }
+          `}</style>
+
+          {/* Imagen saliente */}
+          {prevIdx !== null && (
+            <img
+              src={heroUrls[prevIdx]}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover object-center"
+              style={{ animation: "heroSlideOut 700ms ease-in-out forwards" }}
+            />
+          )}
+          {/* Imagen activa — key fuerza remount y arranca la animación desde translateX(100%) */}
           <img
-            src={HERO_IMG}
+            key={activeIdx}
+            src={heroUrls[activeIdx]}
             alt="Cristina Vive Consciente — Bienestar Holístico"
-            className="w-full h-full object-cover object-center"
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            style={prevIdx !== null ? { animation: "heroSlideIn 700ms ease-in-out forwards" } : undefined}
           />
-          {/* Gradient overlay — dark left, transparent right */}
+
+          {/* Gradient overlay */}
           <div
             className="absolute inset-0"
             style={{
@@ -119,6 +158,20 @@ export default function Home() {
                 "linear-gradient(105deg, oklch(0.18 0.018 55 / 0.75) 0%, oklch(0.18 0.018 55 / 0.45) 50%, oklch(0.18 0.018 55 / 0.15) 100%)",
             }}
           />
+
+          {/* Dots — solo si hay más de 1 imagen */}
+          {heroUrls.length > 1 && (
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+              {heroUrls.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => goTo(idx)}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${idx === activeIdx ? "bg-white w-4" : "w-1.5 bg-white/40 hover:bg-white/70"}`}
+                  aria-label={`Imagen ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -215,7 +268,7 @@ export default function Home() {
 
           {/* Services Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-            {services.map((service, i) => (
+            {services.map((service) => (
               <Link
                 key={service.href}
                 href={service.href}

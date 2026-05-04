@@ -48,6 +48,7 @@ const NAV_ITEMS = [
   { href: "/crm/ebooks", label: "Ebooks", icon: BookOpen },
   { href: "/crm/automatizaciones", label: "Automatizaciones", icon: Zap },
   { href: "/crm/galeria", label: "Galería", icon: Images },
+  { href: "/crm/hero", label: "Hero Inicio", icon: Globe },
 ];
 
 const CITAS_SUBITEMS = [

@@ -609,3 +609,15 @@ export const blogComments = mysqlTable("blog_comments", {
 
 export type BlogComment = typeof blogComments.$inferSelect;
 export type InsertBlogComment = typeof blogComments.$inferInsert;
+
+// ── HERO IMAGES ──────────────────────────────────────────────────────────────
+export const heroImages = mysqlTable("hero_images", {
+  id: int("id").autoincrement().primaryKey(),
+  url: text("url").notNull(),
+  key: varchar("key", { length: 500 }).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type HeroImage = typeof heroImages.$inferSelect;
+export type InsertHeroImage = typeof heroImages.$inferInsert;
