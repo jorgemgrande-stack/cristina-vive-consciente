@@ -127,6 +127,13 @@
       "when": 1775601340211,
       "tag": "0017_big_goblin_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1777936057066,
+      "tag": "0018_fair_kang",
+      "breakpoints": true
     }
   ]
 }
