@@ -55,7 +55,7 @@ export default function Header() {
         }`}
       >
         <div className="container">
-          <div className="flex items-center justify-between h-16 md:h-20">
+          <div className="flex items-center h-16 md:h-20">
 
             {/* Logo */}
             <Link href="/" className="flex items-center no-underline group">
@@ -70,7 +70,7 @@ export default function Header() {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-7">
+            <nav className="hidden lg:flex items-center gap-7 ml-auto mr-8">
               {navLinks.slice(0, 7).map((link) => (
                 <Link
                   key={link.href}

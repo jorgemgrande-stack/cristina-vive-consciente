@@ -137,18 +137,12 @@ export default function Home() {
               className="text-white mb-6 font-display leading-[1.08]"
               style={{ fontWeight: 400 }}
             >
-              Vive con
-              <br />
-              <em className="text-[oklch(0.82_0.06_80)]" style={{ fontStyle: "italic" }}>
-                consciencia
-              </em>
-              <br />
-              y naturaleza
+              VIVE CONSCIENTE
             </h1>
 
             {/* Subtext */}
             <p className="text-white/75 text-base md:text-lg mb-10 font-body leading-relaxed" style={{ fontWeight: 300 }}>
-              Consultas holísticas, masajes terapéuticos y productos naturales para guiarte hacia tu bienestar más profundo.
+              Consulta naturópata y hojas de ruta personalizadas para entender y mejorar tu salud.
             </p>
 
             {/* CTAs */}
