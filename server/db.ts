@@ -13,6 +13,7 @@ import {
   InsertSessionHistory,
   invoices,
   InsertInvoice,
+  invoiceItems,
   affiliateProducts,
   InsertAffiliateProduct,
   affiliateCategories,
@@ -289,20 +290,41 @@ export async function getInvoiceById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select({ invoice: invoices, client: { id: clients.id, firstName: clients.firstName, lastName: clients.lastName, email: clients.email, address: clients.address, postalCode: clients.postalCode, city: clients.city, province: clients.province, country: clients.country, nif: clients.nif, razonSocial: clients.razonSocial } }).from(invoices).leftJoin(clients, eq(invoices.clientId, clients.id)).where(eq(invoices.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  if (result.length === 0) return undefined;
+  const items = await getInvoiceItems(id);
+  return { ...result[0], items };
 }
 
-export async function createInvoice(data: InsertInvoice) {
+export async function createInvoice(data: InsertInvoice): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(invoices).values(data);
-  return result[0];
+  return (result[0] as any).insertId as number;
 }
 
 export async function updateInvoice(id: number, data: Partial<InsertInvoice>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(invoices).set(data).where(eq(invoices.id, id));
+}
+
+export async function getInvoiceItems(invoiceId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, invoiceId)).orderBy(asc(invoiceItems.sortOrder));
+}
+
+export async function replaceInvoiceItems(
+  invoiceId: number,
+  items: { description: string; quantity: string; unitPrice: string; amount: string }[]
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(invoiceItems).where(eq(invoiceItems.invoiceId, invoiceId));
+  if (items.length === 0) return;
+  await db.insert(invoiceItems).values(
+    items.map((item, i) => ({ ...item, invoiceId, sortOrder: i }))
+  );
 }
 
 export async function getNextInvoiceNumber(): Promise<string> {

@@ -179,6 +179,21 @@ export const invoices = mysqlTable("invoices", {
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = typeof invoices.$inferInsert;
 
+// ─── LÍNEAS DE FACTURA ────────────────────────────────────────────────────────
+export const invoiceItems = mysqlTable("invoice_items", {
+  id: int("id").autoincrement().primaryKey(),
+  invoiceId: int("invoiceId").notNull(),
+  description: text("description").notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).default("1").notNull(),
+  unitPrice: decimal("unitPrice", { precision: 10, scale: 2 }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type InvoiceItem = typeof invoiceItems.$inferSelect;
+export type InsertInvoiceItem = typeof invoiceItems.$inferInsert;
+
 // ─── COMPRAS DE EBOOKS ────────────────────────────────────────────────────────
 export const ebookPurchases = mysqlTable("ebook_purchases", {
   id: int("id").autoincrement().primaryKey(),

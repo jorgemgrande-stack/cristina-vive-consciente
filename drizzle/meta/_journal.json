@@ -134,6 +134,13 @@
       "when": 1777936057066,
       "tag": "0018_fair_kang",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1785759319394,
+      "tag": "0019_add_invoice_items",
+      "breakpoints": true
     }
   ]
 }

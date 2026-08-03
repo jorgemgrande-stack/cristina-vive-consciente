@@ -9,6 +9,7 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import CRMLayout from "@/components/CRMLayout";
+import InvoiceItemsEditor, { type InvoiceItemDraft, sumItems, toItemsPayload } from "@/components/InvoiceItemsEditor";
 
 export default function FacturaForm() {
   const search = useSearch();
@@ -31,6 +32,15 @@ export default function FacturaForm() {
     issuedDate: today,
     dueDate: "",
   });
+
+  const [items, setItems] = useState<InvoiceItemDraft[]>([]);
+
+  // Si hay líneas, la base imponible se calcula a partir de ellas
+  useEffect(() => {
+    if (items.length === 0) return;
+    const sum = sumItems(items);
+    setForm((f) => ({ ...f, subtotal: sum > 0 ? sum.toFixed(2) : "" }));
+  }, [items]);
 
   // Auto-calculate total
   useEffect(() => {
@@ -67,6 +77,7 @@ export default function FacturaForm() {
       notes: form.notes || undefined,
       issuedAt,
       dueAt,
+      items: toItemsPayload(items),
     });
   };
 
@@ -133,6 +144,9 @@ export default function FacturaForm() {
             />
           </div>
 
+          {/* Líneas de factura */}
+          <InvoiceItemsEditor items={items} onChange={setItems} />
+
           {/* Importes */}
           <div className="grid grid-cols-3 gap-4">
             <div>
@@ -144,7 +158,8 @@ export default function FacturaForm() {
                 value={form.subtotal}
                 onChange={(e) => setForm((f) => ({ ...f, subtotal: e.target.value }))}
                 placeholder="0.00"
-                className={inputClass}
+                readOnly={items.length > 0}
+                className={`${inputClass} ${items.length > 0 ? "bg-[oklch(0.97_0.006_85)] cursor-not-allowed" : ""}`}
                 style={{ borderRadius: 0 }}
               />
             </div>

@@ -35,6 +35,11 @@ function formatCurrency(amount: string | number | null | undefined): string {
   return n.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
 }
 
+function formatQty(qty: string | number | null | undefined): string {
+  const n = parseFloat(String(qty ?? 1));
+  return Number.isInteger(n) ? String(n) : n.toFixed(2);
+}
+
 function statusLabel(status: string): string {
   const map: Record<string, string> = {
     draft:     "Borrador",
@@ -60,7 +65,7 @@ export async function generateInvoicePdf(invoiceId: number): Promise<Buffer> {
   const row = await getInvoiceById(invoiceId);
   if (!row) throw new Error("Factura no encontrada");
 
-  const { invoice, client } = row;
+  const { invoice, client, items: lineItems } = row;
 
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -240,53 +245,77 @@ export async function generateInvoicePdf(invoiceId: number): Promise<Buffer> {
 
     // ── CONCEPTO / TABLA ───────────────────────────────────────────────────────
     const tableY = 300;
+    const HEADER_H = 26;
+    const ROW_H = 24;
+
+    // Si la factura tiene líneas propias las usamos; si no (facturas antiguas o
+    // sin desglose) mostramos el concepto general como línea única, como antes.
+    const items =
+      lineItems && lineItems.length > 0
+        ? lineItems
+        : [
+            {
+              description: invoice.concept || "Servicio profesional",
+              quantity: "1",
+              unitPrice: invoice.subtotal,
+              amount: invoice.subtotal,
+            },
+          ];
+
+    const colDescW = CONTENT_W * 0.5;
+    const colQtyW = CONTENT_W * 0.12;
+    const colPriceW = CONTENT_W * 0.18;
+    const colAmountW = CONTENT_W - colDescW - colQtyW - colPriceW;
+    const colQtyX = MARGIN + colDescW;
+    const colPriceX = colQtyX + colQtyW;
+    const colAmountX = colPriceX + colPriceW;
 
     // Cabecera tabla
-    doc.rect(MARGIN, tableY, CONTENT_W, 26).fill(COLOR_GREEN);
+    doc.rect(MARGIN, tableY, CONTENT_W, HEADER_H).fill(COLOR_GREEN);
     doc
       .fillColor(COLOR_WHITE)
       .font("Helvetica-Bold")
       .fontSize(9)
-      .text("CONCEPTO / DESCRIPCIÓN", MARGIN + 10, tableY + 8, { width: CONTENT_W * 0.6 })
-      .text("IMPORTE", MARGIN + CONTENT_W * 0.6, tableY + 8, {
-        width: CONTENT_W * 0.4 - 10,
-        align: "right",
-      });
+      .text("DESCRIPCIÓN", MARGIN + 10, tableY + 8, { width: colDescW - 10 })
+      .text("CANT.", colQtyX, tableY + 8, { width: colQtyW, align: "right" })
+      .text("PRECIO", colPriceX, tableY + 8, { width: colPriceW - 6, align: "right" })
+      .text("IMPORTE", colAmountX, tableY + 8, { width: colAmountW - 10, align: "right" });
 
-    // Fila de concepto
-    const rowY = tableY + 26;
-    doc.rect(MARGIN, rowY, CONTENT_W, 40).fill(COLOR_BEIGE);
-    doc
-      .fillColor(COLOR_DARK)
-      .font("Helvetica")
-      .fontSize(10)
-      .text(invoice.concept || "Servicio profesional", MARGIN + 10, rowY + 12, {
-        width: CONTENT_W * 0.6 - 10,
-      });
-    doc
-      .fillColor(COLOR_DARK)
-      .font("Helvetica-Bold")
-      .fontSize(10)
-      .text(formatCurrency(invoice.subtotal), MARGIN + CONTENT_W * 0.6, rowY + 12, {
-        width: CONTENT_W * 0.4 - 10,
-        align: "right",
-      });
+    // Filas de líneas
+    items.forEach((item, i) => {
+      const ry = tableY + HEADER_H + i * ROW_H;
+      doc.rect(MARGIN, ry, CONTENT_W, ROW_H).fill(i % 2 === 0 ? COLOR_BEIGE : COLOR_WHITE);
+      doc
+        .fillColor(COLOR_DARK)
+        .font("Helvetica")
+        .fontSize(9.5)
+        .text(item.description, MARGIN + 10, ry + 7, { width: colDescW - 10 })
+        .text(formatQty(item.quantity), colQtyX, ry + 7, { width: colQtyW, align: "right" })
+        .text(formatCurrency(item.unitPrice), colPriceX, ry + 7, { width: colPriceW - 6, align: "right" });
+      doc
+        .fillColor(COLOR_DARK)
+        .font("Helvetica-Bold")
+        .fontSize(9.5)
+        .text(formatCurrency(item.amount), colAmountX, ry + 7, { width: colAmountW - 10, align: "right" });
+    });
 
     // Separador
-    doc.rect(MARGIN, rowY + 40, CONTENT_W, 1).fill(COLOR_LIGHT);
+    const tableBottomY = tableY + HEADER_H + items.length * ROW_H;
+    doc.rect(MARGIN, tableBottomY, CONTENT_W, 1).fill(COLOR_LIGHT);
 
     // ── TOTALES ────────────────────────────────────────────────────────────────
-    const totalsY = rowY + 55;
+    const totalsY = tableBottomY + 15;
     const totalsX = W - MARGIN - 220;
     const totalsW = 220;
 
-    const taxAmount = parseFloat(String(invoice.tax ?? 0));
-    const subtotal  = parseFloat(String(invoice.subtotal ?? 0));
-    const total     = parseFloat(String(invoice.total ?? 0));
+    const taxRate  = parseFloat(String(invoice.tax ?? 0));
+    const subtotal = parseFloat(String(invoice.subtotal ?? 0));
+    const total    = parseFloat(String(invoice.total ?? 0));
+    const taxAmount = (subtotal * taxRate) / 100;
 
     const totalsRows = [
       { label: "Subtotal", value: formatCurrency(subtotal) },
-      ...(taxAmount > 0 ? [{ label: "IVA", value: formatCurrency(taxAmount) }] : []),
+      ...(taxRate > 0 ? [{ label: `IVA (${formatQty(taxRate)}%)`, value: formatCurrency(taxAmount) }] : []),
     ];
 
     totalsRows.forEach((row, i) => {

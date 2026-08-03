@@ -38,6 +38,7 @@ import {
   getInvoiceById,
   createInvoice,
   updateInvoice,
+  replaceInvoiceItems,
   getNextInvoiceNumber,
   getDashboardStats,
   getCalendarEvents,
@@ -458,26 +459,60 @@ const invoicesRouter = router({
         notes: z.string().optional(),
         issuedAt: z.number(),
         dueAt: z.number().optional(),
+        items: z
+          .array(
+            z.object({
+              description: z.string().min(1),
+              quantity: z.string(),
+              unitPrice: z.string(),
+              amount: z.string(),
+            })
+          )
+          .optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const { items, ...invoiceData } = input;
       const invoiceNumber = await getNextInvoiceNumber();
-      await createInvoice({ ...input, invoiceNumber, createdBy: ctx.user.id });
-      return { success: true, invoiceNumber };
+      const invoiceId = await createInvoice({ ...invoiceData, invoiceNumber, createdBy: ctx.user.id });
+      if (items && items.length > 0) {
+        await replaceInvoiceItems(invoiceId, items);
+      }
+      return { success: true, invoiceNumber, id: invoiceId };
     }),
 
   update: adminProcedure
     .input(
       z.object({
         id: z.number(),
+        clientId: z.number().optional(),
+        concept: z.string().optional(),
+        subtotal: z.string().optional(),
+        tax: z.string().optional(),
+        total: z.string().optional(),
         status: z.enum(["draft", "sent", "paid", "cancelled"]).optional(),
         notes: z.string().optional(),
+        issuedAt: z.number().optional(),
+        dueAt: z.number().optional(),
         paidAt: z.number().optional(),
+        items: z
+          .array(
+            z.object({
+              description: z.string().min(1),
+              quantity: z.string(),
+              unitPrice: z.string(),
+              amount: z.string(),
+            })
+          )
+          .optional(),
       })
     )
     .mutation(async ({ input }) => {
-      const { id, ...data } = input;
+      const { id, items, ...data } = input;
       await updateInvoice(id, data);
+      if (items !== undefined) {
+        await replaceInvoiceItems(id, items);
+      }
       return { success: true };
     }),
 

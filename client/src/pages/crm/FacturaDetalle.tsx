@@ -10,6 +10,7 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import CRMLayout from "@/components/CRMLayout";
+import InvoiceItemsEditor, { type InvoiceItemDraft, sumItems, toItemsPayload } from "@/components/InvoiceItemsEditor";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   draft:     { label: "Borrador",   color: "bg-gray-100 text-gray-600" },
@@ -39,6 +40,8 @@ export default function FacturaDetalle() {
     paidDate: "",
   });
 
+  const [items, setItems] = useState<InvoiceItemDraft[]>([]);
+
   // Populate form when data loads
   useEffect(() => {
     if (!invoiceData) return;
@@ -55,7 +58,21 @@ export default function FacturaDetalle() {
       dueDate: inv.dueAt ? new Date(inv.dueAt).toISOString().split("T")[0] : "",
       paidDate: inv.paidAt ? new Date(inv.paidAt).toISOString().split("T")[0] : "",
     });
+    setItems(
+      (invoiceData.items ?? []).map((it) => ({
+        description: it.description,
+        quantity: it.quantity?.toString() ?? "1",
+        unitPrice: it.unitPrice?.toString() ?? "0",
+      }))
+    );
   }, [invoiceData]);
+
+  // Si hay líneas, la base imponible se calcula a partir de ellas
+  useEffect(() => {
+    if (items.length === 0) return;
+    const sum = sumItems(items);
+    setForm((f) => ({ ...f, subtotal: sum > 0 ? sum.toFixed(2) : "" }));
+  }, [items]);
 
   // Auto-calculate total
   useEffect(() => {
@@ -94,9 +111,17 @@ export default function FacturaDetalle() {
     e.preventDefault();
     updateMutation.mutate({
       id,
+      clientId: form.clientId || undefined,
+      concept: form.concept,
+      subtotal: form.subtotal || form.total,
+      tax: form.tax || "0",
+      total: form.total,
       status: form.status,
       notes: form.notes || undefined,
+      issuedAt: form.issuedDate ? new Date(form.issuedDate).getTime() : undefined,
+      dueAt: form.dueDate ? new Date(form.dueDate).getTime() : undefined,
       paidAt: form.paidDate ? new Date(form.paidDate).getTime() : undefined,
+      items: toItemsPayload(items),
     });
   };
 
@@ -232,6 +257,9 @@ export default function FacturaDetalle() {
             />
           </div>
 
+          {/* Líneas de factura */}
+          <InvoiceItemsEditor items={items} onChange={setItems} />
+
           {/* Importes */}
           <div className="grid grid-cols-3 gap-4">
             <div>
@@ -243,7 +271,8 @@ export default function FacturaDetalle() {
                 value={form.subtotal}
                 onChange={(e) => setForm((f) => ({ ...f, subtotal: e.target.value }))}
                 placeholder="0.00"
-                className={inputClass}
+                readOnly={items.length > 0}
+                className={`${inputClass} ${items.length > 0 ? "bg-[oklch(0.97_0.006_85)] cursor-not-allowed" : ""}`}
                 style={{ borderRadius: 0 }}
               />
             </div>
