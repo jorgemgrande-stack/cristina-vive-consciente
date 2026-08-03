@@ -96,8 +96,9 @@ export default function Home() {
   const [prevIdx, setPrevIdx] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { data: heroImgs = [] } = trpc.hero.list.useQuery(undefined, { staleTime: 60 * 1000 });
-  const heroUrls = heroImgs.length > 0 ? heroImgs.map((i) => i.url) : [HERO_IMG];
+  const { data: heroImgs = [], isLoading: heroLoading } = trpc.hero.list.useQuery(undefined, { staleTime: 60 * 1000 });
+  const heroUrls =
+    heroImgs.length > 0 ? heroImgs.map((i) => i.url) : heroLoading ? [] : [HERO_IMG];
 
   useEffect(() => {
     if (heroUrls.length < 2) return;
@@ -132,6 +133,11 @@ export default function Home() {
             @keyframes heroSlideOut { from { transform: translateX(0) }    to { transform: translateX(-100%) } }
           `}</style>
 
+          {/* Placeholder neutro mientras cargan las imágenes reales del hero — evita el flash de una imagen incorrecta */}
+          {heroUrls.length === 0 && (
+            <div className="absolute inset-0 bg-[oklch(0.18_0.018_55)]" />
+          )}
+
           {/* Imagen saliente */}
           {prevIdx !== null && (
             <img
@@ -142,13 +148,15 @@ export default function Home() {
             />
           )}
           {/* Imagen activa — key fuerza remount y arranca la animación desde translateX(100%) */}
-          <img
-            key={activeIdx}
-            src={heroUrls[activeIdx]}
-            alt="Cristina Vive Consciente — Bienestar Holístico"
-            className="absolute inset-0 w-full h-full object-cover object-center"
-            style={prevIdx !== null ? { animation: "heroSlideIn 700ms ease-in-out forwards" } : undefined}
-          />
+          {heroUrls.length > 0 && (
+            <img
+              key={activeIdx}
+              src={heroUrls[activeIdx]}
+              alt="Cristina Vive Consciente — Bienestar Holístico"
+              className="absolute inset-0 w-full h-full object-cover object-center"
+              style={prevIdx !== null ? { animation: "heroSlideIn 700ms ease-in-out forwards" } : undefined}
+            />
+          )}
 
           {/* Gradient overlay */}
           <div
