@@ -9,6 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import ScrollToTop from "./components/ScrollToTop";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
 // Public Pages
@@ -76,6 +77,8 @@ import HeroImagenes from "./pages/crm/HeroImagenes";
 
 function Router() {
   return (
+    <>
+    <ScrollToTop />
     <Switch>
       {/* ── Public ── */}
       <Route path="/" component={Home} />
@@ -170,6 +173,7 @@ function Router() {
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
+    </>
   );
 }
 
