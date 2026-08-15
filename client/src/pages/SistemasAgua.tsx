@@ -380,10 +380,14 @@ export default function SistemasAgua() {
   return (
     <Layout>
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
-      <section className="relative bg-gradient-to-br from-[#1A2E1A] via-[#2A3E2A] to-[#1A2E1A] text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-[#7AB87A] rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#4A8A7A] rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
+      <section className="relative text-white overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src="https://cristinaviveconsciente.es/uploads/crm-uploads/images/1786784764684-sn3yxah7.png"
+            alt=""
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#08141F]/90 via-[#0A2038]/70 to-[#08141F]/90" />
         </div>
         <div className="relative max-w-6xl mx-auto px-6 py-20 md:py-28">
           <div className="max-w-3xl">
