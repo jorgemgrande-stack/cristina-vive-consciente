@@ -20,7 +20,7 @@ const AGUA_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx
 const services = [
   {
     href: "/consultas",
-    title: "Consultas Holísticas",
+    title: "Consultas",
     description: "Sesiones personalizadas para guiarte hacia el equilibrio físico, emocional y espiritual.",
     img: CONSULTAS_IMG,
     icon: <Leaf size={18} />,
@@ -28,8 +28,8 @@ const services = [
   },
   {
     href: "/masajes",
-    title: "Masajes Terapéuticos",
-    description: "Técnicas naturales que liberan tensiones y restauran la armonía de tu cuerpo.",
+    title: "Masaje y equilibrio energético",
+    description: "Un espacio de reconexión y calma para el sistema nervioso, favoreciendo el equilibrio entre cuerpo, mente y espíritu.",
     img: MASAJES_IMG,
     icon: <Star size={18} />,
     tag: "Terapia corporal",
@@ -37,7 +37,7 @@ const services = [
   {
     href: "/sistemas-agua",
     title: "Sistemas de Agua",
-    description: "Soluciones para purificar y vitalizar el agua que bebes cada día.",
+    description: "Asesoramiento en filtros. Soluciones para purificar y vitalizar el agua que bebes.",
     img: AGUA_IMG,
     icon: <Droplets size={18} />,
     tag: "Agua viva",
@@ -45,7 +45,7 @@ const services = [
   {
     href: "/aceites-esenciales",
     title: "Aceites Esenciales",
-    description: "La sabiduría de las plantas en su forma más pura para tu bienestar diario.",
+    description: "Descubre sus propiedades, usos y diferentes formas de incorporarlos de manera consciente a tu día a día.",
     img: ACEITES_IMG,
     icon: <Leaf size={18} />,
     tag: "Aromaterapia",
@@ -190,7 +190,7 @@ export default function Home() {
               className="text-[oklch(0.72_0.06_148)] text-xs tracking-[0.25em] uppercase mb-6 font-body"
               style={{ fontWeight: 400 }}
             >
-              Bienestar holístico natural
+              Consulta naturópata
             </p>
 
             {/* Headline */}
@@ -203,7 +203,7 @@ export default function Home() {
 
             {/* Subtext */}
             <p className="text-white/75 text-base md:text-lg mb-10 font-body leading-relaxed" style={{ fontWeight: 300 }}>
-              Consulta naturópata y hojas de ruta personalizadas para entender y mejorar tu salud.
+              Diseño hojas de ruta personalizadas para tu salud.
             </p>
 
             {/* CTAs */}
@@ -238,7 +238,7 @@ export default function Home() {
       <section className="bg-[oklch(0.52_0.08_148)] py-5">
         <div className="container">
           <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-2">
-            {["Consultas Holísticas", "Masajes Terapéuticos", "Sistemas de Agua", "Aceites Esenciales", "Guías Digitales"].map(
+            {["Comprensión del síntoma", "Entorno y salud ambiental", "Educación para la salud", "Hojas de ruta personalizadas", "Guías y recursos"].map(
               (item, i) => (
                 <span
                   key={i}
