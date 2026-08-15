@@ -32,7 +32,7 @@ interface ReservaModalProps {
   onClose: () => void;
 }
 
-function ReservaModal({ productId, productName, onClose }: ReservaModalProps) {
+export function ReservaModal({ productId, productName, onClose }: ReservaModalProps) {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -89,7 +89,7 @@ function ReservaModal({ productId, productName, onClose }: ReservaModalProps) {
       <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white px-6 pt-6 pb-4 border-b border-[#E8E4DC] flex items-start justify-between">
           <div>
-            <h3 className="text-xl font-serif text-[#1A1208]">Reservar sistema</h3>
+            <h3 className="text-xl font-serif text-[#1A1208]">Solicitar presupuesto</h3>
             {productName && (
               <p className="text-sm text-[#3A5A3A] font-medium mt-0.5">{productName}</p>
             )}
@@ -348,7 +348,7 @@ function ProductCard({
             className="w-full flex items-center justify-center gap-2 py-3 bg-[#3A5A3A] text-white rounded-xl font-medium hover:bg-[#2E4A2E] transition-colors"
           >
             <Droplets size={16} />
-            {product.ctaPrimaryLabel ?? "Reservar sistema"}
+            {product.ctaPrimaryLabel ?? "Solicitar presupuesto"}
           </button>
           <Link href={`/sistemas-agua/${product.slug}`}>
             <a className="w-full flex items-center justify-center gap-2 py-2.5 border border-[#3A5A3A] text-[#3A5A3A] rounded-xl text-sm font-medium hover:bg-[#F0F4F0] transition-colors">

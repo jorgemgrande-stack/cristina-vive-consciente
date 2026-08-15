@@ -6,9 +6,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
-import { ArrowRight, Leaf, Droplets, BookOpen, Star, ChevronRight, Calendar, Clock } from "lucide-react";
+import { ArrowRight, Leaf, Droplets, BookOpen, Star, ChevronRight, Calendar, Clock, CheckCircle } from "lucide-react";
 import Layout from "@/components/Layout";
 import BookingModal from "@/components/BookingModal";
+import { ReservaModal as WaterReservaModal } from "@/pages/SistemasAgua";
 import { trpc } from "@/lib/trpc";
 
 const HERO_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-main-T6UmVzyg8XHyq4zLvU5RfZ.webp";
@@ -95,6 +96,12 @@ export default function Home() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [prevIdx, setPrevIdx] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [waterReserva, setWaterReserva] = useState<{ id: number; name: string } | null>(null);
+
+  const { data: waterProducts = [] } = trpc.water.listProducts.useQuery(
+    { onlyDestacados: true },
+    { staleTime: 60 * 1000 }
+  );
 
   const { data: heroImgs = [], isLoading: heroLoading } = trpc.hero.list.useQuery(undefined, { staleTime: 60 * 1000 });
   const heroUrls =
@@ -123,6 +130,13 @@ export default function Home() {
   return (
     <>
     <BookingModal isOpen={bookingOpen} onClose={() => setBookingOpen(false)} />
+    {waterReserva && (
+      <WaterReservaModal
+        productId={waterReserva.id}
+        productName={waterReserva.name}
+        onClose={() => setWaterReserva(null)}
+      />
+    )}
     <Layout>
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center overflow-hidden">
@@ -450,6 +464,143 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── SISTEMAS DE AGUA ─────────────────────────────────── */}
+      {waterProducts.length > 0 && (
+        <section className="section-padding bg-[oklch(0.94_0.012_80)]">
+          <div className="container">
+            <div className="max-w-lg mb-16">
+              <p
+                className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-4 font-body"
+                style={{ fontWeight: 500 }}
+              >
+                Sistemas de agua
+              </p>
+              <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-4" style={{ fontWeight: 400 }}>
+                Agua que cuida tu salud, en tu propia casa
+              </h2>
+              <div className="section-divider" />
+              <p className="text-[oklch(0.52_0.02_60)] leading-relaxed font-body mt-4" style={{ fontWeight: 300 }}>
+                Equipos seleccionados personalmente por Cristina para llevar agua pura y de calidad a cada punto de tu hogar.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+              {waterProducts.map((product) => {
+                const benefits: string[] = (() => {
+                  try {
+                    return JSON.parse(product.benefits ?? "[]");
+                  } catch {
+                    return [];
+                  }
+                })();
+
+                return (
+                  <div key={product.id} className="group card-natural overflow-hidden flex flex-col">
+                    {/* Image */}
+                    <div className="relative overflow-hidden" style={{ aspectRatio: "16/9" }}>
+                      {product.mainImage ? (
+                        <img
+                          src={product.mainImage}
+                          alt={product.title}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-[oklch(0.94_0.012_80)]">
+                          <Droplets size={40} className="text-[oklch(0.72_0.06_148)]" />
+                        </div>
+                      )}
+                      {product.badge && (
+                        <span
+                          className="absolute top-4 left-4 px-3 py-1 bg-[oklch(0.985_0.006_85)]/90 text-[oklch(0.52_0.08_148)] text-[0.65rem] tracking-widest uppercase font-body"
+                          style={{ fontWeight: 500, letterSpacing: "0.12em" }}
+                        >
+                          {product.badge}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-6 md:p-7 flex flex-col flex-1">
+                      <h3
+                        className="font-display text-[oklch(0.18_0.018_55)] mb-1"
+                        style={{ fontWeight: 400, fontSize: "1.25rem" }}
+                      >
+                        {product.title}
+                      </h3>
+                      {product.subtitle && (
+                        <p className="text-[oklch(0.52_0.08_148)] text-sm font-body mb-3" style={{ fontWeight: 500 }}>
+                          {product.subtitle}
+                        </p>
+                      )}
+                      {product.shortDescription && (
+                        <p className="text-[oklch(0.52_0.02_60)] text-sm leading-relaxed mb-4 font-body" style={{ fontWeight: 300 }}>
+                          {product.shortDescription}
+                        </p>
+                      )}
+
+                      {benefits.length > 0 && (
+                        <ul className="space-y-1.5 mb-5">
+                          {benefits.slice(0, 3).map((benefit, i) => (
+                            <li key={i} className="flex items-start gap-2 text-sm text-[oklch(0.52_0.02_60)] font-body">
+                              <CheckCircle size={14} className="text-[oklch(0.52_0.08_148)] flex-shrink-0 mt-0.5" />
+                              <span style={{ fontWeight: 300 }}>{benefit}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {(product.priceVisible || product.priceOrientative) && (
+                        <div className="border-t border-[oklch(0.9_0.01_80)] pt-4 mb-5">
+                          {product.priceVisible ? (
+                            <p className="font-display text-[oklch(0.18_0.018_55)] text-xl" style={{ fontWeight: 400 }}>
+                              {product.priceVisible}
+                            </p>
+                          ) : (
+                            <p className="text-[oklch(0.52_0.02_60)] text-sm font-body italic" style={{ fontWeight: 300 }}>
+                              {product.priceOrientative}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* CTAs */}
+                      <div className="mt-auto flex flex-col gap-2.5">
+                        <button
+                          onClick={() => setWaterReserva({ id: product.id, name: product.title })}
+                          className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-350 font-body"
+                          style={{ borderRadius: 0, letterSpacing: "0.1em" }}
+                        >
+                          {product.ctaPrimaryLabel ?? "Solicitar presupuesto"}
+                        </button>
+                        <Link
+                          href={`/sistemas-agua/${product.slug}`}
+                          className="inline-flex items-center justify-center gap-1.5 text-[oklch(0.52_0.08_148)] text-xs tracking-widest uppercase font-body no-underline hover:gap-2.5 transition-all"
+                          style={{ fontWeight: 500, letterSpacing: "0.1em" }}
+                        >
+                          {product.ctaSecondaryLabel ?? "Conocer más detalles"}
+                          <ChevronRight size={13} />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-10 flex flex-wrap gap-4">
+              <Link
+                href="/sistemas-agua"
+                className="btn-outline text-sm"
+                style={{ textDecoration: "none" }}
+              >
+                <Droplets size={15} />
+                Ver todos los sistemas de agua
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── BLOG PREVIEW ─────────────────────────────────────── */}
       {latestPosts.length > 0 && (

@@ -86,7 +86,7 @@ function ReservaModal({ productId, productName, onClose }: ReservaModalProps) {
       <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white px-6 pt-6 pb-4 border-b border-[#E8E4DC] flex items-start justify-between">
           <div>
-            <h3 className="text-xl font-serif text-[#1A1208]">Reservar sistema</h3>
+            <h3 className="text-xl font-serif text-[#1A1208]">Solicitar presupuesto</h3>
             {productName && <p className="text-sm text-[#3A5A3A] font-medium mt-0.5">{productName}</p>}
             <p className="text-xs text-[#7A6E5E] mt-1">Cristina te contactará para orientarte sin compromiso</p>
           </div>
@@ -333,7 +333,7 @@ export default function SistemaAguaDetalle() {
                   className="w-full flex items-center justify-center gap-2 py-4 bg-[#3A5A3A] text-white rounded-xl font-semibold hover:bg-[#2E4A2E] transition-colors text-lg"
                 >
                   <Droplets size={20} />
-                  {product.ctaPrimaryLabel ?? "Reservar sistema"}
+                  {product.ctaPrimaryLabel ?? "Solicitar presupuesto"}
                 </button>
                 <button
                   onClick={() => setReservaOpen(true)}
@@ -523,7 +523,7 @@ export default function SistemaAguaDetalle() {
               className="flex items-center justify-center gap-2 px-8 py-4 bg-[#3A5A3A] text-white rounded-xl font-semibold hover:bg-[#2E4A2E] transition-colors"
             >
               <Droplets size={18} />
-              {product.ctaPrimaryLabel ?? "Reservar sistema"}
+              {product.ctaPrimaryLabel ?? "Solicitar presupuesto"}
             </button>
             <Link href="/sistemas-agua">
               <a className="flex items-center justify-center gap-2 px-8 py-4 border border-[#3A5A3A] text-[#3A5A3A] rounded-xl font-medium hover:bg-[#F0F4F0] transition-colors">
