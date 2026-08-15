@@ -384,10 +384,19 @@ export default function Home() {
               </h2>
               <div className="section-divider" />
               <p className="text-[oklch(0.28_0.025_55)] leading-relaxed mb-5 font-body mt-6" style={{ fontWeight: 300 }}>
-                Soy terapeuta holística con años de experiencia acompañando a personas en su camino hacia una vida más consciente y natural. Mi misión es ofrecerte herramientas prácticas y conocimiento profundo para que puedas transformar tu salud desde adentro.
+                Soy Cristina Battistelli, naturópata y apasionada por la salud desde una visión integrativa.
+              </p>
+              <p className="text-[oklch(0.28_0.025_55)] leading-relaxed mb-5 font-body" style={{ fontWeight: 300 }}>
+                Desde siempre he sido una buscadora, movida por una profunda curiosidad por la naturaleza, la salud y todo aquello que aún nos queda por comprender sobre el ser humano. Esa búsqueda me llevó a explorar la alimentación ecológica, la naturopatía y diferentes tradiciones de medicina ancestral, ampliando poco a poco mi forma de entender la salud y reforzando mi confianza en la capacidad del cuerpo humano para recuperar el equilibrio cuando se le ofrecen las condiciones adecuadas.
+              </p>
+              <p className="text-[oklch(0.28_0.025_55)] leading-relaxed mb-5 font-body" style={{ fontWeight: 300 }}>
+                Lo que siempre ha sido una pasión acabó convirtiéndose en mi profesión. Desde entonces no he dejado de estudiar, formarme e integrar conocimientos que amplíen mi manera de entender la salud. Me gusta cuestionar, aprender de diferentes disciplinas y quedarme siempre con aquello que pueda aportar un valor real a las personas que acompaño.
+              </p>
+              <p className="text-[oklch(0.28_0.025_55)] leading-relaxed mb-5 font-body" style={{ fontWeight: 300 }}>
+                Con el tiempo entendí que la salud no depende únicamente de la alimentación. En ella influyen muchos otros factores: el entorno en el que vivimos, los hábitos, el sistema nervioso, las emociones, la epigenética y la forma en la que cada persona vive su propia historia.
               </p>
               <p className="text-[oklch(0.28_0.025_55)] leading-relaxed mb-8 font-body" style={{ fontWeight: 300 }}>
-                Creo profundamente en el poder de la naturaleza y en la capacidad innata del cuerpo para sanar cuando le damos las condiciones adecuadas.
+                No creo en soluciones universales. Cada proceso es único, por eso acompaño a cada persona desde una visión global y diseño una hoja de ruta personalizada, adaptada a sus necesidades.
               </p>
               <Link
                 href="/contacto"
