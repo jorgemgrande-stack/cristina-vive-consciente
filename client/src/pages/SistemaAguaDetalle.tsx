@@ -258,7 +258,7 @@ export default function SistemaAguaDetalle() {
                   <img
                     src={allImages[activeImage]}
                     alt={product.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain p-10"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">

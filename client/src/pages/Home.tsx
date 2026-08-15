@@ -498,15 +498,15 @@ export default function Home() {
                 return (
                   <div key={product.id} className="group card-natural overflow-hidden flex flex-col">
                     {/* Image */}
-                    <div className="relative overflow-hidden" style={{ aspectRatio: "16/9" }}>
+                    <div className="relative overflow-hidden bg-[oklch(0.94_0.012_80)]" style={{ aspectRatio: "4/3" }}>
                       {product.mainImage ? (
                         <img
                           src={product.mainImage}
                           alt={product.title}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          className="w-full h-full object-contain p-8 transition-transform duration-700 group-hover:scale-105"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-[oklch(0.94_0.012_80)]">
+                        <div className="w-full h-full flex items-center justify-center">
                           <Droplets size={40} className="text-[oklch(0.72_0.06_148)]" />
                         </div>
                       )}
