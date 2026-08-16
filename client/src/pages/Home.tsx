@@ -251,16 +251,16 @@ export default function Home() {
       {/* ── INTRO STRIP ──────────────────────────────────────── */}
       <section className="bg-[oklch(0.52_0.08_148)] py-5">
         <div className="container">
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-2">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 sm:gap-x-8 lg:gap-x-10 gap-y-2">
             {["Comprensión del síntoma", "Entorno y salud ambiental", "Educación para la salud", "Hojas de ruta personalizadas", "Guías y recursos"].map(
-              (item, i) => (
+              (item, i, arr) => (
                 <span
                   key={i}
-                  className="text-white/90 text-xs tracking-widest uppercase font-body"
+                  className="flex items-center gap-x-6 sm:gap-x-8 lg:gap-x-10 text-white/90 text-[0.65rem] sm:text-xs tracking-widest uppercase font-body"
                   style={{ fontWeight: 400, letterSpacing: "0.12em" }}
                 >
-                  {i > 0 && <span className="mr-10 text-white/40">·</span>}
                   {item}
+                  {i < arr.length - 1 && <span className="text-white/40" aria-hidden="true">·</span>}
                 </span>
               )
             )}
