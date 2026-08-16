@@ -4,7 +4,7 @@
 
 import { useState } from "react";
 import { Link } from "wouter";
-import { Plus, FileText, ChevronDown, ArrowRight, Download, Send } from "lucide-react";
+import { Plus, FileText, ChevronDown, ArrowRight, Download, Send, Trash2, AlertTriangle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import CRMLayout from "@/components/CRMLayout";
@@ -44,6 +44,16 @@ export default function CRMFacturas() {
     setSendingId(invoiceId);
     sendByEmail.mutate({ id: invoiceId });
   }
+
+  const [confirmDelete, setConfirmDelete] = useState<{ id: number; invoiceNumber: string; status: string } | null>(null);
+  const deleteInvoice = trpc.crm.invoices.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Factura eliminada");
+      setConfirmDelete(null);
+      refetch();
+    },
+    onError: (err) => toast.error(err.message ?? "Error al eliminar la factura"),
+  });
 
   return (
     <CRMLayout title="Facturas">
@@ -200,6 +210,14 @@ export default function CRMFacturas() {
                         <ArrowRight size={13} />
                       </Link>
                     )}
+                    {/* Eliminar */}
+                    <button
+                      onClick={() => setConfirmDelete({ id: inv.id, invoiceNumber: inv.invoiceNumber, status: inv.status })}
+                      className="w-7 h-7 flex items-center justify-center bg-[oklch(0.97_0.006_85)] text-[oklch(0.38_0.02_55)] hover:bg-red-50 hover:text-red-500 transition-colors"
+                      title="Eliminar factura"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
                 </div>
               );
@@ -215,6 +233,48 @@ export default function CRMFacturas() {
           </div>
         )}
       </div>
+
+      {/* Delete confirm modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-[oklch(0.92_0.01_80)] p-6 max-w-sm w-full space-y-4 shadow-lg" style={{ borderRadius: 0 }}>
+            <h2 className="font-heading text-[oklch(0.35_0.05_148)] text-lg">Eliminar factura</h2>
+
+            {confirmDelete.status !== "draft" ? (
+              <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200">
+                <AlertTriangle size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm font-body text-amber-800 leading-snug">
+                  Esta factura ya fue emitida ({STATUS_CONFIG[confirmDelete.status]?.label ?? confirmDelete.status}). Eliminarla dejará un hueco en la numeración correlativa ({confirmDelete.invoiceNumber}), lo cual puede incumplir la normativa fiscal española de facturación. Si es un error, considera marcarla como "Cancelada" en vez de borrarla.
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm font-body text-[oklch(0.38_0.02_55)]">
+                ¿Eliminar permanentemente la factura {confirmDelete.invoiceNumber}? Esta acción no se puede deshacer.
+              </p>
+            )}
+
+            <div className="flex gap-3 justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                className="px-4 py-2 border border-[oklch(0.92_0.01_80)] text-sm font-body text-[oklch(0.38_0.02_55)] hover:bg-[oklch(0.97_0.006_85)] transition-colors"
+                style={{ borderRadius: 0 }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={deleteInvoice.isPending}
+                onClick={() => deleteInvoice.mutate({ id: confirmDelete.id })}
+                className="px-4 py-2 bg-red-500 text-white text-sm font-body hover:bg-red-600 disabled:opacity-50 transition-colors"
+                style={{ borderRadius: 0 }}
+              >
+                {deleteInvoice.isPending ? "Eliminando..." : "Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </CRMLayout>
   );
 }

@@ -327,6 +327,13 @@ export async function replaceInvoiceItems(
   );
 }
 
+export async function deleteInvoice(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(invoiceItems).where(eq(invoiceItems.invoiceId, id));
+  await db.delete(invoices).where(eq(invoices.id, id));
+}
+
 export async function getNextInvoiceNumber(): Promise<string> {
   const db = await getDb();
   if (!db) return `BION-${new Date().getFullYear()}-001`;

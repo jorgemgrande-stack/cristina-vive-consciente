@@ -38,6 +38,7 @@ import {
   getInvoiceById,
   createInvoice,
   updateInvoice,
+  deleteInvoice,
   replaceInvoiceItems,
   getNextInvoiceNumber,
   getDashboardStats,
@@ -513,6 +514,15 @@ const invoicesRouter = router({
       if (items !== undefined) {
         await replaceInvoiceItems(id, items);
       }
+      return { success: true };
+    }),
+
+  delete: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const inv = await getInvoiceById(input.id);
+      if (!inv) throw new TRPCError({ code: "NOT_FOUND", message: "Factura no encontrada" });
+      await deleteInvoice(input.id);
       return { success: true };
     }),
 
