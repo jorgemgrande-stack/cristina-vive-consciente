@@ -2,8 +2,8 @@
  * Galería — CRM Cristina Vive Consciente
  * Muestra todos los archivos alojados en el servidor con opción de copiar URL y eliminar.
  */
-import { useState } from "react";
-import { Copy, Trash2, ImageIcon, FileIcon, Search, Check, ShieldCheck } from "lucide-react";
+import { useRef, useState } from "react";
+import { Copy, Trash2, ImageIcon, FileIcon, Search, Check, ShieldCheck, Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import CRMLayout from "@/components/CRMLayout";
@@ -27,6 +27,8 @@ export default function Galeria() {
   const [filter, setFilter] = useState<"all" | "image" | "file">("all");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useUtils();
   const { data: files = [], isLoading } = trpc.gallery.list.useQuery();
@@ -47,6 +49,35 @@ export default function Galeria() {
       toast.success("URL copiada al portapapeles");
       setTimeout(() => setCopiedKey(null), 2000);
     });
+  }
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Error desconocido" }));
+        throw new Error(err.error ?? "Error al subir la imagen");
+      }
+      const data = await res.json();
+      await utils.gallery.list.invalidate();
+      copyUrl(data.url, data.key);
+      toast.success("Imagen subida y URL copiada al portapapeles");
+    } catch (err: any) {
+      toast.error(err.message ?? "Error al subir la imagen");
+    } finally {
+      setUploading(false);
+    }
   }
 
   const filtered = files.filter((f) => {
@@ -77,6 +108,33 @@ export default function Galeria() {
               imágenes
             </span>
           </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleUpload}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => !uploading && fileInputRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-2 px-4 py-2 bg-[oklch(0.52_0.08_148)] text-white text-sm font-body hover:opacity-90 disabled:opacity-50 transition-opacity"
+            style={{ borderRadius: 0 }}
+          >
+            {uploading ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                Subiendo...
+              </>
+            ) : (
+              <>
+                <Upload size={14} />
+                Subir imagen
+              </>
+            )}
+          </button>
         </div>
 
         {/* Filters */}
