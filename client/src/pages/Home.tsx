@@ -252,7 +252,7 @@ export default function Home() {
       <section className="bg-[oklch(0.52_0.08_148)] py-5">
         <div className="container">
           <div className="flex flex-wrap items-center justify-center gap-x-6 sm:gap-x-8 lg:gap-x-10 gap-y-2">
-            {["Comprensión del síntoma", "Entorno y salud ambiental", "Educación para la salud", "Hojas de ruta personalizadas", "Guías y recursos"].map(
+            {["Comprensión del síntoma", "Entorno y salud ambiental", "Educación para la salud", "Guías y recursos"].map(
               (item, i, arr) => (
                 <span
                   key={i}
