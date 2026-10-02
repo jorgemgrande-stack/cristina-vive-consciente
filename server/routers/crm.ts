@@ -14,6 +14,17 @@ import {
   sendAppointmentCancelledAdminEmail,
   sendRescheduleProposalEmail,
 } from "../email";
+import { selectProposedSlot, trackNotification } from "../bookingActions";
+import {
+  ACCEPTABLE_FROM,
+  APPOINTMENT_SERVICE_TYPES,
+  CANCELLABLE_FROM,
+  PROPOSABLE_FROM,
+  canTransition,
+  madridLocalToEpoch,
+  validateRequestedDate,
+  type AppointmentStatus,
+} from "../bookingRules";
 import {
   getClients,
   getClientById,
@@ -26,7 +37,8 @@ import {
   updateAppointment,
   getTodayAppointments,
   getUpcomingAppointments,
-  getAppointmentByRescheduleToken,
+  getAppointmentEvents,
+  logAppointmentEvent,
   getClientNotes,
   createClientNote,
   updateClientNote,
@@ -132,12 +144,23 @@ const clientsRouter = router({
 });
 
 // ─── APPOINTMENTS ─────────────────────────────────────────────────────────────
+/** Falla con CONFLICT si la cita no está en un estado desde el que se permite la acción. */
+function assertTransition(status: AppointmentStatus, allowed: AppointmentStatus[], action: string) {
+  if (!canTransition(status, allowed)) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: `No se puede ${action}: la cita ya está "${status}". Recarga la lista para ver su estado actual.`,
+    });
+  }
+}
+
 const appointmentsRouter = router({
   list: adminProcedure
     .input(
       z.object({
         clientId: z.number().optional(),
         status: z.string().optional(),
+        serviceType: z.string().optional(),
         from: z.number().optional(),
         to: z.number().optional(),
       })
@@ -152,6 +175,11 @@ const appointmentsRouter = router({
       return appt;
     }),
 
+  /** Historial de la cita: alta, cambios de estado y notificaciones (con su resultado). */
+  events: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .query(({ input }) => getAppointmentEvents(input.id)),
+
   today: adminProcedure.query(() => getTodayAppointments()),
 
   upcoming: adminProcedure
@@ -162,16 +190,7 @@ const appointmentsRouter = router({
     .input(
       z.object({
         clientId: z.number(),
-        serviceType: z.enum([
-          "consulta_acompanamiento",
-          "consulta_naturopata",
-          "consulta_breve",
-          "consulta_express",
-          "biohabitabilidad",
-          "kinesiologia",
-          "masaje",
-          "otro",
-        ]),
+        serviceType: z.enum(APPOINTMENT_SERVICE_TYPES),
         serviceLabel: z.string().optional(),
         scheduledAt: z.number(),
         durationMinutes: z.number().optional(),
@@ -190,16 +209,7 @@ const appointmentsRouter = router({
     .input(
       z.object({
         id: z.number(),
-        serviceType: z.enum([
-          "consulta_acompanamiento",
-          "consulta_naturopata",
-          "consulta_breve",
-          "consulta_express",
-          "biohabitabilidad",
-          "kinesiologia",
-          "masaje",
-          "otro",
-        ]).optional(),
+        serviceType: z.enum(APPOINTMENT_SERVICE_TYPES).optional(),
         serviceLabel: z.string().optional(),
         scheduledAt: z.number().optional(),
         durationMinutes: z.number().optional(),
@@ -209,75 +219,104 @@ const appointmentsRouter = router({
         internalNotes: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { id, ...data } = input;
+      // Cambio manual de estado (desplegable del listado): no envía emails, pero queda registrado.
+      const before = data.status ? await getAppointmentById(id) : undefined;
       await updateAppointment(id, data);
+      if (data.status && before && before.appointment.status !== data.status) {
+        await logAppointmentEvent({
+          appointmentId: id,
+          type: "status_changed",
+          fromStatus: before.appointment.status,
+          toStatus: data.status,
+          detail: "Cambio manual (sin notificación al cliente)",
+          actorUserId: ctx.user.id,
+        });
+      }
       return { success: true };
     }),
 
-  /** Acepta una cita pendiente → confirmed + emails */
+  /** Acepta una solicitud pendiente → confirmed + emails. Solo desde "pending". */
   accept: adminProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const row = await getAppointmentById(input.id);
       if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Cita no encontrada" });
       const { appointment: appt, client } = row;
+      assertTransition(appt.status, ACCEPTABLE_FROM, "confirmar");
       await updateAppointment(input.id, { status: "confirmed" });
+      await logAppointmentEvent({
+        appointmentId: input.id,
+        type: "status_changed",
+        fromStatus: appt.status,
+        toStatus: "confirmed",
+        actorUserId: ctx.user.id,
+      });
 
       const emailData = {
         clientFirstName: client?.firstName ?? "Cliente",
         clientEmail: client?.email ?? "",
         serviceLabel: appt.serviceLabel ?? appt.serviceType,
         scheduledAt: appt.scheduledAt,
-        modality: appt.modality ?? "zoom",
+        modality: appt.modality ?? "presencial",
       };
 
       if (client?.email) {
-        sendAppointmentAcceptedEmail(emailData).catch((e) =>
-          console.warn("[Email] accept client:", e)
-        );
+        void trackNotification({
+          appointmentId: input.id, channel: "email", audience: "client", template: "accepted", actorUserId: ctx.user.id,
+          run: () => sendAppointmentAcceptedEmail(emailData),
+        });
       }
-      sendAppointmentAcceptedAdminEmail({
-        ...emailData,
-        clientLastName: client?.lastName ?? "",
-        clientPhone: client?.phone ?? undefined,
-      }).catch((e) => console.warn("[Email] accept admin:", e));
+      void trackNotification({
+        appointmentId: input.id, channel: "email", audience: "admin", template: "accepted", actorUserId: ctx.user.id,
+        run: () => sendAppointmentAcceptedAdminEmail({ ...emailData, clientLastName: client?.lastName ?? "", clientPhone: client?.phone ?? undefined }),
+      });
 
       return { success: true };
     }),
 
-  /** Cancela una cita con motivo → cancelled + emails */
+  /** Rechaza/cancela una cita con motivo → cancelled + emails. No sobre citas ya completadas o canceladas. */
   cancelWithReason: adminProcedure
     .input(z.object({ id: z.number(), reason: z.string().min(1) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const row = await getAppointmentById(input.id);
       if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Cita no encontrada" });
       const { appointment: appt, client } = row;
+      assertTransition(appt.status, CANCELLABLE_FROM, "cancelar");
       await updateAppointment(input.id, { status: "cancelled", cancellationReason: input.reason });
+      await logAppointmentEvent({
+        appointmentId: input.id,
+        type: "status_changed",
+        fromStatus: appt.status,
+        toStatus: "cancelled",
+        actorUserId: ctx.user.id,
+      });
 
       const emailData = {
         clientFirstName: client?.firstName ?? "Cliente",
         clientEmail: client?.email ?? "",
         serviceLabel: appt.serviceLabel ?? appt.serviceType,
         scheduledAt: appt.scheduledAt,
-        modality: appt.modality ?? "zoom",
+        modality: appt.modality ?? "presencial",
         cancellationReason: input.reason,
       };
 
       if (client?.email) {
-        sendAppointmentCancelledEmail(emailData).catch((e) =>
-          console.warn("[Email] cancel client:", e)
-        );
+        void trackNotification({
+          appointmentId: input.id, channel: "email", audience: "client", template: "cancelled", actorUserId: ctx.user.id,
+          run: () => sendAppointmentCancelledEmail(emailData),
+        });
       }
-      sendAppointmentCancelledAdminEmail({
-        ...emailData,
-        clientLastName: client?.lastName ?? "",
-      }).catch((e) => console.warn("[Email] cancel admin:", e));
+      void trackNotification({
+        appointmentId: input.id, channel: "email", audience: "admin", template: "cancelled", actorUserId: ctx.user.id,
+        run: () => sendAppointmentCancelledAdminEmail({ ...emailData, clientLastName: client?.lastName ?? "" }),
+      });
 
       return { success: true };
     }),
 
-  /** Propone nuevas fechas → rescheduled + genera token + envía email al cliente */
+  /** Propone nuevas fechas → rescheduled + token de un solo uso + email al cliente */
   proposeSlots: adminProcedure
     .input(
       z.object({
@@ -285,10 +324,18 @@ const appointmentsRouter = router({
         slots: z.array(z.object({ date: z.string(), time: z.string() })).min(1).max(5),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const row = await getAppointmentById(input.id);
       if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Cita no encontrada" });
       const { appointment: appt, client } = row;
+      assertTransition(appt.status, PROPOSABLE_FROM, "proponer otra fecha");
+
+      for (const s of input.slots) {
+        const err = validateRequestedDate(s.date);
+        if (err || Number.isNaN(madridLocalToEpoch(s.date, s.time))) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Fecha propuesta no válida (${s.date} ${s.time}): ${err ?? "hora no válida"}` });
+        }
+      }
 
       const token = crypto.randomBytes(24).toString("hex");
       await updateAppointment(input.id, {
@@ -296,54 +343,40 @@ const appointmentsRouter = router({
         rescheduleToken: token,
         proposedSlots: JSON.stringify(input.slots),
       });
+      await logAppointmentEvent({
+        appointmentId: input.id,
+        type: "status_changed",
+        fromStatus: appt.status,
+        toStatus: "rescheduled",
+        detail: `Propuestas: ${input.slots.map((s) => `${s.date} ${s.time}`).join(", ")}`,
+        actorUserId: ctx.user.id,
+      });
 
       const emailData = {
         clientFirstName: client?.firstName ?? "Cliente",
         clientEmail: client?.email ?? "",
         serviceLabel: appt.serviceLabel ?? appt.serviceType,
         scheduledAt: appt.scheduledAt,
-        modality: appt.modality ?? "zoom",
+        modality: appt.modality ?? "presencial",
         proposedSlots: input.slots,
         rescheduleToken: token,
       };
 
       if (client?.email) {
-        sendRescheduleProposalEmail(emailData).catch((e) =>
-          console.warn("[Email] proposeSlots:", e)
-        );
+        void trackNotification({
+          appointmentId: input.id, channel: "email", audience: "client", template: "reschedule_proposed", actorUserId: ctx.user.id,
+          run: () => sendRescheduleProposalEmail(emailData),
+        });
       }
 
       return { success: true, token };
     }),
 
-  /** Público: el cliente selecciona un slot propuesto */
+  /** Público: el cliente selecciona un slot propuesto (misma lógica que bookings.selectSlot) */
   selectSlot: publicProcedure
     .input(z.object({ token: z.string(), slotIndex: z.number().min(0).max(4) }))
     .mutation(async ({ input }) => {
-      const row = await getAppointmentByRescheduleToken(input.token);
-      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Enlace no válido o expirado" });
-      const { appointment: appt } = row;
-
-      const slots: Array<{ date: string; time: string }> = appt.proposedSlots
-        ? JSON.parse(appt.proposedSlots)
-        : [];
-      if (!slots[input.slotIndex]) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Opción no válida" });
-      }
-
-      const chosen = slots[input.slotIndex];
-      const [year, month, day] = chosen.date.split("-").map(Number);
-      const [hour, minute] = chosen.time.split(":").map(Number);
-      const newScheduledAt = new Date(year, month - 1, day, hour, minute).getTime();
-
-      // Nueva cita pending con la fecha elegida, limpia el token
-      await updateAppointment(appt.id, {
-        scheduledAt: newScheduledAt,
-        status: "pending",
-        rescheduleToken: null as any,
-        proposedSlots: null as any,
-      });
-
+      await selectProposedSlot(input.token, input.slotIndex);
       return { success: true };
     }),
 });

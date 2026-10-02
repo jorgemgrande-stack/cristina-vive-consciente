@@ -1,26 +1,47 @@
 /**
  * Bookings Router — Capa pública de solicitud de citas
- * Permite a usuarios sin autenticar solicitar una cita.
+ * Permite a usuarios sin autenticar solicitar una cita (consulta o masaje).
  * Reutiliza las tablas clients y appointments del CRM.
- * Las citas se crean con status "pending" para que Cristina las gestione desde el CRM.
+ * Las citas se crean con status "pending": NO son una reserva confirmada hasta que
+ * Cristina las acepta desde el CRM (crm.appointments.accept).
  *
  * Flujo:
- * 1. Buscar/crear cliente (deduplicación por email)
- * 2. Crear cita con status "pending"
- * 3. Enviar email de confirmación al cliente
- * 4. Enviar email de notificación al admin
- * 5. Notificar al admin via sistema de notificaciones Manus
+ * 1. Resolver el servicio desde la BD (nombre, duración, precio, tipo) — no se fía del cliente
+ * 2. Validar fecha (no pasada, hora de Madrid) y modalidad permitida para ese servicio
+ * 3. Buscar/crear cliente (deduplicación por email) y evitar solicitudes duplicadas
+ * 4. Crear cita "pending" + registrar en el historial
+ * 5. Notificar al cliente y a Cristina (cada envío queda registrado con su resultado)
  * 6. Devolver enlace de WhatsApp pre-rellenado para el cliente
  */
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
-import { createClient, createAppointment, findClientByEmail, getAppointmentByRescheduleToken, updateAppointment } from "../db";
+import {
+  createClient,
+  createAppointment,
+  findClientByEmail,
+  getAppointmentByRescheduleToken,
+  getServiceBySlug,
+  findOpenDuplicateAppointment,
+  logAppointmentEvent,
+} from "../db";
 import { notifyOwner } from "../_core/notification";
 import { sendClientConfirmationEmail, sendAdminNotificationEmail } from "../email";
 import { notifyAdminNewBooking } from "../whatsapp";
+import { selectProposedSlot, trackNotification } from "../bookingActions";
+import {
+  APPOINTMENT_SERVICE_TYPES,
+  MASSAGE_TIME_SLOTS,
+  allowedModalities,
+  buildServiceLabel,
+  madridLocalToEpoch,
+  resolveAppointmentServiceType,
+  validateRequestedDate,
+  type AppointmentServiceType,
+} from "../bookingRules";
 
-const SERVICE_LABELS: Record<string, string> = {
+// Respaldo si un servicio "legacy" del formulario no está en la tabla services.
+const LEGACY_SERVICE_LABELS: Record<string, string> = {
   consulta_acompanamiento: "Consulta + Acompañamiento 21 días",
   consulta_naturopata: "Consulta Naturópata (60 min)",
   consulta_breve: "Consulta Breve (30 min)",
@@ -36,173 +57,179 @@ const WHATSAPP_ADMIN_NUMBER = process.env.WHATSAPP_ADMIN_NUMBER ?? "34600000000"
 export const bookingsRouter = router({
   /**
    * Solicitud pública de cita.
-   * 1. Busca si el cliente ya existe por email.
-   * 2. Si no existe, lo crea como "lead".
-   * 3. Crea la cita con status "pending".
-   * 4. Envía emails de confirmación y notificación.
-   * 5. Devuelve enlace de WhatsApp para el cliente.
+   * `serviceType` es el slug del servicio elegido (tabla `services`). Los masajes tienen slugs
+   * libres (p. ej. masaje_relajante_navas_de_rio_frio_segovia) y se guardan como serviceType
+   * "masaje" en la cita; el servicio concreto queda en serviceLabel.
    */
   request: publicProcedure
     .input(
       z.object({
         // Datos del solicitante
-        firstName: z.string().min(1, "El nombre es obligatorio"),
-        lastName: z.string().min(1, "Los apellidos son obligatorios"),
-        email: z.string().email("Email no válido"),
-        phone: z.string().optional(),
+        firstName: z.string().trim().min(1, "El nombre es obligatorio").max(100),
+        lastName: z.string().trim().min(1, "Los apellidos son obligatorios").max(100),
+        email: z.string().trim().email("Email no válido").max(320),
+        phone: z.string().trim().max(30).optional(),
         // Datos de la cita
-        serviceType: z.enum([
-          "consulta_acompanamiento",
-          "consulta_naturopata",
-          "consulta_breve",
-          "consulta_express",
-          "biohabitabilidad",
-          "kinesiologia",
-          "masaje",
-          "otro",
-        ]),
+        serviceType: z.string().trim().min(1).max(100),
         preferredDate: z.string().min(1, "La fecha preferida es obligatoria"), // "YYYY-MM-DD"
-        preferredTime: z.string().optional(), // "HH:MM"
+        preferredTime: z.string().optional(), // "HH:MM" (consultas)
+        /** Franja preferida (masajes): mañana / tarde / sin preferencia */
+        timeSlot: z.enum(["morning", "afternoon", "any"]).optional(),
         modality: z.enum(["presencial", "telefono", "zoom", "whatsapp"]).default("zoom"),
-        message: z.string().optional(),
+        message: z.string().trim().max(1000).optional(),
       })
     )
     .mutation(async ({ input }) => {
-      // 1. Buscar o crear cliente (deduplicación por email, case-insensitive)
-      let clientId: number;
-      const emailNormalized = input.email.trim().toLowerCase();
+      // 1. Resolver el servicio desde la BD (fuente de verdad de nombre, duración y precio)
+      const service = input.serviceType === "otro" ? null : await getServiceBySlug(input.serviceType);
+      if (service && service.status !== "active") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Este servicio no está disponible actualmente" });
+      }
+      const isLegacy = (APPOINTMENT_SERVICE_TYPES as readonly string[]).includes(input.serviceType);
+      if (!service && !isLegacy) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Servicio no válido" });
+      }
 
+      const serviceType: AppointmentServiceType = service
+        ? resolveAppointmentServiceType(service)
+        : (input.serviceType as AppointmentServiceType);
+      const serviceLabel = service
+        ? buildServiceLabel(service.name, service.durationLabel, service.durationMinutes)
+        : LEGACY_SERVICE_LABELS[input.serviceType] ?? input.serviceType;
+      const isMassage = serviceType === "masaje";
+
+      // 2. Modalidad: un masaje solo es presencial (no se acepta Zoom/teléfono/WhatsApp)
+      if (!allowedModalities(serviceType).includes(input.modality)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Los masajes solo se realizan de forma presencial" });
+      }
+
+      // 3. Fecha y hora (siempre hora de Madrid; el servidor corre en UTC)
+      const dateError = validateRequestedDate(input.preferredDate);
+      if (dateError) throw new TRPCError({ code: "BAD_REQUEST", message: dateError });
+
+      const slotKey = isMassage ? input.timeSlot ?? "any" : null;
+      const timeStr = isMassage
+        ? MASSAGE_TIME_SLOTS[slotKey!].start
+        : input.preferredTime && /^\d{2}:\d{2}$/.test(input.preferredTime)
+          ? input.preferredTime
+          : "12:00";
+      const scheduledAt = madridLocalToEpoch(input.preferredDate, timeStr);
+      if (Number.isNaN(scheduledAt)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Fecha u hora no válida" });
+      }
+      // Lo que se muestra en emails/WhatsApp: la franja (masaje) o la hora (consulta)
+      const displayTime = isMassage ? MASSAGE_TIME_SLOTS[slotKey!].label : input.preferredTime || undefined;
+
+      // 4. Buscar o crear cliente (deduplicación por email, case-insensitive)
+      const emailNormalized = input.email.toLowerCase();
       const existing = await findClientByEmail(emailNormalized);
+      const clientId = existing
+        ? existing.id
+        : await createClient({
+            firstName: input.firstName,
+            lastName: input.lastName,
+            email: emailNormalized,
+            phone: input.phone || null,
+            status: "lead",
+          });
 
-      if (existing) {
-        clientId = existing.id;
-      } else {
-        clientId = await createClient({
-          firstName: input.firstName.trim(),
-          lastName: input.lastName.trim(),
-          email: emailNormalized,
-          phone: input.phone?.trim() ?? null,
-          status: "lead",
+      // WhatsApp pre-rellenado para el cliente (no confirma nada: solo le avisa a Cristina)
+      const whatsappText = encodeURIComponent(
+        `Hola Cristina, acabo de solicitar una cita de ${serviceLabel} para el ${input.preferredDate}${displayTime ? ` (${displayTime})` : ""}. Quedo a la espera de tu confirmación. Gracias 🌿`
+      );
+      const whatsappUrl = `https://wa.me/${WHATSAPP_ADMIN_NUMBER}?text=${whatsappText}`;
+      const response = {
+        success: true as const,
+        status: "pending" as const,
+        whatsappUrl,
+        message:
+          "Solicitud recibida. Tu cita queda pendiente de confirmación de Cristina, que se pondrá en contacto contigo en las próximas 24–48 horas.",
+      };
+
+      // 5. Anti-duplicados: misma persona + mismo servicio + mismo día con solicitud abierta
+      const dayStart = madridLocalToEpoch(input.preferredDate, "00:00");
+      const dayEnd = madridLocalToEpoch(input.preferredDate, "23:59");
+      const duplicate = await findOpenDuplicateAppointment(clientId, serviceLabel, dayStart, dayEnd);
+      if (duplicate) return { ...response, duplicate: true as const };
+
+      // 6. Crear la cita con status pending
+      const notes = [
+        isMassage ? `Franja preferida: ${MASSAGE_TIME_SLOTS[slotKey!].label}` : null,
+        input.message ? `Mensaje del solicitante: ${input.message}` : null,
+      ].filter(Boolean);
+      const insert: any = await createAppointment({
+        clientId,
+        serviceType,
+        serviceLabel,
+        scheduledAt,
+        durationMinutes: service?.durationMinutes ?? undefined,
+        price: service?.price ?? undefined,
+        modality: input.modality,
+        status: "pending",
+        internalNotes: notes.length ? notes.join("\n") : null,
+      });
+      const appointmentId: number | undefined = insert?.insertId ? Number(insert.insertId) : undefined;
+
+      if (appointmentId) {
+        await logAppointmentEvent({
+          appointmentId,
+          type: "request_submitted",
+          toStatus: "pending",
+          detail: `Solicitud web: ${service?.slug ?? input.serviceType}${slotKey ? ` · franja ${slotKey}` : ""}`,
         });
       }
 
-      // 2. Construir timestamp de la cita con validación
-      const dateStr = input.preferredDate;
-      const timeStr = input.preferredTime ?? "12:00";
-      const scheduledAt = new Date(`${dateStr}T${timeStr}:00`).getTime();
-      if (isNaN(scheduledAt)) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Fecha u hora no válida" });
-      }
-
-      // 3. Crear la cita con status pending
-      const serviceLabel = SERVICE_LABELS[input.serviceType] ?? input.serviceType;
-      await createAppointment({
-        clientId,
-        serviceType: input.serviceType,
-        serviceLabel,
-        scheduledAt,
-        modality: input.modality,
-        status: "pending",
-        internalNotes: input.message
-          ? `Mensaje del solicitante: ${input.message}`
-          : null,
-      });
-
       // Datos comunes para emails
       const emailData = {
-        firstName: input.firstName.trim(),
-        lastName: input.lastName.trim(),
+        firstName: input.firstName,
+        lastName: input.lastName,
         email: emailNormalized,
-        phone: input.phone?.trim(),
+        phone: input.phone || undefined,
         serviceLabel,
-        preferredDate: dateStr,
-        preferredTime: input.preferredTime,
+        preferredDate: input.preferredDate,
+        preferredTime: displayTime,
         modality: input.modality,
-        message: input.message?.trim(),
+        message: input.message,
       };
 
-      // 4. Enviar email de confirmación al cliente (no bloqueante)
-      sendClientConfirmationEmail(emailData).catch((err) => {
-        console.warn("[Email] Error sending client confirmation:", err);
-      });
+      // 7. Notificaciones (no bloqueantes; cada una deja constancia de su resultado)
+      const notify = (channel: "email" | "whatsapp" | "owner", audience: "client" | "admin", template: string, run: () => Promise<unknown>) => {
+        if (!appointmentId) {
+          run().catch((err) => console.warn(`[Notify] ${channel}/${audience}/${template}:`, err));
+          return;
+        }
+        void trackNotification({ appointmentId, channel, audience, template, run });
+      };
 
-      // 5. Enviar email de notificación al admin (no bloqueante)
-      sendAdminNotificationEmail(emailData).catch((err) => {
-        console.warn("[Email] Error sending admin notification:", err);
-      });
-
-      // 6. Notificar al admin via WhatsApp (no bloqueante)
-      notifyAdminNewBooking({
-        firstName: input.firstName.trim(),
-        lastName: input.lastName.trim(),
-        phone: input.phone?.trim(),
-        email: emailNormalized,
-        serviceLabel,
-        preferredDate: dateStr,
-        preferredTime: input.preferredTime,
-        modality: input.modality,
-        notes: input.message?.trim(),
-      }).catch((err) => {
-        console.warn("[WhatsApp] Error notifying admin (booking):", err);
-      });
-
-      // 7. Notificar al admin via Manus (no bloqueante)
-      notifyOwner({
-        title: `Nueva solicitud de cita — ${input.firstName} ${input.lastName}`,
-        content: `${input.firstName} ${input.lastName} (${emailNormalized}${input.phone ? ` · ${input.phone}` : ""}) ha solicitado una cita de ${serviceLabel} para el ${dateStr}${input.preferredTime ? ` a las ${input.preferredTime}` : ""}. Modalidad: ${input.modality}.${input.message ? ` Mensaje: "${input.message}"` : ""}`,
-      }).catch((err) => {
-        console.warn("[Notification] Error notifying owner:", err);
-      });
-
-      // 7. Generar enlace de WhatsApp pre-rellenado para el cliente
-      // El cliente puede enviarse a sí mismo el mensaje de confirmación
-      const whatsappText = encodeURIComponent(
-        `Hola Cristina, acabo de solicitar una cita de ${serviceLabel} para el ${dateStr}${input.preferredTime ? ` a las ${input.preferredTime}` : ""}. Quedo a la espera de tu confirmación. Gracias 🌿`
+      notify("email", "client", "request_received", () => sendClientConfirmationEmail(emailData));
+      notify("email", "admin", "new_request", () => sendAdminNotificationEmail(emailData));
+      notify("whatsapp", "admin", "new_request", () =>
+        notifyAdminNewBooking({
+          firstName: input.firstName,
+          lastName: input.lastName,
+          phone: input.phone || undefined,
+          email: emailNormalized,
+          serviceLabel,
+          preferredDate: input.preferredDate,
+          preferredTime: displayTime,
+          modality: input.modality,
+          notes: input.message,
+        })
       );
-      const whatsappUrl = `https://wa.me/${WHATSAPP_ADMIN_NUMBER}?text=${whatsappText}`;
+      notify("owner", "admin", "new_request", () =>
+        notifyOwner({
+          title: `Nueva solicitud de cita — ${input.firstName} ${input.lastName}`,
+          content: `${input.firstName} ${input.lastName} (${emailNormalized}${input.phone ? ` · ${input.phone}` : ""}) ha solicitado una cita de ${serviceLabel} para el ${input.preferredDate}${displayTime ? ` (${displayTime})` : ""}. Modalidad: ${input.modality}.`,
+        })
+      );
 
-      return {
-        success: true,
-        whatsappUrl,
-        message: "Tu solicitud ha sido recibida. Cristina se pondrá en contacto contigo en las próximas 24–48 horas.",
-      };
+      return response;
     }),
 
-  /** El cliente selecciona uno de los slots propuestos por la admin */
+  /** El cliente selecciona uno de los slots propuestos por la admin (la cita vuelve a "pending") */
   selectSlot: publicProcedure
     .input(z.object({ token: z.string(), slotIndex: z.number().min(0).max(4) }))
-    .mutation(async ({ input }) => {
-      const row = await getAppointmentByRescheduleToken(input.token);
-      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Enlace no válido o expirado" });
-      const { appointment: appt } = row;
-
-      const slots: Array<{ date: string; time: string }> = appt.proposedSlots
-        ? JSON.parse(appt.proposedSlots as string)
-        : [];
-      if (!slots[input.slotIndex]) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Opción no válida" });
-      }
-
-      const chosen = slots[input.slotIndex];
-      const [year, month, day] = chosen.date.split("-").map(Number);
-      const [hour, minute] = chosen.time.split(":").map(Number);
-      const newScheduledAt = new Date(year, month - 1, day, hour, minute).getTime();
-
-      await updateAppointment(appt.id, {
-        scheduledAt: newScheduledAt,
-        status: "pending",
-        rescheduleToken: null as any,
-        proposedSlots: null as any,
-      });
-
-      // Datos del slot seleccionado para la respuesta
-      return {
-        success: true,
-        serviceLabel: appt.serviceLabel ?? appt.serviceType,
-        chosenDate: chosen.date,
-        chosenTime: chosen.time,
-      };
-    }),
+    .mutation(({ input }) => selectProposedSlot(input.token, input.slotIndex)),
 
   /** Devuelve los slots propuestos para mostrarlos en la página pública */
   getSlots: publicProcedure

@@ -28,6 +28,16 @@ const BASE_URL = "https://cristinaviveconsciente.es";
 const LOGO_URL =
   `${BASE_URL}/logo-bion.png`;
 
+/** ¿Hay SMTP configurado? Si no, los emails solo se escriben en el log (no se envían). */
+export function isEmailConfigured(): boolean {
+  return !!(SMTP_HOST && SMTP_USER && SMTP_PASS);
+}
+
+/** ¿Hay buzón de administración al que avisar de nuevas solicitudes? */
+export function isAdminEmailConfigured(): boolean {
+  return !!ADMIN_EMAIL;
+}
+
 function getTransporter() {
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
     return null; // modo dev: solo log
@@ -210,7 +220,7 @@ export async function sendClientConfirmationEmail(data: BookingEmailData): Promi
           Hola, ${data.firstName}
         </h1>
         <p style="margin:0 0 24px;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
-          Hemos recibido tu solicitud de cita. Cristina la revisará y se pondrá en contacto contigo en las próximas <strong>24–48 horas</strong> para confirmar los detalles.
+          Hemos recibido tu solicitud de cita. Cristina la revisará y se pondrá en contacto contigo en las próximas <strong>24–48 horas</strong> para confirmar los detalles. Hasta entonces, <strong>tu cita queda pendiente de confirmación</strong>: la fecha y la hora que indicaste son una preferencia, no una reserva confirmada.
         </p>
 
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F2EC;border-left:3px solid #3A5A3A;margin-bottom:24px;">
@@ -257,7 +267,7 @@ export async function sendClientConfirmationEmail(data: BookingEmailData): Promi
     ${emailFooter()}
   `);
 
-  const text = `Hola ${data.firstName},\n\nHemos recibido tu solicitud de cita.\n\nServicio: ${data.serviceLabel}\nFecha preferida: ${dateFormatted}\n${data.preferredTime ? `Hora preferida: ${data.preferredTime}\n` : ""}Modalidad: ${modalityLabel}\n\nCristina se pondrá en contacto contigo en las próximas 24–48 horas.\n\nCon cariño,\nCristina — BION`;
+  const text = `Hola ${data.firstName},\n\nHemos recibido tu solicitud de cita.\n\nServicio: ${data.serviceLabel}\nFecha preferida: ${dateFormatted}\n${data.preferredTime ? `Hora preferida: ${data.preferredTime}\n` : ""}Modalidad: ${modalityLabel}\n\nTu cita queda pendiente de confirmación: la fecha y hora indicadas son una preferencia, no una reserva confirmada. Cristina se pondrá en contacto contigo en las próximas 24–48 horas.\n\nCon cariño,\nCristina — BION`;
 
   await sendEmail({ to: data.email, subject, html, text });
 }
@@ -711,10 +721,10 @@ export interface AppointmentActionEmailData {
 
 export async function sendAppointmentAcceptedEmail(data: AppointmentActionEmailData): Promise<void> {
   const modalityLabel = MODALITY_LABELS[data.modality] ?? data.modality;
-  const dateFormatted = new Date(data.scheduledAt).toLocaleDateString("es-ES", {
+  const dateFormatted = new Date(data.scheduledAt).toLocaleDateString("es-ES", { timeZone: "Europe/Madrid",
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
-  const timeFormatted = new Date(data.scheduledAt).toLocaleTimeString("es-ES", {
+  const timeFormatted = new Date(data.scheduledAt).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid",
     hour: "2-digit", minute: "2-digit",
   });
 
@@ -777,8 +787,8 @@ export async function sendAppointmentAcceptedEmail(data: AppointmentActionEmailD
 
 export async function sendAppointmentAcceptedAdminEmail(data: AppointmentActionEmailData & { clientLastName: string; clientPhone?: string }): Promise<void> {
   if (!ADMIN_EMAIL) return;
-  const dateFormatted = new Date(data.scheduledAt).toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  const timeFormatted = new Date(data.scheduledAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  const dateFormatted = new Date(data.scheduledAt).toLocaleDateString("es-ES", { timeZone: "Europe/Madrid", weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const timeFormatted = new Date(data.scheduledAt).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" });
   const subject = `Cita confirmada — ${data.clientFirstName} ${data.clientLastName}`;
   const html = wrapEmail(`
     ${emailHeader()}
@@ -804,7 +814,7 @@ export async function sendAppointmentAcceptedAdminEmail(data: AppointmentActionE
 // ─── EMAIL: CITA CANCELADA (al cliente) ──────────────────────────────────────
 
 export async function sendAppointmentCancelledEmail(data: AppointmentActionEmailData): Promise<void> {
-  const dateFormatted = new Date(data.scheduledAt).toLocaleDateString("es-ES", {
+  const dateFormatted = new Date(data.scheduledAt).toLocaleDateString("es-ES", { timeZone: "Europe/Madrid",
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
@@ -852,7 +862,7 @@ export async function sendAppointmentCancelledEmail(data: AppointmentActionEmail
 
 export async function sendAppointmentCancelledAdminEmail(data: AppointmentActionEmailData & { clientLastName: string }): Promise<void> {
   if (!ADMIN_EMAIL) return;
-  const dateFormatted = new Date(data.scheduledAt).toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const dateFormatted = new Date(data.scheduledAt).toLocaleDateString("es-ES", { timeZone: "Europe/Madrid", weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const subject = `Cita cancelada — ${data.clientFirstName} ${data.clientLastName}`;
   const html = wrapEmail(`
     ${emailHeader()}
@@ -930,4 +940,32 @@ export async function sendRescheduleProposalEmail(data: AppointmentActionEmailDa
   const text = `Hola ${data.clientFirstName},\n\nTe propongo estas fechas para tu cita de ${data.serviceLabel}:\n\n${slotsText}\n\nSelecciona tu fecha aquí: ${selectUrl}\n\nCon cariño,\nCristina — BION`;
 
   await sendEmail({ to: data.clientEmail, subject, html, text });
+}
+
+// ─── EMAIL: EL CLIENTE HA ELEGIDO UNA FECHA PROPUESTA (al admin) ──────────────
+
+export async function sendAdminSlotSelectedEmail(data: AppointmentActionEmailData & { clientLastName: string; clientPhone?: string }): Promise<void> {
+  if (!ADMIN_EMAIL) return;
+  const dateFormatted = new Date(data.scheduledAt).toLocaleDateString("es-ES", { timeZone: "Europe/Madrid", weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const timeFormatted = new Date(data.scheduledAt).toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" });
+  const subject = `Fecha elegida por el cliente — ${data.clientFirstName} ${data.clientLastName}`;
+  const html = wrapEmail(`
+    ${emailHeader()}
+    ${adminBadge("Fecha elegida — pendiente de confirmar")}
+    <tr><td style="padding:32px 40px;">
+      <p style="margin:0 0 16px;font-size:14px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:300;">
+        <strong>${data.clientFirstName} ${data.clientLastName}</strong> ha elegido una de las fechas que propusiste. La cita vuelve a estar <strong>pendiente</strong>: confírmala desde el CRM para que el cliente reciba la confirmación.
+      </p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F2EC;border-left:3px solid #3A5A3A;">
+        <tr><td style="padding:16px 20px;">
+          <p style="margin:0 0 4px;font-size:12px;color:#5A4E3E;font-family:'DM Sans',Arial,sans-serif;">Servicio: <strong>${data.serviceLabel}</strong></p>
+          <p style="margin:0 0 4px;font-size:12px;color:#5A4E3E;font-family:'DM Sans',Arial,sans-serif;">Fecha elegida: <strong>${dateFormatted} a las ${timeFormatted}</strong></p>
+          <p style="margin:0 0 4px;font-size:12px;color:#5A4E3E;font-family:'DM Sans',Arial,sans-serif;">Email cliente: <a href="mailto:${data.clientEmail}" style="color:#3A5A3A;">${data.clientEmail}</a></p>
+          ${data.clientPhone ? `<p style="margin:0;font-size:12px;color:#5A4E3E;font-family:'DM Sans',Arial,sans-serif;">Teléfono: <a href="tel:${data.clientPhone}" style="color:#3A5A3A;">${data.clientPhone}</a></p>` : ""}
+        </td></tr>
+      </table>
+    </td></tr>
+    ${emailFooter()}
+  `);
+  await sendEmail({ to: ADMIN_EMAIL, subject, html });
 }

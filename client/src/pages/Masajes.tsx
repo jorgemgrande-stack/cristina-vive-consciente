@@ -17,7 +17,8 @@ const HERO = SITE_IMAGES.heroMasajes;
 const MODALITY_LABEL: Record<string, string> = {
   online: "Online",
   presencial: "Presencial",
-  ambos: "Presencial / Online",
+  // Un masaje nunca es online: "ambos" (dato heredado de la BD) se muestra solo como Presencial.
+  ambos: "Presencial",
 };
 
 const ACEITES = [

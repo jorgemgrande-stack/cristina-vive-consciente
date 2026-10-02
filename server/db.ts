@@ -1,4 +1,4 @@
-import { eq, desc, and, gte, lte, like, or, sql, asc } from "drizzle-orm";
+import { eq, ne, desc, and, gte, lte, like, or, sql, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -29,6 +29,8 @@ import {
   type InsertEbook,
   calendarEvents,
   type InsertCalendarEvent,
+  appointmentEvents,
+  type InsertAppointmentEvent,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -180,12 +182,15 @@ export async function getClientsCount() {
 }
 
 // ─── APPOINTMENTS ──────────────────────────────────────────────────────────────────────
-export async function getAppointments(filters?: { clientId?: number; status?: string; from?: number; to?: number }) {
+export async function getAppointments(filters?: { clientId?: number; status?: string; from?: number; to?: number; serviceType?: string }) {
   const db = await getDb();
   if (!db) return [];
   const conditions: any[] = [];
   if (filters?.clientId) conditions.push(eq(appointments.clientId, filters.clientId));
   if (filters?.status && filters.status !== "all") conditions.push(eq(appointments.status, filters.status as any));
+  // "consulta" = todo lo que no es masaje (consultas, kinesiología, biohabitabilidad, otros)
+  if (filters?.serviceType === "consulta") conditions.push(ne(appointments.serviceType, "masaje"));
+  else if (filters?.serviceType && filters.serviceType !== "all") conditions.push(eq(appointments.serviceType, filters.serviceType as any));
   if (filters?.from) conditions.push(gte(appointments.scheduledAt, filters.from));
   if (filters?.to) conditions.push(lte(appointments.scheduledAt, filters.to));
   let query = db.select({ appointment: appointments, client: { id: clients.id, firstName: clients.firstName, lastName: clients.lastName, email: clients.email, phone: clients.phone } }).from(appointments).leftJoin(clients, eq(appointments.clientId, clients.id)).$dynamic();
@@ -211,6 +216,61 @@ export async function updateAppointment(id: number, data: Partial<InsertAppointm
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(appointments).set(data).where(eq(appointments.id, id));
+}
+
+/**
+ * Anti-duplicados: ¿ya hay una solicitud abierta (pendiente o con fechas propuestas) de este
+ * cliente para este mismo servicio y día? Evita que un doble clic o un reintento cree dos citas.
+ */
+export async function findOpenDuplicateAppointment(clientId: number, serviceLabel: string, dayStart: number, dayEnd: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select({ id: appointments.id })
+    .from(appointments)
+    .where(
+      and(
+        eq(appointments.clientId, clientId),
+        eq(appointments.serviceLabel, serviceLabel),
+        gte(appointments.scheduledAt, dayStart),
+        lte(appointments.scheduledAt, dayEnd),
+        or(eq(appointments.status, "pending"), eq(appointments.status, "rescheduled"))
+      )
+    )
+    .limit(1);
+  return rows[0];
+}
+
+/**
+ * Historial de citas. Tolerante: si la tabla `appointment_events` aún no existe en la BD
+ * (migración 0020 sin aplicar) NO rompe el flujo de reservas, solo se pierde el historial.
+ */
+export async function logAppointmentEvent(data: InsertAppointmentEvent): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    await db.insert(appointmentEvents).values({
+      ...data,
+      detail: data.detail ? String(data.detail).slice(0, 500) : data.detail,
+    });
+  } catch (err) {
+    console.warn("[AppointmentEvents] No se pudo registrar el evento (¿migración 0020 pendiente?):", (err as Error).message);
+  }
+}
+
+export async function getAppointmentEvents(appointmentId: number) {
+  try {
+    const db = await getDb();
+    if (!db) return { available: false, events: [] as Array<typeof appointmentEvents.$inferSelect> };
+    const events = await db
+      .select()
+      .from(appointmentEvents)
+      .where(eq(appointmentEvents.appointmentId, appointmentId))
+      .orderBy(asc(appointmentEvents.createdAt), asc(appointmentEvents.id));
+    return { available: true, events };
+  } catch {
+    return { available: false, events: [] as Array<typeof appointmentEvents.$inferSelect> };
+  }
 }
 
 export async function getTodayAppointments() {

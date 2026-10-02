@@ -93,6 +93,37 @@ export const appointments = mysqlTable("appointments", {
   createdBy: int("createdBy"),
 });
 
+// ─── HISTORIAL DE CITAS (trazabilidad) ───────────────────────────────────────
+/**
+ * Registro de lo que ocurre con cada solicitud: alta, cambios de estado y envío de
+ * notificaciones (con su resultado). Tabla aislada: si aún no existe en la BD, el código
+ * lo tolera (ver logAppointmentEvent / getAppointmentEvents en server/db.ts).
+ * SQL de creación: drizzle/0020_appointment_events.sql (aplicar a mano; NO está en el journal).
+ * NO guardar datos personales ni de salud aquí (solo tipo de evento, estados y resultado).
+ */
+export const appointmentEvents = mysqlTable("appointment_events", {
+  id: int("id").autoincrement().primaryKey(),
+  appointmentId: int("appointmentId").notNull(),
+  /** request_submitted | status_changed | notification */
+  type: varchar("type", { length: 40 }).notNull(),
+  fromStatus: varchar("fromStatus", { length: 20 }),
+  toStatus: varchar("toStatus", { length: 20 }),
+  /** email | whatsapp | owner (solo para type = notification) */
+  channel: varchar("channel", { length: 20 }),
+  /** client | admin (a quién iba dirigida la notificación; sin direcciones) */
+  audience: varchar("audience", { length: 20 }),
+  /** sent | failed | skipped (notificaciones) */
+  result: varchar("result", { length: 20 }),
+  /** Plantilla/acción: request_received, accepted, cancelled, reschedule_proposed... o error resumido */
+  detail: varchar("detail", { length: 500 }),
+  /** Usuario admin que realizó la acción (null = cliente/sistema) */
+  actorUserId: int("actorUserId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AppointmentEvent = typeof appointmentEvents.$inferSelect;
+export type InsertAppointmentEvent = typeof appointmentEvents.$inferInsert;
+
 // ─── EVENTOS DE CALENDARIO ────────────────────────────────────────────────────
 export const calendarEvents = mysqlTable("calendar_events", {
   id: int("id").autoincrement().primaryKey(),

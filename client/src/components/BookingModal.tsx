@@ -1,14 +1,21 @@
 /**
- * BookingModal — Solicitud pública de cita
+ * BookingModal — Solicitud pública de cita (consultas y masajes)
  * Design: "Luz Botánica" — natural, elegante, minimalista
- * Escribe en la tabla appointments del CRM con status "pending"
- * NO duplica lógica del CRM interno
+ * Escribe en la tabla appointments del CRM con status "pending": es una SOLICITUD, no una
+ * reserva confirmada hasta que Cristina la acepta. NO duplica lógica del CRM interno.
+ *
+ * Si el servicio elegido es un masaje, el formulario cambia: se presenta como reserva de masaje,
+ * muestra duración/precio/lugar, solo ofrece modalidad presencial, pide una franja horaria y
+ * añade un paso de resumen antes de enviar. Las consultas mantienen el formulario de siempre.
  */
 
-import { useState } from "react";
-import { X, Leaf, CheckCircle2, Loader2, MessageCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Leaf, CheckCircle2, Loader2, MessageCircle, MapPin } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { MASSAGE_LOCATION, MASSAGE_TIME_SLOTS, type MassageTimeSlot } from "@shared/booking";
+import { BOOKING_EVENTS } from "@shared/bookingAnalytics";
+import { trackBookingEvent } from "@/lib/analytics";
 
 // Fallback estático por si la BD no responde
 const FALLBACK_SERVICES = [
@@ -44,6 +51,7 @@ type FormData = {
   preferredDate: string;
   preferredTime: string;
   modality: string;
+  timeSlot: MassageTimeSlot;
   message: string;
 };
 
@@ -56,8 +64,16 @@ const initialForm: FormData = {
   preferredDate: "",
   preferredTime: "",
   modality: "zoom",
+  timeSlot: "any",
   message: "",
 };
+
+/** "70.00" → "70 €"; sin precio fijo → "Consultar tarifa" */
+function formatPrice(price?: string | null): string {
+  if (!price) return "Consultar tarifa";
+  const n = Number(price);
+  return Number.isFinite(n) ? `${Number.isInteger(n) ? n : n.toFixed(2)} €` : "Consultar tarifa";
+}
 
 export default function BookingModal({ isOpen, onClose, preselectedService }: BookingModalProps) {
   const [form, setForm] = useState<FormData>({
@@ -65,6 +81,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
     serviceType: preselectedService ?? initialForm.serviceType,
   });
   const [submitted, setSubmitted] = useState(false);
+  const [step, setStep] = useState<"form" | "review">("form");
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
 
@@ -85,8 +102,46 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
       ]
     : FALLBACK_SERVICES;
 
+  // Servicio elegido y si es un masaje (los masajes tienen su propio formulario)
+  const selectedService = dbServices.find((s) => s.slug === form.serviceType);
+  const isMassage = selectedService?.type === "masaje" || form.serviceType === "masaje";
+  const selectedOption = serviceOptions.find((o) => o.value === form.serviceType);
+
+  // ¿Es masaje el servicio con este slug? (la lista de la BD manda; "masaje" es el slug legacy)
+  const isMassageSlug = (slug: string) =>
+    dbServices.find((s) => s.slug === slug)?.type === "masaje" || slug === "masaje";
+
+  // Modalidad coherente con el servicio: masaje = presencial; al salir de un masaje se vuelve a Zoom.
+  const modalityFor = (slug: string, current: string) =>
+    isMassageSlug(slug) ? "presencial" : current === "presencial" && isMassage ? "zoom" : current;
+
+  // Al abrir el modal (o cambiar el servicio preseleccionado) se reinicia el servicio elegido.
+  // Sin esto, el modal —que está montado siempre— conservaba el servicio de la primera apertura.
+  useEffect(() => {
+    if (!isOpen) return;
+    const slug = preselectedService ?? form.serviceType;
+    setForm((prev) => ({
+      ...prev,
+      serviceType: slug,
+      modality: isMassageSlug(slug) ? "presencial" : prev.modality,
+    }));
+    setStep("form");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, preselectedService, dbServices.length]);
+
+  // Señal secundaria (intención, no conversión): una vez por apertura del formulario
+  useEffect(() => {
+    if (isOpen) trackBookingEvent(BOOKING_EVENTS.FORM_OPENED, { service_slug: preselectedService ?? "sin_preseleccion" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
   const requestMutation = trpc.bookings.request.useMutation({
     onSuccess: (data) => {
+      trackBookingEvent(BOOKING_EVENTS.REQUEST_SUBMITTED, {
+        service_slug: form.serviceType,
+        service_group: isMassage ? "masaje" : "consulta",
+        modality: isMassage ? "presencial" : form.modality,
+      });
       setSubmitted(true);
       if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
     },
@@ -111,6 +166,11 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    // Masajes: primero un resumen para que el cliente vea exactamente qué envía
+    if (isMassage && step === "form") {
+      setStep("review");
+      return;
+    }
     requestMutation.mutate({
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
@@ -118,8 +178,9 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
       phone: form.phone.trim() || undefined,
       serviceType: form.serviceType as any,
       preferredDate: form.preferredDate,
-      preferredTime: form.preferredTime || undefined,
-      modality: form.modality as any,
+      preferredTime: isMassage ? undefined : form.preferredTime || undefined,
+      timeSlot: isMassage ? form.timeSlot : undefined,
+      modality: (isMassage ? "presencial" : form.modality) as any,
       message: form.message.trim() || undefined,
     });
   };
@@ -127,6 +188,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
   const handleClose = () => {
     setForm({ ...initialForm, serviceType: preselectedService ?? initialForm.serviceType });
     setSubmitted(false);
+    setStep("form");
     setWhatsappUrl(null);
     setErrors({});
     onClose();
@@ -163,7 +225,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
               className="font-display text-[oklch(0.18_0.018_55)]"
               style={{ fontWeight: 400, fontSize: "1.15rem" }}
             >
-              Solicitar consulta
+              {isMassage ? "Reservar masaje" : "Solicitar consulta"}
             </h2>
           </div>
           <button
@@ -184,10 +246,19 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
               className="font-display text-[oklch(0.18_0.018_55)] mb-3"
               style={{ fontWeight: 400, fontSize: "1.3rem" }}
             >
-              ¡Solicitud recibida!
+              {isMassage ? "Solicitud recibida" : "¡Solicitud recibida!"}
             </h3>
             <p className="text-[oklch(0.52_0.02_60)] text-sm leading-relaxed mb-6 font-body" style={{ fontWeight: 300 }}>
-              Cristina revisará tu solicitud y se pondrá en contacto contigo en las próximas 24–48 horas para confirmar la cita. Recibirás un email de confirmación.
+              {isMassage ? (
+                <>
+                  <strong style={{ fontWeight: 500 }}>Tu cita queda pendiente de confirmación de Cristina.</strong>{" "}
+                  La fecha y la franja que has indicado son una preferencia: todavía no es una reserva confirmada.
+                  Cristina te escribirá por email (y por teléfono si lo has indicado) en las próximas 24–48 horas para confirmar la hora o proponerte otra.
+                  Mientras tanto recibirás un email con el resumen de tu solicitud.
+                </>
+              ) : (
+                "Cristina revisará tu solicitud y se pondrá en contacto contigo en las próximas 24–48 horas para confirmar la cita. Recibirás un email de confirmación."
+              )}
             </p>
 
             {/* WhatsApp CTA */}
@@ -205,7 +276,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                 }}
               >
                 <MessageCircle size={15} />
-                Confirmar por WhatsApp
+                Avisar a Cristina por WhatsApp (opcional)
               </a>
             )}
 
@@ -221,9 +292,13 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
           /* ── FORM ── */
           <form onSubmit={handleSubmit} className="px-7 py-6 space-y-5">
             <p className="text-[oklch(0.52_0.02_60)] text-sm font-body leading-relaxed" style={{ fontWeight: 300 }}>
-              Rellena el formulario y Cristina confirmará la cita contigo personalmente.
+              {isMassage
+                ? "Envía tu solicitud de masaje. Cristina la revisará y te confirmará la cita personalmente: hasta entonces la fecha es solo una preferencia."
+                : "Rellena el formulario y Cristina confirmará la cita contigo personalmente."}
             </p>
 
+            {/* Campos del formulario (se ocultan en el paso de resumen de los masajes) */}
+            <div className={isMassage && step === "review" ? "hidden" : "space-y-5"}>
             {/* Nombre + Apellidos */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -290,11 +365,14 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
             {/* Tipo de consulta */}
             <div>
               <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
-                Tipo de consulta *
+                {isMassage ? "Masaje *" : "Tipo de consulta *"}
               </label>
               <select
                 value={form.serviceType}
-                onChange={set("serviceType")}
+                onChange={(e) => {
+                  const slug = e.target.value;
+                  setForm((prev) => ({ ...prev, serviceType: slug, modality: modalityFor(slug, prev.modality) }));
+                }}
                 className="w-full px-3 py-2.5 bg-white border border-[oklch(0.88_0.015_75)] text-sm font-body text-[oklch(0.18_0.018_55)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors appearance-none cursor-pointer"
                 style={{ borderRadius: 0, fontWeight: 300 }}
               >
@@ -304,6 +382,21 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                   </option>
                 ))}
               </select>
+              {isMassage && selectedService && (
+                <div className="mt-3 border border-[oklch(0.88_0.015_75)] bg-white px-4 py-3 text-xs font-body text-[oklch(0.38_0.02_55)] space-y-1" style={{ fontWeight: 300 }}>
+                  <p>
+                    <span className="text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 500 }}>{selectedService.name}</span>
+                    {" · "}
+                    {selectedService.durationLabel ?? `${selectedService.durationMinutes} min`}
+                    {" · "}
+                    {formatPrice(selectedService.price)}
+                  </p>
+                  <p className="flex items-center gap-1.5">
+                    <MapPin size={11} className="text-[oklch(0.52_0.08_148)]" />
+                    Presencial en consulta · {MASSAGE_LOCATION}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Fecha + Hora */}
@@ -324,19 +417,46 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
               </div>
               <div>
                 <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
-                  Hora preferida
+                  {isMassage ? "Franja preferida" : "Hora preferida"}
                 </label>
-                <input
-                  type="time"
-                  value={form.preferredTime}
-                  onChange={set("preferredTime")}
-                  className="w-full px-3 py-2.5 bg-white border border-[oklch(0.88_0.015_75)] text-sm font-body text-[oklch(0.18_0.018_55)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors"
-                  style={{ borderRadius: 0, fontWeight: 300 }}
-                />
+                {isMassage ? (
+                  <select
+                    value={form.timeSlot}
+                    onChange={(e) => setForm((prev) => ({ ...prev, timeSlot: e.target.value as MassageTimeSlot }))}
+                    className="w-full px-3 py-2.5 bg-white border border-[oklch(0.88_0.015_75)] text-sm font-body text-[oklch(0.18_0.018_55)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors appearance-none cursor-pointer"
+                    style={{ borderRadius: 0, fontWeight: 300 }}
+                  >
+                    {(Object.keys(MASSAGE_TIME_SLOTS) as MassageTimeSlot[]).map((k) => (
+                      <option key={k} value={k}>{MASSAGE_TIME_SLOTS[k].label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="time"
+                    value={form.preferredTime}
+                    onChange={set("preferredTime")}
+                    className="w-full px-3 py-2.5 bg-white border border-[oklch(0.88_0.015_75)] text-sm font-body text-[oklch(0.18_0.018_55)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors"
+                    style={{ borderRadius: 0, fontWeight: 300 }}
+                  />
+                )}
               </div>
             </div>
 
             {/* Modalidad */}
+            {isMassage ? (
+              <div>
+                <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
+                  Modalidad
+                </label>
+                <div className="flex items-center gap-2 px-3 py-2.5 border border-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]/5 text-xs font-body text-[oklch(0.38_0.02_55)]" style={{ fontWeight: 500 }}>
+                  <MapPin size={13} className="text-[oklch(0.52_0.08_148)]" />
+                  Presencial en consulta — {MASSAGE_LOCATION}
+                </div>
+                <p className="mt-2 text-[0.7rem] font-body text-[oklch(0.52_0.02_60)] leading-relaxed" style={{ fontWeight: 300 }}>
+                  ¿Prefieres el masaje a domicilio? No se reserva desde este formulario: cuéntaselo a Cristina en el mensaje y te indicará disponibilidad y tarifa.
+                </p>
+              </div>
+            ) : (
             <div>
               <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
                 Modalidad
@@ -367,6 +487,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                 ))}
               </div>
             </div>
+            )}
 
             {/* Mensaje */}
             <div>
@@ -377,14 +498,46 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                 value={form.message}
                 onChange={set("message")}
                 rows={3}
-                placeholder="¿Qué te gustaría trabajar en la consulta? ¿Tienes alguna pregunta?"
+                placeholder={isMassage ? "Preferencias (aromas, presión…) o alguna pregunta. Por favor, no incluyas datos de salud." : "¿Qué te gustaría trabajar en la consulta? ¿Tienes alguna pregunta?"}
                 className="w-full px-3 py-2.5 bg-white border border-[oklch(0.88_0.015_75)] text-sm font-body text-[oklch(0.18_0.018_55)] placeholder:text-[oklch(0.72_0.02_60)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors resize-none"
                 style={{ borderRadius: 0, fontWeight: 300 }}
               />
             </div>
 
+            </div>
+
+            {/* Resumen previo al envío (masajes) */}
+            {isMassage && step === "review" && selectedService && (
+              <div className="border border-[oklch(0.52_0.08_148)] bg-white px-5 py-4 text-sm font-body text-[oklch(0.38_0.02_55)] space-y-1.5" style={{ fontWeight: 300 }}>
+                <p className="text-xs uppercase tracking-wider text-[oklch(0.52_0.08_148)]" style={{ fontWeight: 500 }}>Revisa tu solicitud</p>
+                <p><span style={{ fontWeight: 500 }}>Masaje:</span> {selectedService.name}</p>
+                <p><span style={{ fontWeight: 500 }}>Duración:</span> {selectedService.durationLabel ?? `${selectedService.durationMinutes} min`}</p>
+                <p><span style={{ fontWeight: 500 }}>Precio:</span> {formatPrice(selectedService.price)} <span className="text-[0.7rem]">(se abona en la cita; no se cobra nada ahora)</span></p>
+                <p><span style={{ fontWeight: 500 }}>Lugar:</span> Presencial en consulta — {MASSAGE_LOCATION}</p>
+                <p>
+                  <span style={{ fontWeight: 500 }}>Fecha preferida:</span>{" "}
+                  {form.preferredDate ? new Date(form.preferredDate + "T12:00:00").toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "—"}
+                  {" · "}{MASSAGE_TIME_SLOTS[form.timeSlot].label}
+                </p>
+                <p><span style={{ fontWeight: 500 }}>Contacto:</span> {form.firstName} {form.lastName} · {form.email}{form.phone ? ` · ${form.phone}` : ""}</p>
+                <p className="pt-2 text-xs text-[oklch(0.52_0.02_60)]">
+                  Esto es una solicitud: la cita no queda confirmada hasta que Cristina la acepte.
+                </p>
+              </div>
+            )}
+
             {/* Submit */}
             <div className="pt-2">
+              {isMassage && step === "review" && (
+                <button
+                  type="button"
+                  onClick={() => setStep("form")}
+                  className="w-full mb-2 px-6 py-3 border border-[oklch(0.88_0.015_75)] text-[oklch(0.52_0.02_60)] text-xs tracking-widest uppercase font-body hover:border-[oklch(0.52_0.08_148)] hover:text-[oklch(0.52_0.08_148)] transition-colors"
+                  style={{ letterSpacing: "0.1em" }}
+                >
+                  Modificar datos
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={requestMutation.isPending}
@@ -396,12 +549,16 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                     <Loader2 size={14} className="animate-spin" />
                     Enviando...
                   </>
+                ) : isMassage && step === "form" ? (
+                  "Revisar solicitud"
                 ) : (
                   "Enviar solicitud"
                 )}
               </button>
               <p className="text-center text-[oklch(0.72_0.02_60)] text-[0.65rem] mt-3 font-body" style={{ fontWeight: 300 }}>
-                Cristina confirmará la cita contigo en 24–48 horas.
+                {isMassage
+                  ? "Cristina confirmará la cita contigo en 24–48 horas. Hasta entonces, no es una reserva confirmada."
+                  : "Cristina confirmará la cita contigo en 24–48 horas."}
               </p>
             </div>
           </form>
