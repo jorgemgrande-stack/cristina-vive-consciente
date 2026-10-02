@@ -6,7 +6,7 @@
  * la Home se actualiza sola. Los precios y el lugar usan las mismas reglas que /masajes.
  */
 import { Link } from "wouter";
-import { ChevronRight, Clock, Euro, Leaf, MapPin } from "lucide-react";
+import { ChevronRight, Clock, Leaf, MapPin } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { SITE_IMAGES } from "@/lib/siteImages";
 import { getHomePrice, massagePlaceLabel } from "@shared/booking";
@@ -106,37 +106,63 @@ export default function HomeMasajes() {
                     </p>
                   )}
 
-                  {/* Chips: lugar y precios */}
-                  <div className="flex flex-wrap gap-1.5 mb-5 mt-auto">
-                    <span className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-1 font-body">
-                      <MapPin size={9} className="text-[oklch(0.52_0.08_148)]" />
-                      {massagePlaceLabel(m)}
-                    </span>
-                    {m.durationLabel && (
+                  <div className="mt-auto">
+                    {/* Chips: lugar y duración */}
+                    <div className="flex flex-wrap gap-1.5 mb-5">
                       <span className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-1 font-body">
-                        <Clock size={9} className="text-[oklch(0.52_0.08_148)]" />
-                        {m.durationLabel}
+                        <MapPin size={9} className="text-[oklch(0.52_0.08_148)]" />
+                        {massagePlaceLabel(m)}
                       </span>
-                    )}
-                    {price && (
-                      <span
-                        className="inline-flex items-center gap-1 text-[10px] font-body text-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]/8 px-2 py-1"
-                        style={{ fontWeight: 600 }}
+                      {m.durationLabel && (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-1 font-body">
+                          <Clock size={9} className="text-[oklch(0.52_0.08_148)]" />
+                          {m.durationLabel}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Precios: protagonistas de la tarjeta */}
+                    {(price || home !== null) && (
+                      <div
+                        className="flex items-end gap-x-8 gap-y-3 flex-wrap mb-5 py-4 border-y border-[oklch(0.52_0.08_148)]/20"
+                        aria-label={`Precios de ${m.name}`}
                       >
-                        <Euro size={9} />
-                        {price} €
-                      </span>
+                        {price && (
+                          <div>
+                            <p
+                              className="text-[oklch(0.52_0.02_60)] text-[0.65rem] tracking-[0.15em] uppercase font-body mb-1"
+                              style={{ fontWeight: 500 }}
+                            >
+                              En consulta
+                            </p>
+                            <p
+                              className="font-display text-[oklch(0.52_0.08_148)] leading-none"
+                              style={{ fontWeight: 500, fontSize: "2.5rem" }}
+                            >
+                              {price}
+                              <span style={{ fontSize: "1.5rem", marginLeft: "0.2rem" }}>€</span>
+                            </p>
+                          </div>
+                        )}
+                        {home !== null && (
+                          <div>
+                            <p
+                              className="text-[oklch(0.52_0.02_60)] text-[0.65rem] tracking-[0.15em] uppercase font-body mb-1"
+                              style={{ fontWeight: 500 }}
+                            >
+                              A domicilio
+                            </p>
+                            <p
+                              className="font-display text-[oklch(0.18_0.018_55)] leading-none"
+                              style={{ fontWeight: 500, fontSize: "1.9rem" }}
+                            >
+                              {formatEuro(home)}
+                              <span style={{ fontSize: "1.2rem", marginLeft: "0.2rem" }}>€</span>
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     )}
-                    {home !== null && (
-                      <span
-                        className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-1 font-body"
-                        style={{ fontWeight: 500 }}
-                      >
-                        <Euro size={9} />
-                        {formatEuro(home)} € a domicilio
-                      </span>
-                    )}
-                  </div>
 
                   <span
                     className="inline-flex items-center gap-1.5 text-[oklch(0.52_0.08_148)] text-xs tracking-widest uppercase font-body"
@@ -145,6 +171,7 @@ export default function HomeMasajes() {
                     Ver masaje y reservar
                     <ChevronRight size={13} className="transition-transform duration-300 group-hover:translate-x-1" />
                   </span>
+                  </div>
                 </div>
               </Link>
             );
