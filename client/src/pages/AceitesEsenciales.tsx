@@ -202,7 +202,7 @@ export default function AceitesEsenciales() {
           {/* Bloque de autoridad */}
           <div className="bg-white/5 border border-white/10 p-6 space-y-4">
             <p className="font-display text-lg text-[oklch(0.92_0.01_80)]">
-              "Cada aceite tiene su momento, su dosis y su persona."
+              "Cada aceite tiene su momento y su forma de uso."
             </p>
             <p className="font-body text-sm text-[oklch(0.68_0.01_80)] leading-relaxed">
               Como terapeuta holística certificada, acompaño a cada persona en el uso consciente y seguro de los aceites esenciales. No existe una fórmula universal: existe la tuya.
@@ -236,7 +236,7 @@ export default function AceitesEsenciales() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nombre o uso (ej: ansiedad, sueño, digestivo...)"
+              placeholder="Buscar por nombre o aroma (ej: relajante, cítrico, menta...)"
               className="pl-9 font-body text-sm bg-white border-[oklch(0.88_0.01_80)]"
               style={{ borderRadius: 0 }}
             />

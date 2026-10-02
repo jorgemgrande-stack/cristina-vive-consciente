@@ -1,0 +1,862 @@
+{
+  "generatedAt": "2026-10-02",
+  "note": "Sustituciones de afirmaciones de salud. El script solo cambia un campo si su valor actual coincide con la huella (fromSha1) de lo auditado.",
+  "entries": [
+    {
+      "table": "services",
+      "id": 1,
+      "label": "Consulta + Acompañamiento 21 días",
+      "field": "description",
+      "fromSha1": "3dd9f193dcedc6dc88015c663b9991a89a5f60c8",
+      "to": "Esta consulta incluye el contenido descrito en la consulta de naturopatía de 60 min y suma un valor añadido clave: el acompañamiento continuo hasta la implementación de un hábito. Este seguimiento ofrece apoyo cercano mientras haces los cambios y ayuda a mantener la constancia. Es una consulta integral en la que se ven diferentes cuestiones relacionadas con la biohabitabilidad. Incluye una consulta inicial en la que revisaremos tu situación y tus hábitos, con recomendaciones concretas. Además, contarás con 21 días de seguimiento por WhatsApp, donde te acompañaré con audios y/o por escrito para resolver las dudas que vayan surgiendo. También recibirás una lista de compra recomendada, basada en tu alimentación y en los cambios que consideremos oportunos, con ideas de productos naturales y sencillos en áreas como: alimentación, utensilios de cocina, productos de limpieza, textil, cosmética, higiene electromagnética y lumínica. Además, un PDF con orientación informativa sobre complementos alimenticios. Es una consulta informativa y de bienestar: no es una consulta médica, no diagnostico ni trato enfermedades y no sustituye la consulta con tu médico."
+    },
+    {
+      "table": "services",
+      "id": 1,
+      "label": "Consulta + Acompañamiento 21 días",
+      "field": "longDescription",
+      "fromSha1": "5db9463b7d462c72d3d8990c3352b5f1906fb97a",
+      "to": "Esta consulta incluye el contenido descrito en la consulta de naturopatía de 60 min y suma un valor añadido clave: el acompañamiento continuo hasta la implementación de un hábito. Este seguimiento ofrece apoyo cercano mientras haces los cambios y ayuda a mantener la constancia. Es una consulta integral en la que se ven diferentes cuestiones relacionadas con la biohabitabilidad. Incluye una consulta inicial en la que revisaremos tu situación y tus hábitos, con recomendaciones concretas. Además, contarás con 21 días de seguimiento por WhatsApp, donde te acompañaré con audios y/o por escrito para resolver las dudas que vayan surgiendo. También recibirás una lista de compra recomendada con productos naturales y sencillos en áreas como: alimentación, utensilios de cocina, productos de limpieza, textil, cosmética, higiene electromagnética y lumínica. Además, un PDF con orientación informativa sobre complementos alimenticios. Disponible presencialmente, por teléfono o vía Zoom. Es una consulta informativa y de bienestar: no es una consulta médica, no diagnostico ni trato enfermedades y no sustituye la consulta con tu médico."
+    },
+    {
+      "table": "services",
+      "id": 1,
+      "label": "Consulta + Acompañamiento 21 días",
+      "field": "includes",
+      "fromSha1": "24bd6687576c3f37ea31ee780c7605c3cb49b755",
+      "to": "[\"Consulta inicial sobre tus hábitos y objetivos\",\"21 días de seguimiento por WhatsApp (audios y mensajes)\",\"Lista de compra personalizada con productos naturales\",\"PDF con orientación informativa sobre complementos alimenticios\"]"
+    },
+    {
+      "table": "services",
+      "id": 2,
+      "label": "Consulta Naturópata 90 Min",
+      "field": "shortDescription",
+      "fromSha1": "efaeb150708e43563e14d8e0cd19495c50a613d7",
+      "to": "Repaso de tus hábitos y de tu alimentación, con recomendaciones personalizadas de estilo de vida."
+    },
+    {
+      "table": "services",
+      "id": 2,
+      "label": "Consulta Naturópata 90 Min",
+      "field": "description",
+      "fromSha1": "d0968d5d22949017c1e55ef702b11ba2d0f82ec2",
+      "to": "Sesión de mínimo 1 hora (puede alargarse según la necesidad) en la que repasamos tus hábitos y analizamos tu alimentación. Se requiere un registro de dieta de 7 días antes de la consulta: anotarás lo que comes y bebes durante ese tiempo, para que podamos valorar posibles cambios en tus hábitos si fuera conveniente."
+    },
+    {
+      "table": "services",
+      "id": 2,
+      "label": "Consulta Naturópata 90 Min",
+      "field": "longDescription",
+      "fromSha1": "f58996c131199475f06857b1e5c3045ecebfcca9",
+      "to": "CONSULTA DE NATUROPATÍA 90€ Sesión de mínimo 1 hora (puede alargarse según la necesidad) en la que repasamos tus hábitos y analizamos tu alimentación. Se requiere un registro de dieta de 7 días antes de la consulta: anotarás lo que comes y bebes durante ese tiempo, para que podamos valorar posibles cambios en tus hábitos si fuera conveniente. Ideal para: - Personas que quieren cuidar su bienestar con un enfoque natural y personalizado de alimentación y estilo de vida. - Quienes desean cuidar su energía en el día a día a través de la alimentación y las rutinas. - Quienes buscan orientación informativa sobre complementos alimenticios habituales. Incluye un PDF práctico con recomendaciones claras de productos. - Futuros padres o madres que quieren cuidar su alimentación y su entorno. - Familias que buscan una alimentación ecológica, libre de aditivos y adecuada para los más pequeños. - Personas interesadas en reducir el uso de productos químicos en su entorno y en su día a día, creando un hogar más natural. - Quienes quieren revisar sus hábitos de alimentación y actividad con un enfoque natural y adaptado a su ritmo de vida. - Personas interesadas en una alimentación basada en alimentos frescos y de temporada. Esta consulta es útil para cualquier persona que quiera cuidar su bienestar desde un enfoque integral y basado en la naturaleza. Es una consulta informativa y de bienestar: no es una consulta médica, no diagnostico ni trato enfermedades y no sustituye la consulta con tu médico."
+    },
+    {
+      "table": "services",
+      "id": 2,
+      "label": "Consulta Naturópata 90 Min",
+      "field": "benefits",
+      "fromSha1": "230521cd69016074b49ea20845d1fac3c59091be",
+      "to": "[\"Cuidar tu bienestar con un enfoque natural y personalizado\",\"Cuidar tu energía diaria a través de la alimentación y las rutinas\",\"Orientación informativa sobre complementos alimenticios\",\"Futuros padres que quieren cuidar su alimentación y su entorno\",\"Familias que buscan mejorar la alimentación de sus hijos\",\"Personas interesadas en reducir productos químicos en su entorno\",\"Revisar hábitos de alimentación y actividad con enfoque natural\",\"Alimentación fresca y de temporada\"]"
+    },
+    {
+      "table": "services",
+      "id": 2,
+      "label": "Consulta Naturópata 90 Min",
+      "field": "includes",
+      "fromSha1": "0916d0e1a50f9496f21195192e89c03fbd1a440f",
+      "to": "[\"Repaso de tus hábitos con cuestionario inicial\",\"Análisis de dieta (registro previo de 7 días)\",\"Recomendaciones personalizadas por escrito\"]"
+    },
+    {
+      "table": "services",
+      "id": 3,
+      "label": "Consulta Breve Naturopatía 30 min",
+      "field": "description",
+      "fromSha1": "daae19b5b313c14c4552843794c37ca804d318f5",
+      "to": "Opción pensada para resolver dudas puntuales de forma rápida y económica. En esta consulta aclaramos inquietudes específicas sobre estilo de vida y hábitos naturales, sin necesidad de un repaso completo de tus hábitos. Se realiza por vía telefónica o, si lo prefieres, por escrito (WhatsApp o email). La consulta es ideal para quienes necesitan una orientación breve en una sola sesión. Las dudas se envían con antelación para optimizar el tiempo."
+    },
+    {
+      "table": "services",
+      "id": 3,
+      "label": "Consulta Breve Naturopatía 30 min",
+      "field": "longDescription",
+      "fromSha1": "f458cdb13c49e8f0306b27fe19b478648ad70c92",
+      "to": "Opción pensada para resolver dudas puntuales de forma rápida y económica. En esta consulta aclaramos inquietudes específicas sobre estilo de vida y hábitos naturales, sin necesidad de un repaso completo de tus hábitos. Se realiza por vía telefónica o, si lo prefieres, por escrito (WhatsApp o email). La consulta es ideal para quienes necesitan una orientación breve en una sola sesión. Las dudas se envían con antelación para optimizar el tiempo. Temas sobre los que podemos conversar: Entender el entorno que habitas · Estilo de vida y naturaleza · Crianza consciente y respetuosa · Reducción de productos químicos en el hogar · Integración de los 4 elementos en tu día a día · Alimentación ecológica, libre de aditivos (conozco los productos del mercado) · Alimentación infantil · Alimentación fresca y de temporada · Cuidar tu energía diaria · Higiene electromagnética · Higiene lumínica (ritmos circadianos) · Hábitos de alimentación y actividad · Alimentación y estilo de vida en familia · Opciones de filtrado del agua que bebes · Aromaterapia y usos cosméticos y ambientales de los aceites esenciales. Para dudas generales de estilo de vida y bienestar, te daré mi visión desde un enfoque naturópata. Es una consulta informativa y de bienestar: no es una consulta médica, no diagnostico ni trato enfermedades y no sustituye la consulta con tu médico. Si no quedas satisfecho te haré devolución; si no puedo resolver tu duda, te derivaré a otro profesional de mi competencia o te proporcionaré grupos de apoyo para que puedas buscar la información."
+    },
+    {
+      "table": "services",
+      "id": 3,
+      "label": "Consulta Breve Naturopatía 30 min",
+      "field": "benefits",
+      "fromSha1": "c66bc6d72caad9b9d953862ed79a97d1890547eb",
+      "to": "[\"Entender el entorno que habitas\",\"Estilo de vida y naturaleza\",\"Crianza consciente y respetuosa\",\"Reducción de productos químicos en el hogar\",\"Alimentación ecológica libre de aditivos\",\"Alimentación fresca y de temporada\",\"Higiene electromagnética y lumínica (ritmos circadianos)\",\"Hábitos de alimentación y actividad\",\"Alimentación y estilo de vida en familia\",\"Aromaterapia y usos cosméticos de los aceites esenciales\"]"
+    },
+    {
+      "table": "services",
+      "id": 3,
+      "label": "Consulta Breve Naturopatía 30 min",
+      "field": "contraindications",
+      "fromSha1": "16bd8848fe985c397ea0267bbc3bb8536dac7bf1",
+      "to": "Si no quedas satisfecho te haré devolución; si no puedo resolver tu duda, te derivaré a otro profesional de mi competencia o te proporcionaré grupos de apoyo para que puedas buscar la información. Es una consulta informativa y de bienestar: no sustituye la atención médica."
+    },
+    {
+      "table": "services",
+      "id": 4,
+      "label": "Consulta Express Salud",
+      "field": "name",
+      "fromSha1": "317ed954f35c0ac786ed643dc193362e1eb4b57e",
+      "to": "Consulta Express Bienestar"
+    },
+    {
+      "table": "services",
+      "id": 4,
+      "label": "Consulta Express Salud",
+      "field": "description",
+      "fromSha1": "3bcb731864a2ad9127c3769fc6ae5719c7ef0e6c",
+      "to": "Consulta express de 20 minutos para resolver una duda concreta o recibir orientación rápida sobre un tema de estilo de vida y bienestar natural."
+    },
+    {
+      "table": "services",
+      "id": 4,
+      "label": "Consulta Express Salud",
+      "field": "longDescription",
+      "fromSha1": "cf338246ac194cb7441931b314e84c7e1f6791a2",
+      "to": "Es casi seguro que si has llegado hasta aquí, es porque yo misma te he derivado a esta sección de la web, debido a la alta demanda de consultas breves que recibo en las redes sociales. Me veo en la tesitura de atender cada una de ellas a través de esta plataforma; de esta manera mi tiempo y mi energía no se ven comprometidos y puedo atenderlas con todo detalle, como cada una merece, ya que todas son igual de importantes. En mis años de estudio y divulgación he recopilado información sobre muchos de los temas que comparto en mis redes. Esto es para una consulta express, algo que te inquiete relacionado con esas temáticas: me la mandas por escrito o por audio y te contesto de la misma manera. Para dudas generales de estilo de vida y bienestar, te daré mi visión desde un enfoque naturópata. Temas sobre los que podemos conversar: Entender el entorno que habitas · Estilo de vida y naturaleza · Crianza consciente y respetuosa · Reducción de productos químicos en el hogar · Integración de los 4 elementos en tu día a día · Alimentación ecológica, libre de aditivos (conozco los productos del mercado) · Alimentación infantil · Alimentación fresca y de temporada · Cuidar tu energía diaria · Higiene electromagnética · Higiene lumínica (ritmos circadianos) · Hábitos de alimentación y actividad · Alimentación y estilo de vida en familia · Opciones de filtrado del agua que bebes · Aromaterapia y usos cosméticos y ambientales de los aceites esenciales. Es una consulta informativa y de bienestar: no es una consulta médica, no diagnostico ni trato enfermedades y no sustituye la consulta con tu médico. Si no quedas satisfecho te haré devolución; si no puedo resolver tu duda, te derivaré a otro profesional de mi competencia o te proporcionaré grupos de apoyo para que puedas buscar la información."
+    },
+    {
+      "table": "services",
+      "id": 4,
+      "label": "Consulta Express Salud",
+      "field": "benefits",
+      "fromSha1": "fcdf3968252add419dade6ab3aefb3655ec869a4",
+      "to": "[\"Entender el entorno que habitas\",\"Estilo de vida y naturaleza\",\"Crianza consciente y respetuosa\",\"Reducción de productos químicos en el hogar\",\"Alimentación ecológica libre de aditivos\",\"Alimentación fresca y de temporada\",\"Higiene electromagnética y lumínica (ritmos circadianos)\",\"Hábitos de alimentación y actividad\",\"Alimentación y estilo de vida en familia\",\"Aromaterapia y usos cosméticos de los aceites esenciales\"]"
+    },
+    {
+      "table": "services",
+      "id": 4,
+      "label": "Consulta Express Salud",
+      "field": "contraindications",
+      "fromSha1": "a76d7e282509951b0618629adf35e24a53a92fa8",
+      "to": "Si no quedas satisfecho te haré devolución; si no puedo resolver tu duda, te derivaré a otro profesional de mi competencia o te proporcionaré grupos de apoyo para que puedas buscar la información. Es una consulta informativa y de bienestar: no sustituye la atención médica."
+    },
+    {
+      "table": "services",
+      "id": 5,
+      "label": "Asesoría de Biohabitabilidad",
+      "field": "shortDescription",
+      "fromSha1": "d897a2868e8928e9f009d459d990a16bb9a2a7b4",
+      "to": "Claves para redefinir tu espacio vital y crear un hogar más natural y agradable."
+    },
+    {
+      "table": "services",
+      "id": 5,
+      "label": "Asesoría de Biohabitabilidad",
+      "field": "description",
+      "fromSha1": "3c99a778c546f928b941cacdb1e0fbfbd22037d5",
+      "to": "Estudio del entorno doméstico para identificar posibles fuentes de contaminación electromagnética, química y biológica y valorar mejoras sencillas. Incluye análisis del hogar y recomendaciones personalizadas para crear un espacio más natural y cómodo."
+    },
+    {
+      "table": "services",
+      "id": 5,
+      "label": "Asesoría de Biohabitabilidad",
+      "field": "longDescription",
+      "fromSha1": "0efdc3612473916215d12fa235d23be41600f0e7",
+      "to": "¿Quieres comprender el entorno en el que habitas y crear un hogar más natural y agradable, y no sabes por dónde empezar? Esta asesoría te dará las claves para redefinir tu espacio vital."
+    },
+    {
+      "table": "services",
+      "id": 5,
+      "label": "Asesoría de Biohabitabilidad",
+      "field": "benefits",
+      "fromSha1": "1806063234072694b5105fecf6a46f5758dc6e35",
+      "to": "[\"Comprender cómo es tu entorno y qué puedes mejorar\",\"Reducir el uso de productos químicos en tu hogar\",\"Mejorar la higiene electromagnética y lumínica de tus espacios\",\"Crear un espacio vital más natural y consciente\"]"
+    },
+    {
+      "table": "services",
+      "id": 7,
+      "label": "Masaje Terapéutico 60 min",
+      "field": "shortDescription",
+      "fromSha1": "370943087fdd65a1f6207d11e8b87933643d46fc",
+      "to": "Técnica combinada de equilibrio energético + masaje con 8 aceites esenciales."
+    },
+    {
+      "table": "services",
+      "id": 7,
+      "label": "Masaje Terapéutico 60 min",
+      "field": "description",
+      "fromSha1": "a2d07661337d9c143fecb4616e274c0e3dff7579",
+      "to": "La sesión se divide en dos partes. En la primera, una propuesta de equilibrio energético para reconectar cuerpo, mente y espíritu. En la segunda, la técnica Aromatouch aplicada a través de los meridianos con aceites esenciales, pensada para vivir una experiencia de relajación y bienestar."
+    },
+    {
+      "table": "services",
+      "id": 7,
+      "label": "Masaje Terapéutico 60 min",
+      "field": "longDescription",
+      "fromSha1": "f7c462c94d28906b1c4048feb15328125ae42ff3",
+      "to": "Propuesta de bienestar que combina armonización energética, trabajo sobre meridianos y aromaterapia aplicada a través de un masaje de cuerpo completo con aceites esenciales. Incluye un test muscular (testaje AR) para adaptar la sesión a las preferencias de cada persona. Está pensada para disfrutar de un momento de relajación profunda y desconexión del estrés cotidiano, reconectando cuerpo, mente y espíritu. Los masajes tienen una duración de 1 hora y pueden ser presenciales en nuestro centro ubicado en Navas de Río Frío (Segovia) o a domicilio. Para domicilio consultar tarifas."
+    },
+    {
+      "table": "services",
+      "id": 7,
+      "label": "Masaje Terapéutico 60 min",
+      "field": "benefits",
+      "fromSha1": "846a7651638183bd4a63dbc40ee7da9cc23473f0",
+      "to": "[\"Un momento de relajación profunda\",\"Una pausa para soltar la tensión del día a día\",\"Aromaterapia con aceites esenciales\",\"Una experiencia de calma para cuerpo y mente\",\"Un espacio para reconectar contigo\"]"
+    },
+    {
+      "table": "services",
+      "id": 7,
+      "label": "Masaje Terapéutico 60 min",
+      "field": "includes",
+      "fromSha1": "d9cd5da4ff368818cc5e9464c17b61c4a88ef92f",
+      "to": "[\"Conversación inicial para adaptar la sesión\",\"Sesión de equilibrio energético\",\"Masaje Aromatouch (aromaterapia)\"]"
+    },
+    {
+      "table": "services",
+      "id": 10,
+      "label": "Masaje Terapéutico 90 min",
+      "field": "shortDescription",
+      "fromSha1": "370943087fdd65a1f6207d11e8b87933643d46fc",
+      "to": "Técnica combinada de equilibrio energético + masaje con 8 aceites esenciales."
+    },
+    {
+      "table": "services",
+      "id": 10,
+      "label": "Masaje Terapéutico 90 min",
+      "field": "longDescription",
+      "fromSha1": "f20584c41e76e1462e0f491502c1672bbe04102e",
+      "to": "Propuesta de bienestar que combina armonización energética, trabajo sobre meridianos y aromaterapia aplicada a través de un masaje de cuerpo completo con aceites esenciales. Incluye un test muscular (testaje AR) para adaptar la sesión a las preferencias de cada persona. Está pensada para disfrutar de un momento de relajación profunda y desconexión del estrés cotidiano, reconectando cuerpo, mente y espíritu. Los masajes tienen una duración de 90 minutos y pueden ser presenciales en nuestro centro ubicado en Navas de Río Frío (Segovia) o a domicilio. Para domicilio consultar tarifas."
+    },
+    {
+      "table": "services",
+      "id": 10,
+      "label": "Masaje Terapéutico 90 min",
+      "field": "benefits",
+      "fromSha1": "28b0e19e23892a1001a25b3f632aec1fe2952741",
+      "to": "[\"Un momento de relajación profunda\",\"Una pausa para soltar la tensión del día a día\",\"Aromaterapia con aceites esenciales\",\"Una experiencia de calma para cuerpo y mente\",\"Un espacio para reconectar contigo\",\"Un espacio para el equilibrio energético y emocional\"]"
+    },
+    {
+      "table": "services",
+      "id": 10,
+      "label": "Masaje Terapéutico 90 min",
+      "field": "includes",
+      "fromSha1": "9892bb6ae80397a95a79beed6004f81c2325e6e2",
+      "to": "[\"Conversación inicial para adaptar la sesión\",\"Equilibrio energético\",\"Masaje Aromatouch (aromaterapia)\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 2,
+      "label": "Pack Recovery Bomb - Bomba Antigripal",
+      "field": "name",
+      "fromSha1": "6cb1a828c93c9729b9db7e810c75e128cb467676",
+      "to": "Pack Recovery Bomb"
+    },
+    {
+      "table": "oil_products",
+      "id": 2,
+      "label": "Pack Recovery Bomb - Bomba Antigripal",
+      "field": "descripcion",
+      "fromSha1": "7301758ff5b789c7bab87c6647b6ac9211fd51e7",
+      "to": "Pack de cinco aceites esenciales doTERRA: Limón, Orégano, Frankincense, On Guard y Melaleuca (Tea Tree). Una selección de aromas cítricos, herbales y especiados para quienes disfrutan de la aromaterapia. Consulta las instrucciones del fabricante de cada aceite antes de usarlo."
+    },
+    {
+      "table": "oil_products",
+      "id": 2,
+      "label": "Pack Recovery Bomb - Bomba Antigripal",
+      "field": "beneficios",
+      "fromSha1": "661058b2fd784d10e9c389498ea548ffcff4f0b6",
+      "to": "[\"Cinco aceites esenciales doTERRA en un mismo pack\",\"Aromas cítricos, herbales y especiados\",\"Para aromaterapia y uso tópico diluido\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 2,
+      "label": "Pack Recovery Bomb - Bomba Antigripal",
+      "field": "indicaciones",
+      "fromSha1": "bb0a1dd0dc5a81dcfbf2848c9d0ede220b1ca16b",
+      "to": "[\"Aromaterapia: difundir según las instrucciones del fabricante\",\"Uso tópico: diluir siempre en aceite portador y probar antes en una zona pequeña de piel\",\"Mantener fuera del alcance de los niños\",\"Ante embarazo, lactancia o cualquier condición médica, consulta con un profesional sanitario antes de usarlo\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 2,
+      "label": "Pack Recovery Bomb - Bomba Antigripal",
+      "field": "tags",
+      "fromSha1": "8e0a4c4d96e47a8c18cb6596bfa70bd3c41952a7",
+      "to": "[\"pack\",\"aromaterapia\",\"citricos\",\"herbales\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 4,
+      "label": "Veggie Caps - 160 cápsulas",
+      "field": "descripcion",
+      "fromSha1": "61f0bbb54cd40a8a56c5f0d35abc69871bc67f51",
+      "to": "Cápsulas vegetales vacías, 160 unidades."
+    },
+    {
+      "table": "oil_products",
+      "id": 4,
+      "label": "Veggie Caps - 160 cápsulas",
+      "field": "beneficios",
+      "fromSha1": "561dd76ca6f39f79b5aa20a3af955082f4263171",
+      "to": "[\"Material 100% vegetal\",\"160 cápsulas vacías\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 4,
+      "label": "Veggie Caps - 160 cápsulas",
+      "field": "indicaciones",
+      "fromSha1": "5fdc5c9f48fc78fb966d84987f91a336e279e1ed",
+      "to": "[\"Consulta con un profesional sanitario antes de cualquier uso interno\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 4,
+      "label": "Veggie Caps - 160 cápsulas",
+      "field": "tags",
+      "fromSha1": "2fe5703e81257dfd76a3121afbc94601acfa2fd5",
+      "to": "[\"capsulas\",\"accesorio\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 5,
+      "label": "Aceite Esencial de Lavanda 15ml",
+      "field": "descripcion",
+      "fromSha1": "862fc73d385a943870a04eae5d698bfd3b062269",
+      "to": "La lavanda es un aceite esencial muy versátil, apreciado durante siglos por su aroma inconfundible. Egipcios y romanos la empleaban para el baño, la cocina y el perfume. Su aroma floral y herbal crea una atmósfera tranquila y, en aplicación tópica diluida en aceite portador, se usa en rutinas de cuidado de la piel."
+    },
+    {
+      "table": "oil_products",
+      "id": 5,
+      "label": "Aceite Esencial de Lavanda 15ml",
+      "field": "beneficios",
+      "fromSha1": "b4081d3ca0e2107b2a6922b7179158d89c73efe0",
+      "to": "[\"Aroma floral y herbal que crea una atmósfera tranquila\",\"Un clásico de la aromaterapia\",\"Para difundir o usar diluida en masaje\",\"Se usa en rutinas de cuidado de la piel\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 5,
+      "label": "Aceite Esencial de Lavanda 15ml",
+      "field": "indicaciones",
+      "fromSha1": "32a291442e90112149eefe2217d676b84f193c63",
+      "to": "[\"Aromaterapia: 3-4 gotas en difusor\",\"Uso tópico: diluir siempre en aceite portador\",\"Ambiente: 1-2 gotas en un pañuelo o en la almohada\",\"Mantener fuera del alcance de los niños\",\"Ante embarazo, lactancia o cualquier condición médica, consulta con un profesional sanitario antes de usarlo\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 5,
+      "label": "Aceite Esencial de Lavanda 15ml",
+      "field": "tags",
+      "fromSha1": "947594fd1eefa52780aeee92de6601bed3551f51",
+      "to": "[\"lavanda\",\"aromaterapia\",\"relajacion\",\"piel\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 6,
+      "label": "Aceite Esencial Deep Blue 5ml / Roll-on",
+      "field": "descripcion",
+      "fromSha1": "2c34cc685e9e37a6b67ee42267754bb935efc39e",
+      "to": "Mezcla de aceites esenciales de aroma refrescante y mentolado, pensada para masajes. Contiene: gaulteria, menta, tánaceto azul, manzanilla azul, helicriso, osmanthus y alcanfor. Nueva fórmula mejorada con aceite de copaiba y romero español rico en alcanfor. Aceites CPTG certificados. Proporciona una sensación refrescante en la piel. El formato sin diluir se recomienda mezclado con un aceite portador. Ideal para masajes después del ejercicio."
+    },
+    {
+      "table": "oil_products",
+      "id": 6,
+      "label": "Aceite Esencial Deep Blue 5ml / Roll-on",
+      "field": "beneficios",
+      "fromSha1": "88d15ead802b9fbbde715d16d8fc196aa714e3a4",
+      "to": "[\"Sensación refrescante en la piel\",\"Aroma mentolado\",\"Pensado para masajes, también tras el ejercicio\",\"Nueva fórmula mejorada con copaiba\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 6,
+      "label": "Aceite Esencial Deep Blue 5ml / Roll-on",
+      "field": "indicaciones",
+      "fromSha1": "a4a6884873112f240647d628853d3d09e91f3a1c",
+      "to": "[\"Mezclar con aceite de coco fraccionado antes de aplicar\",\"Masajear suavemente sobre la piel\",\"Evitar el contacto con ojos y mucosas\",\"Mantener fuera del alcance de los niños\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 6,
+      "label": "Aceite Esencial Deep Blue 5ml / Roll-on",
+      "field": "tags",
+      "fromSha1": "408cf759b68d7c3cdfdf7f81a517035997abbbd3",
+      "to": "[\"deep-blue\",\"masaje\",\"refrescante\",\"deporte\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 7,
+      "label": "Aceite Esencial Deep Blue Roll-On 10ml",
+      "field": "descripcion",
+      "fromSha1": "3b8bcde9da7ea903eedd26da883d3f8332f7cc70",
+      "to": "Mezcla de aceites esenciales de aroma refrescante y mentolado en formato roll-on de 10ml, pre-diluido con aceite de coco. Contiene: gaulteria, menta, tánaceto azul, manzanilla azul, helicriso, osmanthus y alcanfor. Nueva fórmula mejorada con aceite de copaiba y romero español rico en alcanfor. Proporciona una sensación refrescante en la piel. Formato listo para usar, sin necesidad de aceite portador."
+    },
+    {
+      "table": "oil_products",
+      "id": 7,
+      "label": "Aceite Esencial Deep Blue Roll-On 10ml",
+      "field": "beneficios",
+      "fromSha1": "69e0587c0d5177541105c5384bf9870ed730cd97",
+      "to": "[\"Listo para usar, sin diluir\",\"Sensación refrescante en la piel\",\"Cómodo formato roll-on\",\"Pensado para masajes suaves\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 7,
+      "label": "Aceite Esencial Deep Blue Roll-On 10ml",
+      "field": "indicaciones",
+      "fromSha1": "8fcfab7aed925e11bfecea105051ad861e8bcf79",
+      "to": "[\"Aplicar sobre la piel y masajear suavemente\",\"Ideal para espalda, piernas y pies\",\"Evitar el contacto con ojos y mucosas\",\"Mantener fuera del alcance de los niños\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 7,
+      "label": "Aceite Esencial Deep Blue Roll-On 10ml",
+      "field": "tags",
+      "fromSha1": "079f9ca2a5a18461ba5c8b9606648d0b92f2f7b4",
+      "to": "[\"deep-blue\",\"roll-on\",\"masaje\",\"refrescante\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 8,
+      "label": "Aceite Esencial Frankincense 15ml",
+      "field": "descripcion",
+      "fromSha1": "df24fee63497a4a163773c662867cb4e1729f513",
+      "to": "Obtenido de las resinas de cuatro especies de árboles: Boswellia carterii, Boswellia sacra, Boswellia papyrifera y Boswellia frereana. Llamado el «rey» de los aceites esenciales. Los antiguos egipcios lo usaban en perfumes y bálsamos para la piel. Su aroma resinoso invita a la calma, la relajación y la meditación, y se emplea en rutinas de cuidado de la piel diluido en una crema o aceite portador."
+    },
+    {
+      "table": "oil_products",
+      "id": 8,
+      "label": "Aceite Esencial Frankincense 15ml",
+      "field": "beneficios",
+      "fromSha1": "3ecabce1cd4b41d6ea5b3f235e77c81f76d2a277",
+      "to": "[\"Aroma resinoso e intenso, muy usado en meditación\",\"Un clásico de la aromaterapia\",\"Se usa en rutinas de cuidado de la piel\",\"Ideal para difundir o para masaje diluido\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 8,
+      "label": "Aceite Esencial Frankincense 15ml",
+      "field": "indicaciones",
+      "fromSha1": "678cbac564109259f8f7e6fc3352731be4cd8958",
+      "to": "[\"Aromaterapia: 2-3 gotas en difusor\",\"Cuidado de la piel: mezclar con crema hidratante o aceite portador\",\"Masaje: aplicar diluido sobre la piel\",\"Mantener fuera del alcance de los niños\",\"Ante embarazo, lactancia o cualquier condición médica, consulta con un profesional sanitario antes de usarlo\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 8,
+      "label": "Aceite Esencial Frankincense 15ml",
+      "field": "tags",
+      "fromSha1": "c0bf92545ed0e38981423561c04479f0f89b7c0d",
+      "to": "[\"frankincense\",\"aromaterapia\",\"meditacion\",\"piel\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 9,
+      "label": "Aceite Esencial Serenity 15ml",
+      "field": "descripcion",
+      "fromSha1": "8e5578e2307d641168a5291a6864e677a83f1f83",
+      "to": "Mezcla de aceites esenciales de aroma suave y terroso, pensada para crear un ambiente de tranquilidad. Contiene: flor de lavanda, cedro, hoja de árbol ho, flor de ylang ylang, hoja de mejorana, flor de manzanilla romana, raíz de vetiver y absoluto de grano. Su aroma terroso, de cedro, árbol ho y vetiver, invita a relajar los sentidos."
+    },
+    {
+      "table": "oil_products",
+      "id": 9,
+      "label": "Aceite Esencial Serenity 15ml",
+      "field": "beneficios",
+      "fromSha1": "bf2bb32ee49ad0215682db752a7e77461f92b731",
+      "to": "[\"Aroma suave y terroso\",\"Crea un ambiente de tranquilidad\",\"Ideal para difundir por las noches\",\"Pensado para momentos de calma\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 9,
+      "label": "Aceite Esencial Serenity 15ml",
+      "field": "indicaciones",
+      "fromSha1": "17595831961ce5ca6f474e61ba09ca2557c4502a",
+      "to": "[\"Aromaterapia: 3-4 gotas en difusor por las noches\",\"Uso tópico: diluir en aceite portador y masajear suavemente en cuello y muñecas\",\"Mantener fuera del alcance de los niños\",\"Ante embarazo, lactancia o cualquier condición médica, consulta con un profesional sanitario antes de usarlo\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 9,
+      "label": "Aceite Esencial Serenity 15ml",
+      "field": "tags",
+      "fromSha1": "7309e1d49bb0fec1dab98a41015fe15806c3d12e",
+      "to": "[\"serenity\",\"aromaterapia\",\"relajacion\",\"noche\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 10,
+      "label": "Aceite Esencial Ylang Ylang 15ml",
+      "field": "descripcion",
+      "fromSha1": "0ddae25151aa2125b0b818e8c68c9723e489257f",
+      "to": "Obtenido de las flores en forma de estrella de un árbol tropical. De aroma floral, rico y dulce, es muy utilizado en perfumería y aromaterapia, con siglos de uso en ceremonias religiosas y matrimoniales. Se incorpora con frecuencia en productos de cuidado del cabello y la piel por su aroma."
+    },
+    {
+      "table": "oil_products",
+      "id": 10,
+      "label": "Aceite Esencial Ylang Ylang 15ml",
+      "field": "beneficios",
+      "fromSha1": "7adb274118e4f4b8c78b036432198b23e815d03c",
+      "to": "[\"Aroma floral, rico y dulce\",\"Muy usado en perfumería y aromaterapia\",\"Se incorpora en el cuidado del cabello y la piel por su aroma\",\"Ideal para difundir o para perfumes naturales\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 10,
+      "label": "Aceite Esencial Ylang Ylang 15ml",
+      "field": "tags",
+      "fromSha1": "20b3b9db6b9878b073bdb222495ac4c715c87ad5",
+      "to": "[\"ylang-ylang\",\"aromaterapia\",\"cabello\",\"piel\",\"perfume\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 11,
+      "label": "Aceite Esencial OnGuard 15ml",
+      "field": "descripcion",
+      "fromSha1": "065a19a61d3691ac187cf5c403bb604c8d775f78",
+      "to": "Una de las mezclas más populares de doTERRA por su aroma cálido y especiado. Contiene: naranja, clavo, corteza de canela, eucalipto y romero. Su aroma a cítricos y especias es muy usado para perfumar el ambiente."
+    },
+    {
+      "table": "oil_products",
+      "id": 11,
+      "label": "Aceite Esencial OnGuard 15ml",
+      "field": "beneficios",
+      "fromSha1": "957a8472554732a4029842b16563db2490685be1",
+      "to": "[\"Aroma cálido, cítrico y especiado\",\"Muy usado para perfumar el ambiente\",\"Mezcla popular de doTERRA\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 11,
+      "label": "Aceite Esencial OnGuard 15ml",
+      "field": "indicaciones",
+      "fromSha1": "0441af2b67ba039a8a6c1cc46cb90e308e1aedc5",
+      "to": "[\"Aromaterapia: difundir para perfumar el ambiente\",\"Uso tópico: aplicar diluido en aceite portador, probando antes en una zona pequeña de piel\",\"Mantener fuera del alcance de los niños\",\"Ante embarazo, lactancia o cualquier condición médica, consulta con un profesional sanitario antes de usarlo\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 11,
+      "label": "Aceite Esencial OnGuard 15ml",
+      "field": "tags",
+      "fromSha1": "7544c93c1d12dd24651bff65db45ae4992ec809e",
+      "to": "[\"onguard\",\"aromaterapia\",\"especiado\",\"citrico\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 12,
+      "label": "Aceite Esencial ZenGest 15ml",
+      "field": "descripcion",
+      "fromSha1": "7787b9e6dcc7d89b4ab78c11152004f4f10cc198",
+      "to": "Mezcla de aceites esenciales de aroma herbal y mentolado. Contiene: semilla de anís, menta, raíz de jengibre, semilla de alcaravea, semilla de cilantro, planta de estragón y semilla de hinojo. Su aroma fresco recuerda a las infusiones herbales; es portátil y práctica para el uso diario."
+    },
+    {
+      "table": "oil_products",
+      "id": 12,
+      "label": "Aceite Esencial ZenGest 15ml",
+      "field": "beneficios",
+      "fromSha1": "b1c87e66557bb1decac1de8cc9d2ce56cd15dd7a",
+      "to": "[\"Aroma herbal y mentolado\",\"Mezcla de siete aceites esenciales\",\"Práctico para llevar a diario\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 12,
+      "label": "Aceite Esencial ZenGest 15ml",
+      "field": "indicaciones",
+      "fromSha1": "36fb041ea7348b62a0913b724460f01fdc358447",
+      "to": "[\"Aromaterapia: difundir para perfumar el ambiente\",\"Uso tópico: diluir en aceite portador y masajear suavemente sobre la piel\",\"Mantener fuera del alcance de los niños\",\"Ante embarazo, lactancia o cualquier condición médica, consulta con un profesional sanitario antes de usarlo\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 12,
+      "label": "Aceite Esencial ZenGest 15ml",
+      "field": "tags",
+      "fromSha1": "615b268e139711b423aded6c7506e1383d525607",
+      "to": "[\"zengest\",\"aromaterapia\",\"herbal\",\"menta\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 13,
+      "label": "Aceite Esencial Orégano 15ml",
+      "field": "descripcion",
+      "fromSha1": "30a06b0ab4adfcbb8537c23604f3b9ae8e579509",
+      "to": "Extraído de las hojas de Origanum vulgare, contiene carvacrol como componente principal. Es un aceite esencial muy concentrado, de fragancia herbácea y picante, con aplicaciones en aromaterapia. Debe diluirse siempre antes de aplicarlo sobre la piel. Consulta las instrucciones del fabricante."
+    },
+    {
+      "table": "oil_products",
+      "id": 13,
+      "label": "Aceite Esencial Orégano 15ml",
+      "field": "beneficios",
+      "fromSha1": "44e41dad1902ccca7f536510247bd3ec3fc21d31",
+      "to": "[\"Fragancia herbácea y picante\",\"Muy concentrado: se usa en cantidades muy pequeñas\",\"Se usa en aromaterapia\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 13,
+      "label": "Aceite Esencial Orégano 15ml",
+      "field": "indicaciones",
+      "fromSha1": "86640c6d23d0e523ec5e805d0f62eeabaa7b3927",
+      "to": "[\"Diluir siempre con aceite portador para uso tópico\",\"No usar sin diluir sobre la piel\",\"Es muy concentrado: usar cantidades muy pequeñas\",\"Mantener fuera del alcance de los niños\",\"Ante embarazo, lactancia o cualquier condición médica, consulta con un profesional sanitario antes de usarlo\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 13,
+      "label": "Aceite Esencial Orégano 15ml",
+      "field": "tags",
+      "fromSha1": "d35d4448fcf63f3e81b07ad11ff53b30612caa2d",
+      "to": "[\"oregano\",\"aromaterapia\",\"herbal\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 14,
+      "label": "Aceite Esencial Balance 15ml",
+      "field": "beneficios",
+      "fromSha1": "4e0fb5523e4b95b64b0683126eccdda35c1b820d",
+      "to": "[\"Sensación de equilibrio y armonía\",\"Aroma amaderado y fresco\",\"Aroma pensado para momentos de calma\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 15,
+      "label": "Aceite Esencial Tea Tree 15ml",
+      "field": "descripcion",
+      "fromSha1": "2615d2539e84dadb77fa81a6b6856d35e57a8eb5",
+      "to": "Aceite esencial de aroma fresco y penetrante. Contiene más de 92 compuestos diferentes. Los aborígenes australianos lo utilizaban históricamente triturando las hojas para aplicarlas sobre la piel. Hoy se usa con frecuencia en rutinas de cuidado de la piel y de las uñas, siempre diluido."
+    },
+    {
+      "table": "oil_products",
+      "id": 15,
+      "label": "Aceite Esencial Tea Tree 15ml",
+      "field": "beneficios",
+      "fromSha1": "0f35adbad52a207c8c3917a2d59ab1db2eb7d1b1",
+      "to": "[\"Aroma fresco y penetrante\",\"Muy usado en rutinas de cuidado de la piel y de las uñas\",\"Versátil: aromaterapia y uso tópico diluido\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 15,
+      "label": "Aceite Esencial Tea Tree 15ml",
+      "field": "indicaciones",
+      "fromSha1": "1803209a130b3e4fdbe748a0c8eb504327b04b1a",
+      "to": "[\"Uso tópico: diluir con aceite portador\",\"Probar antes en una zona pequeña de piel\",\"No ingerir\",\"Mantener fuera del alcance de los niños\",\"Ante embarazo, lactancia o cualquier condición médica, consulta con un profesional sanitario antes de usarlo\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 15,
+      "label": "Aceite Esencial Tea Tree 15ml",
+      "field": "tags",
+      "fromSha1": "ae05afec71316443defd8c60c9abb9d3e1ae4024",
+      "to": "[\"tea-tree\",\"melaleuca\",\"piel\",\"aromaterapia\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 16,
+      "label": "Aceite Esencial Peppermint 15ml",
+      "field": "descripcion",
+      "fromSha1": "3ff8ab7ae691ed1a94aae0a2af07f225e570de27",
+      "to": "La menta aporta un aroma fresco y mentolado. Un alto contenido en mentol es indicador de calidad en los aceites esenciales de menta. Se usa en aromaterapia y es frecuente en productos de higiene oral."
+    },
+    {
+      "table": "oil_products",
+      "id": 16,
+      "label": "Aceite Esencial Peppermint 15ml",
+      "field": "beneficios",
+      "fromSha1": "420bd54807ebd30f3c2b5bd7a34e2dbf02e3980f",
+      "to": "[\"Aroma fresco y mentolado\",\"Se usa en aromaterapia\",\"Sensación refrescante\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 16,
+      "label": "Aceite Esencial Peppermint 15ml",
+      "field": "indicaciones",
+      "fromSha1": "b4a4e69ea7b84f9a20d32344beaaed1f31cd4c6b",
+      "to": "[\"Aromaterapia: difundir para refrescar el ambiente\",\"Uso tópico: diluir en aceite portador y evitar el contacto con ojos y mucosas\",\"Mantener fuera del alcance de los niños\",\"Ante embarazo, lactancia o cualquier condición médica, consulta con un profesional sanitario antes de usarlo\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 16,
+      "label": "Aceite Esencial Peppermint 15ml",
+      "field": "tags",
+      "fromSha1": "967897a9e81e8117466116cdd3b095f53fc65839",
+      "to": "[\"peppermint\",\"menta\",\"aromaterapia\",\"refrescante\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 17,
+      "label": "Aceite Esencial Limón 15ml",
+      "field": "descripcion",
+      "fromSha1": "a66dbc2311f88a59da199675582e9e9b385f399d",
+      "to": "AROMA CÍTRICO Y VIGORIZANTE. Prensado en frío de pieles de limón para preservar su delicada naturaleza. Su aroma cítrico aporta un ambiente alegre y luminoso. Uno de los aceites más vendidos de doTERRA."
+    },
+    {
+      "table": "oil_products",
+      "id": 17,
+      "label": "Aceite Esencial Limón 15ml",
+      "field": "beneficios",
+      "fromSha1": "b95e81927e5e3cfcdbef0812ffc89a5230266b39",
+      "to": "[\"Aroma cítrico y vigorizante\",\"Ambiente alegre y luminoso\",\"Versátil en aromaterapia\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 17,
+      "label": "Aceite Esencial Limón 15ml",
+      "field": "indicaciones",
+      "fromSha1": "50cdd9ad67157498ed5d14e0d5a75d40261ed647",
+      "to": "[\"Aromaterapia: difundir para perfumar el ambiente\",\"Uso tópico: diluir en aceite portador\",\"Mantener fuera del alcance de los niños\",\"Ante embarazo, lactancia o cualquier condición médica, consulta con un profesional sanitario antes de usarlo\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 17,
+      "label": "Aceite Esencial Limón 15ml",
+      "field": "tags",
+      "fromSha1": "9c330ef60cf2ef2450703ced89c1df352772b22d",
+      "to": "[\"limon\",\"aromaterapia\",\"citrico\",\"energia\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 18,
+      "label": "Aceite Esencial Air 15ml",
+      "field": "descripcion",
+      "fromSha1": "72b92af4e510f658c7f982ee45371da7950da07e",
+      "to": "MEZCLA DE ACEITES DE AROMA FRESCO Y MENTOLADO. Contiene: laurel, eucalipto, menta, melaleuca, limón, cardamomo, ravintsara y ravensara. Una mezcla vigorizante, de aroma mentolado, con una sensación refrescante y relajante cuando se aplica diluida sobre la piel."
+    },
+    {
+      "table": "oil_products",
+      "id": 18,
+      "label": "Aceite Esencial Air 15ml",
+      "field": "beneficios",
+      "fromSha1": "2c99b8ad416f28464bce9e13240cc841132babe4",
+      "to": "[\"Aroma fresco, mentolado y vigorizante\",\"Sensación refrescante en la piel\",\"Ideal para difundir y airear ambientes\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 18,
+      "label": "Aceite Esencial Air 15ml",
+      "field": "indicaciones",
+      "fromSha1": "126089b746919456c7d9346c5cc99b043e76b78e",
+      "to": "[\"Aromaterapia: difundir para refrescar ambientes\",\"Uso tópico: aplicar diluido con aceite portador en cuello y espalda\",\"Inhalación aromática: 2-3 gotas en las manos, frotar y aspirar el aroma\",\"Mantener fuera del alcance de los niños\",\"Ante embarazo, lactancia o cualquier condición médica, consulta con un profesional sanitario antes de usarlo\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 18,
+      "label": "Aceite Esencial Air 15ml",
+      "field": "tags",
+      "fromSha1": "3073c6453edd40b60905a85b9104517a6a3b03fa",
+      "to": "[\"air\",\"aromaterapia\",\"eucalipto\",\"menta\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 19,
+      "label": "Aceite de Coco Fraccionado",
+      "field": "descripcion",
+      "fromSha1": "9e7aedc7ce9577c688d8caee72f3f035b030b9c8",
+      "to": "Aceite portador natural de doTERRA que se absorbe fácilmente en la piel. Proporciona una barrera suavizante sin obstruir los poros y deja la piel suave sin sensación grasa, a diferencia de muchos aceites vegetales. Completamente soluble con los aceites esenciales, incoloro, inodoro y sin manchas."
+    },
+    {
+      "table": "oil_products",
+      "id": 19,
+      "label": "Aceite de Coco Fraccionado",
+      "field": "beneficios",
+      "fromSha1": "5aeb799367838d00c36afd10f29ba92fa85bfc19",
+      "to": "[\"Hidrata sin obstruir poros\",\"Facilita la dilución de los aceites esenciales\",\"Incoloro e inodoro\",\"Textura ligera, sin sensación grasa\"]"
+    },
+    {
+      "table": "oil_products",
+      "id": 26,
+      "label": "Asesoría Aceites Esenciales para Perros",
+      "field": "indicaciones",
+      "fromSha1": "5b8bec4e484294f86866bc6f0e4d86fa5a2cab1b",
+      "to": "[\"Sesión individual con Ruth Barreña Hernández\",\"Se abordan precauciones y formas de uso de los aceites esenciales con perros\",\"No sustituye la consulta con un veterinario\"]"
+    },
+    {
+      "table": "oil_categories",
+      "id": 2,
+      "label": "Mezclas terapéuticas",
+      "field": "name",
+      "fromSha1": "4f7f4f25afd9a841f36b3d1c7a9619842c136ff1",
+      "to": "Mezclas de aceites"
+    },
+    {
+      "table": "oil_categories",
+      "id": 2,
+      "label": "Mezclas terapéuticas",
+      "field": "description",
+      "fromSha1": "d887855a4b028efc02ff7b1f3d481dba16f849c0",
+      "to": "Combinaciones de aceites esenciales con aromas pensados para distintos ambientes y momentos: calma, energía, descanso y concentración."
+    },
+    {
+      "table": "oil_categories",
+      "id": 4,
+      "label": "Packs y guías",
+      "field": "description",
+      "fromSha1": "a9fc7a819aea46a80e6af9318e1de2c0a79ae3a8",
+      "to": "Kits de inicio y guías digitales para aprender a usar los aceites esenciales con seguridad."
+    },
+    {
+      "table": "water_products",
+      "id": 4,
+      "label": "Jala 2.0",
+      "field": "benefits",
+      "fromSha1": "0cd12eed0fbcb90a9b147a85ec3bb933f76ece4c",
+      "to": "[\"Produce agua filtrada al instante, sin acumulación.\",\"Limpieza automática de membrana cada 24 horas para prolongar su vida útil.\",\"Detector de fugas Aquastop que bloquea el equipo ante cualquier incidencia.\",\"Menor rechazo de agua: solo 0,7 L por litro producido.\",\"Mejora el sabor de alimentos, bebidas y preparaciones culinarias.\",\"Equipo compacto, fácil de instalar y de diseño moderno.\"]"
+    },
+    {
+      "table": "ebooks",
+      "id": 1,
+      "label": "Guía Digital del Agua",
+      "field": "description",
+      "fromSha1": "d078a1e5f0218a99bdccea1ab2ce92e34f1b278a",
+      "to": "Una guía práctica sobre el agua que bebes y el concepto de agua estructurada: qué es, cómo prepararla en casa y cómo integrarla en tu rutina diaria. Incluye pautas prácticas y recomendaciones de uso diario. Incluye sesión de 30 minutos con Cristina para resolver tus dudas."
+    },
+    {
+      "table": "ebooks",
+      "id": 2,
+      "label": "Guía de Aceites Esenciales",
+      "field": "description",
+      "fromSha1": "4d0768beb2d5142d7feea1af9dc256ccb010f58f",
+      "to": "Aprende a usar los aceites esenciales con seguridad: aromaterapia, aplicación tópica diluida, combinaciones y precauciones para las situaciones más comunes del día a día. Una guía práctica para integrar el aroma de las plantas en tu rutina de bienestar."
+    },
+    {
+      "table": "affiliate_products",
+      "id": 5,
+      "label": "Glicina en polvo + minerales Zeutics",
+      "field": "description",
+      "fromSha1": "92488f2e3128394206a2e1cf902366125599482e",
+      "to": "Glicina en polvo con minerales de la marca Zeutics."
+    },
+    {
+      "table": "affiliate_products",
+      "id": 12,
+      "label": "ARCILLAS DETOX",
+      "field": "name",
+      "fromSha1": "9de03ed3ee6b712976320ff7891769ff9da57591",
+      "to": "ARCILLAS NATURALES"
+    },
+    {
+      "table": "affiliate_products",
+      "id": 24,
+      "label": "PACK ARCILLAS DETOX + ARCILLAS PIEL",
+      "field": "name",
+      "fromSha1": "19fe31f1b477f8649ed138d47bafdb864dd755dd",
+      "to": "PACK ARCILLAS NATURALES + ARCILLAS PIEL"
+    },
+    {
+      "table": "affiliate_products",
+      "id": 66,
+      "label": "Omega 3 Omegran El Granero Integral – Ácidos Grasos Esenciales para una Salud Óptima",
+      "field": "name",
+      "fromSha1": "1fc5a57c02aae4767ef8046499366a98ad1b75f6",
+      "to": "Omega 3 Omegran El Granero Integral – Ácidos Grasos Esenciales"
+    },
+    {
+      "table": "affiliate_products",
+      "id": 73,
+      "label": "Bisglicinato de Magnesio Solaray Absorción Óptima, soporte Muscular y apoyo al sistema nervioso",
+      "field": "name",
+      "fromSha1": "63d8cc462e0613d48b8de909728fd14e96fea209",
+      "to": "Bisglicinato de Magnesio Solaray"
+    },
+    {
+      "table": "affiliate_products",
+      "id": 78,
+      "label": "Carbonato de Magnesio Soria Natural – Vitalidad y Bienestar Digestivo",
+      "field": "name",
+      "fromSha1": "a0581f1a40b6cbed4c32ccfd0144ea203458bfb5",
+      "to": "Carbonato de Magnesio Soria Natural"
+    },
+    {
+      "table": "affiliate_products",
+      "id": 83,
+      "label": "Citrobiotic en Gotas 100ml Extracto de Semilla de Pomelo - Refuerza Tus Defensas de Forma Natural",
+      "field": "name",
+      "fromSha1": "b911de9568976672cc941018a3c6fd741fe047da",
+      "to": "Citrobiotic en Gotas 100ml – Extracto de Semilla de Pomelo"
+    }
+  ]
+}

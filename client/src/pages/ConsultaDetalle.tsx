@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Layout from "@/components/Layout";
 import BookingModal from "@/components/BookingModal";
+import HealthDisclaimer from "@/components/HealthDisclaimer";
 import { trpc } from "@/lib/trpc";
 
 const MODALITY_LABEL: Record<string, string> = {
@@ -86,8 +87,8 @@ export default function ConsultaDetalle() {
     {
       q: "¿Cómo se desarrolla la consulta?",
       a: consulta.durationLabel
-        ? `La duración es ${consulta.durationLabel}. Comenzamos con una revisión de tu caso y terminamos con recomendaciones concretas y un plan de acción.`
-        : "Comenzamos con una revisión de tu caso y terminamos con recomendaciones concretas y un plan de acción personalizado.",
+        ? `La duración es ${consulta.durationLabel}. Comenzamos con una revisión de tus hábitos y terminamos con recomendaciones concretas.`
+        : "Comenzamos con una revisión de tus hábitos y terminamos con recomendaciones concretas.",
     },
     {
       q: "¿Es online o presencial?",
@@ -100,7 +101,7 @@ export default function ConsultaDetalle() {
     },
     {
       q: "¿Qué necesito preparar antes?",
-      a: "Si es tu primera consulta, es útil traer un registro de tu dieta y hábitos habituales, así como cualquier analítica reciente o historial relevante. Si tienes dudas concretas, envíalas con antelación para aprovechar mejor el tiempo.",
+      a: "Si es tu primera consulta, es útil traer un registro de tu dieta y de tus hábitos habituales. Si tienes dudas concretas, envíalas con antelación para aprovechar mejor el tiempo.",
     },
     {
       q: "¿Cuándo recibiré las recomendaciones?",
@@ -282,6 +283,8 @@ export default function ConsultaDetalle() {
                     ))}
                   </div>
                 </div>
+
+                <HealthDisclaimer />
               </div>
 
               {/* Sidebar */}

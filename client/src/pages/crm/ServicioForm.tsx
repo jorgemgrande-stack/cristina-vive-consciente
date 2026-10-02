@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploader } from "@/components/ImageUploader";
+import { strictClaims } from "@shared/healthClaims";
 import ServiceGalleryManager from "@/components/ServiceGalleryManager";
 import {
   Select,
@@ -190,6 +191,22 @@ export default function ServicioForm() {
     // Filtrar items vacíos de arrays
     const cleanBenefits = form.benefits.filter(b => b.trim());
     const cleanIncludes = form.includes.filter(i => i.trim());
+
+    // Aviso editorial: un servicio de naturopatía o masaje no puede prometer efectos sobre la salud.
+    // (No se revisan las contraindicaciones: ahí es correcto mencionar enfermedades, embarazo, etc.)
+    const claims = strictClaims(
+      [form.name, form.shortDescription, form.description, form.longDescription, ...cleanBenefits, ...cleanIncludes].join(" . "),
+    );
+    if (claims.length > 0) {
+      const lista = Array.from(new Set(claims)).slice(0, 8).join(", ");
+      const seguir = window.confirm(
+        `Aviso: estos textos contienen afirmaciones de salud (${lista}).` + "\n\n" +
+          "Un servicio de naturopatía o de masaje no puede prometer efectos sobre la salud (tratar, curar, prevenir, aliviar, " +
+          "reforzar el sistema inmune…). Descríbelo mejor por la experiencia, la técnica y la duración." + "\n\n" +
+          "¿Guardar igualmente?",
+      );
+      if (!seguir) return;
+    }
 
     const data = {
       slug: form.slug.trim(),

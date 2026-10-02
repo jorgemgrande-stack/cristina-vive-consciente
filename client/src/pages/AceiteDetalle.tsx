@@ -6,6 +6,7 @@
  * Objetivo: informar y convertir en consulta con Cristina.
  */
 
+import HealthDisclaimer from "@/components/HealthDisclaimer";
 import { Link, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import Layout from "@/components/Layout";
@@ -212,7 +213,7 @@ export default function AceiteDetalle() {
                     Este producto requiere personalización
                   </p>
                   <p className="font-body text-xs text-[oklch(0.42_0.06_148)] mt-1 leading-relaxed">
-                    Su uso depende de dosis, combinación y contexto individual. Cristina te orientará sobre la forma más adecuada para ti.
+                    Si tienes dudas sobre cómo usarlo, Cristina puede orientarte de forma general sobre aromaterapia. No sustituye el consejo de un profesional sanitario.
                   </p>
                 </div>
               </div>
@@ -272,15 +273,15 @@ export default function AceiteDetalle() {
         <div>
           <FAQItem
             question={`¿Cómo sé si ${product.name} es adecuado para mí?`}
-            answer={`Cada persona tiene una constitución y unas necesidades únicas. Cristina puede ayudarte a determinar si ${product.name} es el aceite más adecuado para tu situación, en qué dosis y combinado con qué otros aceites.`}
+            answer={`Cristina puede orientarte de forma general sobre aromaterapia y sobre cómo se suele usar ${product.name}, siempre como información de bienestar. Ante cualquier condición médica, embarazo o medicación, consulta con tu médico.`}
           />
           <FAQItem
             question="¿Puedo usarlo sin consultar a un profesional?"
-            answer="Los aceites esenciales son herramientas terapéuticas potentes. Aunque muchos tienen un perfil de seguridad excelente, su uso óptimo requiere conocer tu historial de salud, medicación y objetivos. Una consulta con Cristina garantiza un uso seguro y efectivo."
+            answer="Los aceites esenciales son productos muy concentrados y conviene usarlos con precaución: diluirlos siempre antes de aplicarlos sobre la piel y seguir las instrucciones del fabricante. Ante cualquier condición médica, embarazo o medicación, consulta con tu médico antes de usarlos."
           />
           <FAQItem
             question="¿Qué incluye la consulta con Cristina?"
-            answer="La consulta incluye una evaluación de tu estado de salud y objetivos, una selección personalizada de aceites, protocolos de uso específicos para ti, y seguimiento para ajustar el protocolo según tu evolución."
+            answer="La consulta es una orientación informativa sobre aromaterapia: Cristina te explica los aceites que te interesan y cómo se usan habitualmente. No es una consulta médica ni sustituye el consejo de un profesional sanitario."
           />
           <FAQItem
             question="¿Cómo funciona el sistema de 'Añadir a mi consulta'?"
@@ -288,6 +289,10 @@ export default function AceiteDetalle() {
           />
         </div>
       </section>
+
+      <div className="max-w-3xl mx-auto px-6 pb-10">
+        <HealthDisclaimer />
+      </div>
 
       {/* ─── CTA FINAL ────────────────────────────────────────────────────── */}
       <section className="bg-[oklch(0.14_0.018_55)] text-white py-12">

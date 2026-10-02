@@ -556,30 +556,29 @@ export default function SistemasAgua() {
                   ¿Qué es el agua estructurada?
                 </p>
                 <h2 className="text-3xl font-serif text-[#1A1208] mb-4">
-                  Más que filtrar, <em>transformar</em>
+                  Cuidar el <em>agua que bebes</em>
                 </h2>
               </div>
               <p className="text-[#5A4E3E] leading-relaxed">
-                Somos un 70% agua. El agua contenida en tu cuerpo es el principal transportador de
-                nutrientes y oxígeno, además de ser fundamental para la eliminación de toxinas del
-                organismo.
+                Somos aproximadamente un 70% agua, por eso cuidar el agua que bebes es una decisión
+                cotidiana importante para muchas personas.
               </p>
               <p className="text-[#5A4E3E] leading-relaxed">
-                Varias líneas de investigación sugieren que el agua no es un agente pasivo de salud.
-                El agua de manantial, viva y en movimiento, tiene una estructura molecular que el agua
-                del grifo ha perdido debido a la manipulación, los tratamientos químicos y los
-                materiales de las tuberías.
+                Desde el enfoque del agua estructurada se defiende que el agua de manantial, viva y en
+                movimiento, tiene unas características que el agua del grifo pierde con su potabilización y
+                su paso por las tuberías. Es un enfoque divulgativo que no cuenta con consenso
+                científico.
               </p>
               <p className="text-[#5A4E3E] leading-relaxed">
-                Los sistemas que seleccionamos no solo filtran: purifican, remineralizan y devuelven
-                al agua su vitalidad natural, para que cada sorbo sea realmente nutritivo.
+                Los sistemas que seleccionamos filtran el agua de casa para que disfrutes de un agua
+                con mejor sabor en tu día a día.
               </p>
               <div className="flex items-start gap-3 p-5 bg-[#F5F2EC] rounded-xl border border-[#E8E4DC]">
                 <BookOpen size={16} className="text-[#3A5A3A] mt-0.5 flex-shrink-0" />
                 <p className="text-[#5A4E3E] text-sm italic">
-                  Como referencia científica, recomiendo las investigaciones de{" "}
-                  <strong>Masaru Emoto</strong> sobre la estructura del agua y su respuesta a los
-                  estímulos del entorno.
+                  Si quieres profundizar en este enfoque, puedes leer a{" "}
+                  <strong>Masaru Emoto</strong>, autor divulgativo sobre la estructura del agua. Sus
+                  ideas no cuentan con consenso científico.
                 </p>
               </div>
             </div>
@@ -592,15 +591,13 @@ export default function SistemasAgua() {
               </div>
               <div className="p-6 bg-[#F5F2EC] rounded-2xl border border-[#E8E4DC]">
                 <p className="text-[#5A4E3E] text-xs tracking-widest uppercase mb-4 font-medium">
-                  El agua estructurada puede
+                  Qué ofrecen estos sistemas
                 </p>
                 <ul className="space-y-2.5">
                   {[
-                    "Mejorar la hidratación celular",
-                    "Facilitar la eliminación de toxinas",
-                    "Mejorar la absorción de nutrientes",
-                    "Reducir la inflamación",
-                    "Reforzar el sistema inmune",
+                    "Agua filtrada en casa",
+                    "Mejor sabor en bebidas y preparaciones culinarias",
+                    "Equipos compactos y de diseño moderno",
                   ].map((item) => (
                     <li key={item} className="flex items-center gap-2.5">
                       <CheckCircle size={13} className="text-[#3A5A3A] flex-shrink-0" />

@@ -8,6 +8,7 @@ import { Link } from "wouter";
 import { Instagram, Mail, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { OPEN_COOKIE_SETTINGS_EVENT } from "@/lib/consent";
+import HealthDisclaimer from "@/components/HealthDisclaimer";
 
 const LOGO_URL = "/logo-bion.png";
 
@@ -150,6 +151,13 @@ export default function Footer() {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Aviso legal: servicios de bienestar, no sanitarios */}
+      <div className="border-t border-[oklch(0.28_0.01_55)]">
+        <div className="container py-5">
+          <HealthDisclaimer variant="inline" className="max-w-4xl" />
         </div>
       </div>
 
