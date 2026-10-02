@@ -5,6 +5,7 @@
  */
 
 import { SITE_IMAGES } from "@/lib/siteImages";
+import { getHomePrice } from "@shared/booking";
 import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, MapPin, Clock, Euro, Star, Loader2, ChevronDown, ChevronUp, Leaf, CheckCircle, Eye } from "lucide-react";
@@ -297,6 +298,12 @@ export default function Masajes() {
                             <span className="inline-flex items-center gap-1 text-[10px] font-body text-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]/8 px-2 py-1" style={{ fontWeight: 600 }}>
                               <Euro size={9} />
                               {masaje.price} €
+                            </span>
+                          )}
+                          {getHomePrice(masaje.slug) !== null && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-body text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-1" style={{ fontWeight: 500 }}>
+                              <Euro size={9} />
+                              {getHomePrice(masaje.slug)} € a domicilio
                             </span>
                           )}
                         </div>

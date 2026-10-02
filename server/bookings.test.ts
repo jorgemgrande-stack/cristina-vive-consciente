@@ -302,3 +302,88 @@ describe("bookings.selectSlot — el cliente elige una fecha propuesta", () => {
     await expect(publicCaller().selectSlot({ token: "tok", slotIndex: 0 })).rejects.toThrow(/ya no está disponible/);
   });
 });
+
+// ─── Horario de Cristina y servicio a domicilio ──────────────────────────────
+
+/** Próxima fecha (a partir de +3 días) que cae en el día de la semana pedido (0 = domingo … 6 = sábado). */
+const nextDow = (dow: number) => {
+  for (let i = 3; i < 12; i++) {
+    const d = new Date(Date.now() + i * 86400000);
+    const iso = todayInMadrid(d.getTime());
+    if (new Date(`${iso}T12:00:00Z`).getUTCDay() === dow) return iso;
+  }
+  throw new Error("sin fecha");
+};
+
+describe("bookings.request — horario de Cristina", () => {
+  it("entre semana: la mañana se guarda a las 10:00 y la tarde a las 16:00 (hora de Madrid)", async () => {
+    const date = nextDow(3); // miércoles
+    await publicCaller().request(baseInput({ preferredDate: date, timeSlot: "morning" }));
+    const created = (db.createAppointment.mock.calls as any[][])[0][0];
+    const madridHour = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(created.scheduledAt);
+    expect(madridHour).toBe("10:00");
+  });
+
+  it("entre semana no existe la franja de mediodía (13:00–16:00)", async () => {
+    await expect(publicCaller().request(baseInput({ preferredDate: nextDow(2), timeSlot: "midday" }))).rejects.toThrow(/no está disponible/i);
+    expect(db.createAppointment).not.toHaveBeenCalled();
+  });
+
+  it("sábado y domingo (10:00–19:00): admiten mañana, mediodía y tarde", async () => {
+    for (const dow of [6, 0]) {
+      for (const timeSlot of ["morning", "midday", "afternoon"] as const) {
+        db.createAppointment.mockClear();
+        db.findOpenDuplicateAppointment.mockResolvedValue(undefined);
+        await publicCaller().request(baseInput({ preferredDate: nextDow(dow), timeSlot, email: `fin${dow}${timeSlot}@example.com` }));
+        expect(db.createAppointment).toHaveBeenCalledTimes(1);
+      }
+    }
+  });
+});
+
+describe("bookings.request — servicio a domicilio", () => {
+  const home = (over: Record<string, unknown> = {}) =>
+    baseInput({ serviceLocation: "domicilio", serviceAddress: "Calle Mayor 5, Segovia", ...over });
+
+  it("Masaje Relajante a domicilio: 100 €, etiqueta y dirección en la cita; modalidad sigue siendo presencial", async () => {
+    await publicCaller().request(home());
+    const created = (db.createAppointment.mock.calls as any[][])[0][0];
+    expect(created.serviceLabel).toBe("Masaje Relajante — 45 min · a domicilio");
+    expect(created.price).toBe("100.00");
+    expect(created.modality).toBe("presencial");
+    expect(created.internalNotes).toContain("Servicio a domicilio (100 €)");
+    expect(created.internalNotes).toContain("Calle Mayor 5, Segovia");
+  });
+
+  it("Masaje Terapéutico a domicilio: 110 €", async () => {
+    await publicCaller().request(home({ serviceType: MASSAGE_THERAPEUTIC.slug }));
+    const created = (db.createAppointment.mock.calls as any[][])[0][0];
+    expect(created.price).toBe("110.00");
+    expect(created.serviceLabel).toBe("Masaje Terapéutico 60 min · a domicilio");
+  });
+
+  it("en consulta conserva el precio de siempre (70 € / 80 €)", async () => {
+    await publicCaller().request(baseInput());
+    expect((db.createAppointment.mock.calls as any[][])[0][0].price).toBe("70.00");
+  });
+
+  it("exige dirección para el domicilio", async () => {
+    await expect(publicCaller().request(home({ serviceAddress: "" }))).rejects.toThrow(/dirección/i);
+    await expect(publicCaller().request(home({ serviceAddress: "abc" }))).rejects.toThrow(/dirección/i);
+    expect(db.createAppointment).not.toHaveBeenCalled();
+  });
+
+  it("no ofrece domicilio en servicios sin tarifa a domicilio (consultas, Terapéutico 90 min)", async () => {
+    db.getServiceBySlug.mockImplementation(async (slug: string) =>
+      slug === "masaje_terapeutico_90_min" ? { ...MASSAGE_THERAPEUTIC, slug, name: "Masaje Terapéutico 90 min", price: "120.00", durationMinutes: 90, durationLabel: "90 min" } : SERVICES[slug] ?? null);
+    await expect(publicCaller().request(home({ serviceType: "masaje_terapeutico_90_min" }))).rejects.toThrow(/no se ofrece a domicilio/i);
+    await expect(publicCaller().request(home({ serviceType: CONSULTA.slug, modality: "zoom" }))).rejects.toThrow(/no se ofrece a domicilio/i);
+    expect(db.createAppointment).not.toHaveBeenCalled();
+  });
+
+  it("consulta y domicilio del mismo día son solicitudes distintas (no se marcan como duplicado)", async () => {
+    await publicCaller().request(home());
+    const labels = (db.findOpenDuplicateAppointment.mock.calls as any[][]).map((c) => c[1]);
+    expect(labels).toEqual(["Masaje Relajante — 45 min · a domicilio"]);
+  });
+});

@@ -7,6 +7,7 @@
 import { Link } from "wouter";
 import { Instagram, Mail, Phone } from "lucide-react";
 import { toast } from "sonner";
+import { OPEN_COOKIE_SETTINGS_EVENT } from "@/lib/consent";
 
 const LOGO_URL = "/logo-bion.png";
 
@@ -166,6 +167,20 @@ export default function Footer() {
                 style={{ fontWeight: 300 }}
               >
                 Privacidad
+              </button>
+              <Link
+                href="/politica-de-cookies"
+                className="text-[oklch(0.52_0.02_60)] text-xs hover:text-[oklch(0.72_0.06_148)] transition-colors duration-200 font-body no-underline"
+                style={{ fontWeight: 300 }}
+              >
+                Cookies
+              </Link>
+              <button
+                onClick={() => window.dispatchEvent(new Event(OPEN_COOKIE_SETTINGS_EVENT))}
+                className="text-[oklch(0.52_0.02_60)] text-xs hover:text-[oklch(0.72_0.06_148)] transition-colors duration-200 font-body"
+                style={{ fontWeight: 300 }}
+              >
+                Gestionar cookies
               </button>
               <button
                 onClick={() => toast.info("Próximamente: términos y condiciones")}

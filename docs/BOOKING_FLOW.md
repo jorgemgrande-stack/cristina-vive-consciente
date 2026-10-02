@@ -4,6 +4,42 @@ Auditoría y despliegue: 2026-10-02. **Estado: implementado y desplegado en prod
 
 ## 0. Estado actual (resumen)
 
+### Actualización 2026-10-02 (tarde): datos de Cristina, domicilio y cookies — rama `feat/reservas-horarios-domicilio-cookies`
+
+> Esta parte **está en una rama y NO está desplegada** hasta que se fusione (al fusionar, Railway despliega solo).
+
+Datos facilitados por Cristina y ya aplicados en el código (`shared/booking.ts`, única fuente):
+
+- **Horario:** lunes a viernes 10:00–13:00 y 16:00–19:00; sábados y domingos 10:00–19:00. El formulario ofrece
+  franjas según el día (entre semana mañana y tarde; fin de semana también mediodía 13:00–16:00) y el servidor
+  rechaza una franja que no exista ese día. Sustituye a las franjas provisionales anteriores (9–13 y 16–20).
+- **Tarifas:** Terapéutico 80 € en consulta y **110 € a domicilio**; Relajante 70 € en consulta y **100 € a domicilio**.
+  El Terapéutico de 90 min (120 €) no tiene tarifa a domicilio y no la ofrece.
+- **Domicilio:** el cliente elige "En consulta" o "A domicilio"; a domicilio exige dirección. Se guarda como modalidad
+  `presencial` + etiqueta "· a domicilio" + precio de domicilio + la dirección en las notas internas de la cita (así no
+  hace falta ninguna migración). Cristina confirma si puede desplazarse a la zona. Las tarifas a domicilio viven por ahora
+  en `HOME_SERVICE_PRICES` (constante); un campo `homePrice` en BD queda como mejora futura.
+- **Pago:** de momento se reserva y se paga **en consulta**; el formulario y la ficha lo dicen ("no se cobra nada al
+  enviar la solicitud"). Posible señal del 50 % por Bizum: **sin implementar** (ver decisiones).
+- **Política de cancelación:** texto estándar de centros de masaje (24 h de antelación; con menos, posible señal previa
+  para una nueva cita; las señales se devuelven íntegras con 24 h o más). Se muestra en el resumen previo al envío y en la
+  ficha. **Es un borrador original, pendiente de que Cristina lo valide.**
+- **Ubicación:** enlace "Ver en Google Maps" (búsqueda "Bion Cristina - Masajes") en el formulario y en la ficha.
+- **Cookies y Google Ads preparados:** banner de consentimiento (Rechazar / Configurar / Aceptar todo, mismo peso visual;
+  se reabre desde el pie), página `/politica-de-cookies` (borrador descriptivo) y carga de Google tag **solo si** hay IDs
+  (`VITE_GOOGLE_ADS_ID`, `VITE_GA4_ID`, `VITE_GOOGLE_ADS_BOOKING_LABEL`) **y** consentimiento, con Consent Mode v2
+  (todo "denied" por defecto). La conversión de Ads es `booking_request_submitted`, sin valor ni datos personales.
+  Sin IDs no se descarga nada de Google (como hoy). No se ha creado ninguna cuenta ni campaña.
+
+Comprobaciones de esta rama (Chrome contra BD de prueba y SMTP falso): formulario/consultas 20/20, admin 27/27,
+móvil 390/360 px 14/14, horarios+domicilio+cookies+medición 27/27 (29/29 construyendo con IDs de prueba: gtag solo tras
+consentimiento, conversión sin datos). Tests unitarios y de router ampliados.
+
+**Hecho en producción (autorizado por Jorge):** se ejecutó `scripts/relocate-images-2026-10.mjs`: portadas de los 2 ebooks
+(`/site/hero-agua.webp`, `/site/hero-aceites.webp`; `pdfUrl` muerto → NULL) y la imagen de 6 productos afiliados
+(ids 16, 28, 50, 60, 76, 81). Verificado: las imágenes responden 200. Copia de los valores anteriores guardada fuera del
+repositorio.
+
 ### Qué quedó implementado y desplegado
 
 - **PR #2** fusionado en `main` (commit `c0858af`; incluye `5a7fc51`, `f1479ef` y `6337a4f`). Railway lo desplegó
@@ -57,11 +93,12 @@ Auditoría y despliegue: 2026-10-02. **Estado: implementado y desplegado en prod
 | `WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_ID` | sin poner: solo se genera el enlace `wa.me`, no hay envío automático |
 | `BUILT_IN_FORGE_API_URL`, `BUILT_IN_FORGE_API_KEY` | sin poner: el aviso interno heredado de Manus sale como "no enviada" |
 
-### Pendiente de autorización (fuera de este flujo)
+### Imágenes y PDFs de los ebooks
 
-- Actualización en BD de imágenes de ebooks y de 6 productos afiliados (`scripts/relocate-images-2026-10.mjs`).
-- Subida de los PDFs de los ebooks (`/uploads/ebooks/ebook-agua.pdf` y `ebook-aceites.pdf`).
-
+- Imágenes de ebooks y afiliados: **hecho** (ver arriba).
+- **PDFs de los ebooks: pendiente.** Los originales estaban en el CDN caído y no hay copia. Hay que aportar los dos
+  archivos para subirlos como `/uploads/ebooks/ebook-agua.pdf` y `/uploads/ebooks/ebook-aceites.pdf` (hasta entonces la
+  descarga tras una compra daría error; hoy los ebooks no tienen precio de Stripe configurado).
 
 ## 1. Cómo funcionaba antes (hallazgos)
 
@@ -122,11 +159,12 @@ Cristina (/crm/citas): lista con filtros → [Confirmar cita | Rechazar | Propon
 - **Una solicitud no se convierte en confirmada por accidente:** `accept` solo funciona desde `pending`;
   `cancelar`/`proponer` no actúan sobre citas ya canceladas o completadas (error claro, nada se modifica).
   El desplegable manual de estado sigue existiendo (control de Cristina) pero deja rastro en el historial.
-- **Modalidad.** Masaje ⇒ solo presencial (validado también en servidor). **Domicilio no se ofrece como opción**
-  porque no hay cobertura ni tarifa configuradas: el formulario lo explica ("consulta tarifa y disponibilidad")
-  y el cliente puede pedirlo en el mensaje.
-- **Precio.** Se muestra el de la ficha (`services.price`): 70 € el Relajante, 80 € el Terapéutico. Se indica
-  "se abona en la cita; no se cobra nada ahora". Sin precio ⇒ "Consultar tarifa".
+- **Modalidad.** Masaje ⇒ solo presencial (nada de Zoom, teléfono ni WhatsApp; validado también en servidor). Desde
+  la rama de 2026-10-02 el cliente elige además dónde: en consulta (Navas de Riofrío) o a domicilio (con dirección y tarifa
+  de domicilio) en los servicios que la tienen. A domicilio se guarda como presencial + etiqueta "· a domicilio".
+- **Precio.** En consulta, el de la ficha (`services.price`): 70 € el Relajante, 80 € el Terapéutico; a domicilio, 100 € y
+  110 € (constantes en `shared/booking.ts`). Se indica "se abona en la cita; no se cobra nada al enviar". Sin precio ⇒
+  "Consultar tarifa".
 - **Zona horaria.** Todo se interpreta y se muestra en `Europe/Madrid` (`server/bookingRules.ts`).
 - **Datos de salud.** El campo libre es opcional y avisa "no incluyas datos de salud"; no se envía a ninguna
   plataforma de analítica ni de publicidad.
@@ -176,29 +214,34 @@ etiqueta de terceros. El sitio **aún no tiene banner de consentimiento**: cuand
 
 ## 5. Decisiones pendientes
 
+### Resueltas (2026-10-02)
+
+- Franjas horarias → horario real de Cristina (ver arriba).
+- Tarifa a domicilio y si se ofrece → 110 € / 100 €, reservable desde el formulario con dirección.
+- Cobro → por ahora en consulta. Política de cancelación → borrador estándar (pendiente de validar).
+- Ubicación → "Navas de Riofrío (Segovia)" + ficha de Google "Bion Cristina - Masajes".
+- Banner de cookies y preparación de Google Ads → hechos (apagados sin IDs).
+
 ### De Cristina
 
-1. **Franjas horarias** del masaje: hoy mañana 9:00–13:00, tarde 16:00–20:00 y "sin preferencia" (`shared/booking.ts`).
-   Confirmar que reflejan su disponibilidad real.
-2. **Servicio a domicilio y tarifa**: la tarifa a domicilio (100 €), la cobertura/radio y si se reserva online o solo
-   por consulta. Hoy **no se ofrece como opción**: el formulario indica que se pida en el mensaje. Implementarlo
-   requiere un campo `homePrice` (migración + formulario del servicio + fichas) y una modalidad `domicilio` en
-   `appointments.modality`.
-3. **Cobro**: ¿se cobra online? Opciones de §2: A (enlace de pago al confirmar, recomendada), B (autorización al
-   solicitar) o C (pago en consulta, estado actual). Hoy no se cobra nada al reservar y el formulario lo dice.
-4. **Política de cancelación y devolución**, imprescindible si se cobra online (plazos, devoluciones, no-show).
-5. **Lugar**: confirmar "Navas de Riofrío (Segovia)" como ubicación en consulta (constante en `shared/booking.ts`).
+1. **Validar la política de cancelación** (24 h, señal previa, devolución íntegra con 24 h o más) o ajustarla.
+2. **Bizum 50 %:** ¿se quiere pedir una señal del 50 % por Bizum al confirmar y el resto en consulta? Si sí, hay que
+   decidir cómo se comunica (en el email de confirmación) y cómo se registra el abono (hoy no hay estado de pago en la cita).
+3. **Cobertura del servicio a domicilio:** radio o localidades a las que se desplaza (hoy Cristina lo confirma caso por caso
+   al responder; no se bloquea ninguna dirección).
+4. **Textos del CRM:** las fichas de los masajes aún dicen "Para domicilio consultar tarifas" (Terapéutico 60 y 90 min) y el
+   Terapéutico de 90 min dice "duración de 1 hora": se corrigen desde `/crm` (Servicios) o con un script con autorización.
+5. **Terapéutico de 90 min:** ¿tiene servicio a domicilio y a qué precio? Hoy no se ofrece (sin tarifa).
 
 ### De Jorge
 
-6. **Cookies y Google Ads**: banner de consentimiento (hoy no existe), qué etiqueta cargar (GTM o gtag) y el ID `AW-…`.
-   Hasta entonces la medición permanece apagada. Si se quiere medir `booking_confirmed`, decidir además el esquema de
-   importación de conversiones offline (requiere guardar un identificador de clic con consentimiento).
-7. **Dato del Masaje Terapéutico** (`modality = "ambos"` en la BD): la web ya lo muestra como "Presencial"; corregir
-   el dato en el CRM cuando se quiera.
-8. **Autorizar** la actualización de imágenes y la subida de PDFs de ebooks (ver "Pendiente de autorización").
-9. **Variables de WhatsApp** (`WHATSAPP_API_TOKEN` y `WHATSAPP_PHONE_ID`) si se quiere envío automático en lugar del
-   enlace `wa.me`; y qué hacer con el aviso interno de Manus (ocultarlo del historial si no se va a configurar).
+6. **Google Ads / Analytics:** crear/aportar el ID `AW-…` (y GA4 `G-…` si se quiere), la etiqueta de conversión de "solicitud
+   de reserva", y definirlos como variables de entorno de Vite en Railway (requiere nuevo despliegue). Revisión legal de la
+   política de cookies y, cuando existan, de privacidad y términos (hoy "Próximamente").
+7. **Subir los PDFs de los ebooks** (aportar los archivos).
+8. **Dato del Masaje Terapéutico** (`modality = "ambos"` en la BD): la web ya lo muestra como "Presencial".
+9. **WhatsApp automático** (`WHATSAPP_API_TOKEN`, `WHATSAPP_PHONE_ID`): **para más adelante**; mientras tanto solo hay enlaces `wa.me`.
+10. **Fusionar la rama** `feat/reservas-horarios-domicilio-cookies` cuando se dé el visto bueno (despliega solo).
 
 ### Observaciones sin decisión urgente
 

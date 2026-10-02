@@ -5,6 +5,7 @@
  */
 
 import { SITE_IMAGES } from "@/lib/siteImages";
+import { getHomePrice, CENTER_MAPS_URL, OPENING_HOURS_TEXT, CANCELLATION_POLICY } from "@shared/booking";
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import {
@@ -112,10 +113,10 @@ export default function MasajeDetalle() {
     {
       q: "¿Dónde se realiza el masaje?",
       a: masaje.modality === "presencial"
-        ? "Las sesiones son presenciales en Navas de Río Frío (Segovia). También puedo desplazarme a domicilio, consulta tarifas."
+        ? `Las sesiones son presenciales en Navas de Riofrío (Segovia).${getHomePrice(masaje.slug) !== null ? ` También ofrezco el servicio a domicilio por ${getHomePrice(masaje.slug)} €; Cristina confirmará si puede desplazarse a tu zona.` : " También puedo desplazarme a domicilio: consulta tarifa."}`
         : masaje.modality === "online"
         ? "Las sesiones se realizan de forma online a través de videollamada."
-        : "Las sesiones pueden ser presenciales en Navas de Río Frío (Segovia) o a domicilio. Consulta disponibilidad.",
+        : `Las sesiones son presenciales en Navas de Riofrío (Segovia).${getHomePrice(masaje.slug) !== null ? ` También ofrezco el servicio a domicilio por ${getHomePrice(masaje.slug)} €; Cristina confirmará si puede desplazarse a tu zona.` : " También puedo desplazarme a domicilio: consulta tarifa."}`,
     },
     {
       q: "¿Necesito preparación previa?",
@@ -185,6 +186,11 @@ export default function MasajeDetalle() {
                 <span className="inline-flex items-center gap-1 text-[oklch(0.72_0.08_148)] text-sm font-body" style={{ fontWeight: 600 }}>
                   <Euro size={12} />
                   {masaje.price} €
+                </span>
+              )}
+              {getHomePrice(masaje.slug) !== null && (
+                <span className="inline-flex items-center gap-1 text-white/80 text-sm font-body" style={{ fontWeight: 400 }}>
+                  · {getHomePrice(masaje.slug)} € a domicilio
                 </span>
               )}
             </div>
@@ -317,9 +323,23 @@ export default function MasajeDetalle() {
                         <span className="font-display text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 400, fontSize: "2rem" }}>
                           {masaje.price}
                         </span>
-                        <span className="text-[oklch(0.55_0.04_75)] font-body text-sm">€ / sesión</span>
+                        <span className="text-[oklch(0.55_0.04_75)] font-body text-sm">€ / sesión en consulta</span>
                       </div>
                     )}
+                    {getHomePrice(masaje.slug) !== null && (
+                      <p className="-mt-2 mb-4 text-[oklch(0.42_0.02_55)] font-body text-xs" style={{ fontWeight: 300 }}>
+                        A domicilio: <strong style={{ fontWeight: 500 }}>{getHomePrice(masaje.slug)} €</strong>
+                      </p>
+                    )}
+                    <div className="mb-4 space-y-1.5 text-[oklch(0.42_0.02_55)] font-body text-xs leading-relaxed" style={{ fontWeight: 300 }}>
+                      <p>
+                        <span style={{ fontWeight: 500 }}>Dónde:</span> Navas de Riofrío (Segovia) ·{" "}
+                        <a href={CENTER_MAPS_URL} target="_blank" rel="noopener noreferrer" className="underline text-[oklch(0.40_0.07_148)]">Ver en Google Maps</a>
+                      </p>
+                      <p><span style={{ fontWeight: 500 }}>Horario:</span> {OPENING_HOURS_TEXT}.</p>
+                      <p><span style={{ fontWeight: 500 }}>Pago:</span> se abona en la cita; no se cobra nada al reservar.</p>
+                      <p><span style={{ fontWeight: 500 }}>Cancelaciones:</span> {CANCELLATION_POLICY}</p>
+                    </div>
 
                     {/* Qué incluye */}
                     <div className="mb-5 space-y-2">
