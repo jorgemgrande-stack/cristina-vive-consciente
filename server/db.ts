@@ -245,6 +245,7 @@ export async function findOpenDuplicateAppointment(clientId: number, serviceLabe
  * Historial de citas. Tolerante: si la tabla `appointment_events` aún no existe en la BD
  * (migración 0020 sin aplicar) NO rompe el flujo de reservas, solo se pierde el historial.
  */
+let appointmentEventsWarned = false;
 export async function logAppointmentEvent(data: InsertAppointmentEvent): Promise<void> {
   try {
     const db = await getDb();
@@ -254,7 +255,11 @@ export async function logAppointmentEvent(data: InsertAppointmentEvent): Promise
       detail: data.detail ? String(data.detail).slice(0, 500) : data.detail,
     });
   } catch (err) {
-    console.warn("[AppointmentEvents] No se pudo registrar el evento (¿migración 0020 pendiente?):", (err as Error).message);
+    // Se avisa una sola vez por arranque (sin volcar la consulta SQL) para no llenar el log.
+    if (!appointmentEventsWarned) {
+      appointmentEventsWarned = true;
+      console.warn("[AppointmentEvents] No se pudo registrar el historial de citas (¿migración 0020 pendiente?). Se sigue sin historial.");
+    }
   }
 }
 
