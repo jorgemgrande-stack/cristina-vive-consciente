@@ -10,6 +10,7 @@ import { Link } from "wouter";
 import { ArrowRight, Leaf, Droplets, BookOpen, Star, ChevronRight, Calendar, Clock, CheckCircle } from "lucide-react";
 import Layout from "@/components/Layout";
 import BookingModal from "@/components/BookingModal";
+import HomeMasajes from "@/components/HomeMasajes";
 import { ReservaModal as WaterReservaModal } from "@/pages/SistemasAgua";
 import { trpc } from "@/lib/trpc";
 
@@ -268,6 +269,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── MASAJES (primer módulo bajo el slideshow) ────────── */}
+      <HomeMasajes />
 
       {/* ── SERVICES ─────────────────────────────────────────── */}
       <section className="section-padding bg-[oklch(0.985_0.006_85)]">
