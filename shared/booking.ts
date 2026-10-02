@@ -41,6 +41,52 @@ export function slotsForDate(date?: string): MassageTimeSlot[] {
   return ["morning", "afternoon", "any"];
 }
 
+// ─── Hora fija ───────────────────────────────────────────────────────────────
+/** Intervalo entre horas de inicio que se ofrecen al cliente (minutos). */
+export const START_TIME_STEP_MIN = 30;
+/** Duración que se asume si el servicio no la indica (minutos). */
+export const DEFAULT_SESSION_MINUTES = 60;
+
+/** Tramos de atención en minutos desde las 00:00: entre semana 10–13 y 16–19; fin de semana 10–19. */
+function openingWindows(date: string): Array<[number, number]> {
+  return isWeekend(date) ? [[10 * 60, 19 * 60]] : [[10 * 60, 13 * 60], [16 * 60, 19 * 60]];
+}
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+export const minutesToHHMM = (m: number) => `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`;
+
+/** Minutos desde las 00:00 de la hora actual en Madrid, y la fecha "YYYY-MM-DD" de hoy en Madrid. */
+function madridNow(now: number): { date: string; minutes: number } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+  }).formatToParts(new Date(now));
+  const g = (t: string) => parts.find((p) => p.type === t)!.value;
+  return { date: `${g("year")}-${g("month")}-${g("day")}`, minutes: Number(g("hour")) * 60 + Number(g("minute")) };
+}
+
+/**
+ * Horas de inicio ("HH:MM") que se pueden solicitar un día: dentro del horario de Cristina, cada
+ * START_TIME_STEP_MIN minutos y de forma que la sesión TERMINE antes de que cierre el tramo.
+ * Si la fecha es hoy, se descartan las horas que ya han pasado (hora de Madrid).
+ */
+export function bookableTimes(date: string, durationMinutes?: number | null, now: number = Date.now()): string[] {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
+  const duration = durationMinutes && durationMinutes > 0 ? durationMinutes : DEFAULT_SESSION_MINUTES;
+  const today = madridNow(now);
+  const out: string[] = [];
+  for (const [open, close] of openingWindows(date)) {
+    for (let t = open; t + duration <= close; t += START_TIME_STEP_MIN) {
+      if (date === today.date && t <= today.minutes) continue;
+      out.push(minutesToHHMM(t));
+    }
+  }
+  return out;
+}
+
+export function isBookableTime(date: string, time: string, durationMinutes?: number | null, now: number = Date.now()): boolean {
+  return bookableTimes(date, durationMinutes, now).includes(time);
+}
+
 // ─── Servicio a domicilio ────────────────────────────────────────────────────
 /**
  * Tarifa a domicilio por servicio (€). Solo los servicios listados aquí ofrecen domicilio.

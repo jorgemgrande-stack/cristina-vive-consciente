@@ -17,12 +17,10 @@ import {
   CANCELLATION_POLICY,
   CENTER_MAPS_URL,
   MASSAGE_LOCATION,
-  MASSAGE_TIME_SLOTS,
   OPENING_HOURS_TEXT,
   PAYMENT_NOTE,
   getHomePrice,
-  slotsForDate,
-  type MassageTimeSlot,
+  bookableTimes,
   type ServiceLocation,
 } from "@shared/booking";
 import { BOOKING_EVENTS } from "@shared/bookingAnalytics";
@@ -62,7 +60,6 @@ type FormData = {
   preferredDate: string;
   preferredTime: string;
   modality: string;
-  timeSlot: MassageTimeSlot;
   serviceLocation: ServiceLocation;
   serviceAddress: string;
   message: string;
@@ -77,7 +74,6 @@ const initialForm: FormData = {
   preferredDate: "",
   preferredTime: "",
   modality: "zoom",
-  timeSlot: "any",
   serviceLocation: "consulta",
   serviceAddress: "",
   message: "",
@@ -105,17 +101,24 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
     staleTime: 5 * 60 * 1000, // 5 min cache
   });
 
-  // Construir opciones del selector: BD + opción "Otro"
-  const serviceOptions = dbServices.length > 0
+  // Si el modal se abre desde un masaje (ficha o listado de masajes), el selector solo ofrece masajes.
+  const isMassageSlug = (slug: string) =>
+    dbServices.find((s) => s.slug === slug)?.type === "masaje" || slug === "masaje" || slug.startsWith("masaje_");
+  const massageOnly = !!preselectedService && isMassageSlug(preselectedService);
+
+  // Construir opciones del selector: BD (+ opción "Otro" solo fuera del modo masaje)
+  const allOptions = dbServices.length > 0
     ? [
         ...dbServices.map((s) => ({
           value: s.slug,
           label: s.name,
           duration: s.durationLabel ?? (s.durationMinutes ? `${s.durationMinutes} min` : ""),
+          isMassage: s.type === "masaje",
         })),
-        { value: "otro", label: "Otro / No sé todavía", duration: "" },
+        { value: "otro", label: "Otro / No sé todavía", duration: "", isMassage: false },
       ]
-    : FALLBACK_SERVICES;
+    : FALLBACK_SERVICES.map((o) => ({ ...o, isMassage: o.value === "masaje" }));
+  const serviceOptions = massageOnly ? allOptions.filter((o) => o.isMassage) : allOptions;
 
   // Servicio elegido y si es un masaje (los masajes tienen su propio formulario)
   const selectedService = dbServices.find((s) => s.slug === form.serviceType);
@@ -126,11 +129,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
   const isHome = homePrice !== null && form.serviceLocation === "domicilio";
   const inPlacePrice = selectedService?.price ?? null;
   const shownPrice = isHome ? `${homePrice} €` : formatPrice(inPlacePrice);
-  const slotOptions = slotsForDate(form.preferredDate);
-
-  // ¿Es masaje el servicio con este slug? (la lista de la BD manda; "masaje" es el slug legacy)
-  const isMassageSlug = (slug: string) =>
-    dbServices.find((s) => s.slug === slug)?.type === "masaje" || slug === "masaje";
+  const timeOptions = bookableTimes(form.preferredDate, selectedService?.durationMinutes);
 
   // Modalidad coherente con el servicio: masaje = presencial; al salir de un masaje se vuelve a Zoom.
   const modalityFor = (slug: string, current: string) =>
@@ -183,6 +182,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
       newErrors.email = "Introduce un email válido";
     }
     if (!form.preferredDate) newErrors.preferredDate = "Selecciona una fecha";
+    if (isMassage && form.preferredDate && !timeOptions.includes(form.preferredTime)) newErrors.preferredTime = "Elige una hora";
     if (isHome && form.serviceAddress.trim().length < 5) newErrors.serviceAddress = "Indica la dirección donde quieres recibir el masaje";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -203,8 +203,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
       phone: form.phone.trim() || undefined,
       serviceType: form.serviceType as any,
       preferredDate: form.preferredDate,
-      preferredTime: isMassage ? undefined : form.preferredTime || undefined,
-      timeSlot: isMassage ? form.timeSlot : undefined,
+      preferredTime: form.preferredTime || undefined,
       serviceLocation: isMassage ? (isHome ? "domicilio" : "consulta") : undefined,
       serviceAddress: isHome ? form.serviceAddress.trim() : undefined,
       modality: (isMassage ? "presencial" : form.modality) as any,
@@ -404,6 +403,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                     serviceType: slug,
                     modality: modalityFor(slug, prev.modality),
                     serviceLocation: getHomePrice(slug) === null ? "consulta" : prev.serviceLocation,
+                    preferredTime: isMassageSlug(slug) ? "" : prev.preferredTime,
                   }));
                 }}
                 className="w-full px-3 py-2.5 bg-white border border-[oklch(0.88_0.015_75)] text-sm font-body text-[oklch(0.18_0.018_55)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors appearance-none cursor-pointer"
@@ -448,7 +448,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                   value={form.preferredDate}
                   onChange={(e) => {
                     const date = e.target.value;
-                    setForm((prev) => ({ ...prev, preferredDate: date, timeSlot: slotsForDate(date).includes(prev.timeSlot) ? prev.timeSlot : "any" }));
+                    setForm((prev) => ({ ...prev, preferredDate: date, preferredTime: isMassage && !bookableTimes(date, selectedService?.durationMinutes).includes(prev.preferredTime) ? "" : prev.preferredTime }));
                     if (errors.preferredDate) setErrors((prev) => ({ ...prev, preferredDate: undefined }));
                   }}
                   min={today}
@@ -459,19 +459,29 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
               </div>
               <div>
                 <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
-                  {isMassage ? "Franja preferida" : "Hora preferida"}
+                  {isMassage ? "Hora preferida *" : "Hora preferida"}
                 </label>
                 {isMassage ? (
-                  <select
-                    value={form.timeSlot}
-                    onChange={(e) => setForm((prev) => ({ ...prev, timeSlot: e.target.value as MassageTimeSlot }))}
-                    className="w-full px-3 py-2.5 bg-white border border-[oklch(0.88_0.015_75)] text-sm font-body text-[oklch(0.18_0.018_55)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors appearance-none cursor-pointer"
-                    style={{ borderRadius: 0, fontWeight: 300 }}
-                  >
-                    {slotOptions.map((k) => (
-                      <option key={k} value={k}>{MASSAGE_TIME_SLOTS[k].label}</option>
-                    ))}
-                  </select>
+                  <>
+                    <select
+                      value={form.preferredTime}
+                      onChange={(e) => {
+                        setForm((prev) => ({ ...prev, preferredTime: e.target.value }));
+                        if (errors.preferredTime) setErrors((prev) => ({ ...prev, preferredTime: undefined }));
+                      }}
+                      disabled={!form.preferredDate || timeOptions.length === 0}
+                      className={`w-full px-3 py-2.5 bg-white border text-sm font-body text-[oklch(0.18_0.018_55)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors appearance-none cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed ${errors.preferredTime ? "border-red-400" : "border-[oklch(0.88_0.015_75)]"}`}
+                      style={{ borderRadius: 0, fontWeight: 300 }}
+                    >
+                      <option value="">
+                        {!form.preferredDate ? "Elige primero la fecha" : timeOptions.length === 0 ? "Sin horas disponibles ese día" : "Elige una hora"}
+                      </option>
+                      {timeOptions.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                    {errors.preferredTime && <p className="text-red-500 text-[0.7rem] mt-1">{errors.preferredTime}</p>}
+                  </>
                 ) : (
                   <input
                     type="time"
@@ -608,7 +618,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                 <p>
                   <span style={{ fontWeight: 500 }}>Fecha preferida:</span>{" "}
                   {form.preferredDate ? new Date(form.preferredDate + "T12:00:00").toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "—"}
-                  {" · "}{MASSAGE_TIME_SLOTS[form.timeSlot].label}
+                  {form.preferredTime ? ` · a las ${form.preferredTime}` : ""}
                 </p>
                 <p><span style={{ fontWeight: 500 }}>Contacto:</span> {form.firstName} {form.lastName} · {form.email}{form.phone ? ` · ${form.phone}` : ""}</p>
                 <p className="pt-2 text-xs text-[oklch(0.52_0.02_60)]">

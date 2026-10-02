@@ -29,7 +29,7 @@ import { notifyOwner } from "../_core/notification";
 import { sendClientConfirmationEmail, sendAdminNotificationEmail } from "../email";
 import { notifyAdminNewBooking } from "../whatsapp";
 import { selectProposedSlot, trackNotification } from "../bookingActions";
-import { CRISTINA_WHATSAPP_NUMBER, HOME_LABEL_SUFFIX, getHomePrice, slotsForDate } from "../../shared/booking";
+import { CRISTINA_WHATSAPP_NUMBER, HOME_LABEL_SUFFIX, getHomePrice, isBookableTime, slotsForDate } from "../../shared/booking";
 import {
   APPOINTMENT_SERVICE_TYPES,
   MASSAGE_TIME_SLOTS,
@@ -73,7 +73,7 @@ export const bookingsRouter = router({
         // Datos de la cita
         serviceType: z.string().trim().min(1).max(100),
         preferredDate: z.string().min(1, "La fecha preferida es obligatoria"), // "YYYY-MM-DD"
-        preferredTime: z.string().optional(), // "HH:MM" (consultas)
+        preferredTime: z.string().optional(), // "HH:MM" (hora fija; obligatoria en masajes)
         /** Franja preferida (masajes): mañana / mediodía (solo fin de semana) / tarde / sin preferencia */
         timeSlot: z.enum(["morning", "midday", "afternoon", "any"]).optional(),
         /** Masajes: en consulta (Navas de Riofrío) o a domicilio (solo servicios con tarifa a domicilio) */
@@ -125,21 +125,31 @@ export const bookingsRouter = router({
       const dateError = validateRequestedDate(input.preferredDate);
       if (dateError) throw new TRPCError({ code: "BAD_REQUEST", message: dateError });
 
-      const slotKey = isMassage ? input.timeSlot ?? "any" : null;
+      // Masajes: hora fija dentro del horario (la franja `timeSlot` solo se admite de clientes antiguos)
+      const fixedTime = isMassage && input.preferredTime && /^\d{2}:\d{2}$/.test(input.preferredTime) ? input.preferredTime : null;
+      if (isMassage && fixedTime && !isBookableTime(input.preferredDate, fixedTime, service?.durationMinutes)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Esa hora no está disponible. Elige otra dentro del horario de Cristina" });
+      }
+      const slotKey = isMassage && !fixedTime ? input.timeSlot ?? "any" : null;
+      if (isMassage && !fixedTime && input.timeSlot === undefined) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Elige la hora de la cita" });
+      }
       if (slotKey && !slotsForDate(input.preferredDate).includes(slotKey)) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Esa franja horaria no está disponible el día elegido" });
       }
-      const timeStr = isMassage
-        ? MASSAGE_TIME_SLOTS[slotKey!].start
-        : input.preferredTime && /^\d{2}:\d{2}$/.test(input.preferredTime)
-          ? input.preferredTime
-          : "12:00";
+      const timeStr = fixedTime
+        ? fixedTime
+        : isMassage
+          ? MASSAGE_TIME_SLOTS[slotKey!].start
+          : input.preferredTime && /^\d{2}:\d{2}$/.test(input.preferredTime)
+            ? input.preferredTime
+            : "12:00";
       const scheduledAt = madridLocalToEpoch(input.preferredDate, timeStr);
       if (Number.isNaN(scheduledAt)) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Fecha u hora no válida" });
       }
-      // Lo que se muestra en emails/WhatsApp: la franja (masaje) o la hora (consulta)
-      const displayTime = isMassage ? MASSAGE_TIME_SLOTS[slotKey!].label : input.preferredTime || undefined;
+      // Lo que se muestra en emails/WhatsApp: la hora fija, la franja (clientes antiguos) o la hora de la consulta
+      const displayTime = fixedTime ?? (slotKey ? MASSAGE_TIME_SLOTS[slotKey].label : input.preferredTime || undefined);
 
       // 4. Buscar o crear cliente (deduplicación por email, case-insensitive)
       const emailNormalized = input.email.toLowerCase();
@@ -175,7 +185,7 @@ export const bookingsRouter = router({
 
       // 6. Crear la cita con status pending
       const notes = [
-        isMassage ? `Franja preferida: ${MASSAGE_TIME_SLOTS[slotKey!].label}` : null,
+        isMassage ? (fixedTime ? `Hora solicitada: ${fixedTime}` : `Franja preferida: ${MASSAGE_TIME_SLOTS[slotKey!].label}`) : null,
         isHome ? `Servicio a domicilio (${homePrice} €) — Dirección: ${input.serviceAddress}` : null,
         input.message ? `Mensaje del solicitante: ${input.message}` : null,
       ].filter(Boolean);
@@ -197,7 +207,7 @@ export const bookingsRouter = router({
           appointmentId,
           type: "request_submitted",
           toStatus: "pending",
-          detail: `Solicitud web: ${service?.slug ?? input.serviceType}${slotKey ? ` · franja ${slotKey}` : ""}`,
+          detail: `Solicitud web: ${service?.slug ?? input.serviceType}${fixedTime ? ` · hora ${fixedTime}` : slotKey ? ` · franja ${slotKey}` : ""}`,
         });
       }
 

@@ -387,3 +387,31 @@ describe("bookings.request — servicio a domicilio", () => {
     expect(labels).toEqual(["Masaje Relajante — 45 min · a domicilio"]);
   });
 });
+
+describe("bookings.request — hora fija en masajes", () => {
+  const madridTime = (d: Date) =>
+    new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(d);
+
+  it("guarda la hora elegida (hora de Madrid) y no una franja", async () => {
+    await publicCaller().request(baseInput({ preferredDate: nextDow(3), timeSlot: undefined, preferredTime: "11:30" }));
+    const created = (db.createAppointment.mock.calls as any[][])[0][0];
+    expect(madridTime(created.scheduledAt)).toBe("11:30");
+  });
+
+  it("rechaza una hora fuera de horario (entre semana, 14:00)", async () => {
+    await expect(
+      publicCaller().request(baseInput({ preferredDate: nextDow(2), timeSlot: undefined, preferredTime: "14:00" })),
+    ).rejects.toThrow(/no está disponible/i);
+    expect(db.createAppointment).not.toHaveBeenCalled();
+  });
+
+  it("rechaza una hora cuya sesión terminaría después de cerrar (relajante 45 min a las 12:30)", async () => {
+    await expect(
+      publicCaller().request(baseInput({ preferredDate: nextDow(2), timeSlot: undefined, preferredTime: "12:30" })),
+    ).rejects.toThrow(/no está disponible/i);
+  });
+
+  it("un masaje sin hora ni franja se rechaza", async () => {
+    await expect(publicCaller().request(baseInput({ preferredDate: nextDow(3), timeSlot: undefined }))).rejects.toThrow(/hora/i);
+  });
+});

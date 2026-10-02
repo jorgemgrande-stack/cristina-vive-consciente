@@ -125,3 +125,33 @@ describe("tarifas a domicilio", () => {
     expect(Object.keys(HOME_SERVICE_PRICES)).toHaveLength(2);
   });
 });
+
+import { bookableTimes, isBookableTime } from "../shared/booking";
+
+describe("bookableTimes — horas fijas", () => {
+  const NOW = Date.UTC(2026, 0, 1, 0, 0); // pasado: no filtra "hoy"
+  it("entre semana: 10–13 y 16–19, cada 30 min, la sesión termina antes de cerrar (60 min)", () => {
+    expect(bookableTimes("2099-07-15", 60, NOW)).toEqual(["10:00", "10:30", "11:00", "11:30", "12:00", "16:00", "16:30", "17:00", "17:30", "18:00"]);
+  });
+  it("45 min: la última de la mañana es 12:00 (termina 12:45) y la de la tarde 18:00", () => {
+    const t = bookableTimes("2099-07-15", 45, NOW);
+    expect(t).toContain("12:00");
+    expect(t).not.toContain("12:30");
+    expect(t[t.length - 1]).toBe("18:00");
+  });
+  it("fin de semana: sin pausa del mediodía (10:00–19:00)", () => {
+    const t = bookableTimes("2099-07-18", 60, NOW); // sábado
+    expect(t).toContain("13:00");
+    expect(t).toContain("14:30");
+    expect(t[t.length - 1]).toBe("18:00");
+  });
+  it("hoy descarta las horas ya pasadas (hora de Madrid)", () => {
+    const now = Date.UTC(2099, 6, 15, 8, 30); // 10:30 en Madrid (CEST)
+    const t = bookableTimes("2099-07-15", 60, now);
+    expect(t[0]).toBe("11:00");
+    expect(isBookableTime("2099-07-15", "10:00", 60, now)).toBe(false);
+  });
+  it("fecha mal formada: sin horas", () => {
+    expect(bookableTimes("15/07/2099")).toEqual([]);
+  });
+});
