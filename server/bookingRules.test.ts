@@ -144,3 +144,14 @@ describe("bookableTimes — horas fijas", () => {
     expect(bookableTimes("15/07/2099")).toEqual([]);
   });
 });
+
+import { formatEuros } from "../shared/booking";
+
+describe("formatEuros — precio de las tarjetas", () => {
+  it("enteros sin decimales y con coma si hay céntimos; vacío si no es un número", () => {
+    expect(formatEuros("80.00")).toBe("80 €");
+    expect(formatEuros(110)).toBe("110 €");
+    expect(formatEuros("72.5")).toBe("72,50 €");
+    for (const v of [null, undefined, "", "abc"]) expect(formatEuros(v as any)).toBe("");
+  });
+});

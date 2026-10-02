@@ -276,7 +276,11 @@ function ProductCard({
   return (
     <div className="bg-white rounded-2xl overflow-hidden border border-[#E8E4DC] hover:border-[#B8D4B8] hover:shadow-xl transition-all duration-300 group flex flex-col">
       {/* Imagen */}
-      <div className="relative aspect-[4/3] bg-gradient-to-br from-[#E8F0E8] to-[#F0F4F0] overflow-hidden">
+      <Link
+        href={`/sistemas-agua/${product.slug}`}
+        aria-label={`Ver ${product.title}`}
+        className="relative block aspect-[4/3] bg-gradient-to-br from-[#E8F0E8] to-[#F0F4F0] overflow-hidden cursor-pointer"
+      >
         {product.mainImage ? (
           <img
             src={product.mainImage}
@@ -296,12 +300,16 @@ function ProductCard({
             {product.badge}
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Contenido */}
       <div className="p-6 flex flex-col flex-1">
         <div className="flex-1">
-          <h3 className="text-xl font-serif text-[#1A1208] mb-1">{product.title}</h3>
+          <h3 className="text-xl font-serif text-[#1A1208] mb-1">
+            <Link href={`/sistemas-agua/${product.slug}`} className="no-underline text-inherit hover:text-[#3A5A3A] transition-colors">
+              {product.title}
+            </Link>
+          </h3>
           {product.subtitle && (
             <p className="text-sm text-[#3A5A3A] font-medium mb-3">{product.subtitle}</p>
           )}
@@ -332,7 +340,7 @@ function ProductCard({
         {(product.priceVisible || product.priceOrientative) && (
           <div className="border-t border-[#E8E4DC] pt-4 mb-4">
             {product.priceVisible ? (
-              <p className="text-2xl font-serif text-[#1A1208]">{product.priceVisible}</p>
+              <p className="text-[2rem] leading-none font-serif font-medium text-[#3A5A3A]">{product.priceVisible}</p>
             ) : (
               <p className="text-sm text-[#7A6E5E] italic">{product.priceOrientative}</p>
             )}

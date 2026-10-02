@@ -5,7 +5,7 @@
  */
 
 import { SITE_IMAGES } from "@/lib/siteImages";
-import { getHomePrice, massagePlaceLabel } from "@shared/booking";
+import { formatEuros, getHomePrice, massagePlaceLabel } from "@shared/booking";
 import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, MapPin, Clock, Euro, Star, Loader2, ChevronDown, ChevronUp, Leaf, CheckCircle, Eye } from "lucide-react";
@@ -257,17 +257,25 @@ export default function Masajes() {
 
                       {/* Imagen con aspect-ratio 4/3 */}
                       {masaje.imageUrl ? (
-                        <div className="aspect-[4/3] overflow-hidden flex-shrink-0">
+                        <Link
+                          href={`/masajes/${masaje.slug}`}
+                          aria-label={`Ver ${masaje.name}`}
+                          className="block aspect-[4/3] overflow-hidden flex-shrink-0 cursor-pointer"
+                        >
                           <img
                             src={masaje.imageUrl}
                             alt={masaje.name}
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           />
-                        </div>
+                        </Link>
                       ) : (
-                        <div className="aspect-[4/3] bg-[oklch(0.94_0.012_80)] flex items-center justify-center flex-shrink-0">
+                        <Link
+                          href={`/masajes/${masaje.slug}`}
+                          aria-label={`Ver ${masaje.name}`}
+                          className="aspect-[4/3] bg-[oklch(0.94_0.012_80)] flex items-center justify-center flex-shrink-0"
+                        >
                           <Leaf size={40} className="text-[oklch(0.52_0.08_148)]/30" />
-                        </div>
+                        </Link>
                       )}
 
                       {/* Contenido */}
@@ -285,24 +293,36 @@ export default function Masajes() {
                             <MapPin size={9} className="text-[oklch(0.52_0.08_148)]" />
                             {massagePlaceLabel(masaje)}
                           </span>
-                          {masaje.price && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-body text-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]/8 px-2 py-1" style={{ fontWeight: 600 }}>
-                              <Euro size={9} />
-                              {masaje.price} €
-                            </span>
-                          )}
-                          {getHomePrice(masaje) !== null && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-body text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-1" style={{ fontWeight: 500 }}>
-                              <Euro size={9} />
-                              {getHomePrice(masaje)} € a domicilio
-                            </span>
-                          )}
                         </div>
 
-                        {/* Nombre */}
-                        <h3 className="font-display text-[oklch(0.18_0.018_55)] mb-2" style={{ fontWeight: 400, fontSize: "1.1rem" }}>
-                          {masaje.name}
+                        {/* Nombre (enlaza a la ficha) */}
+                        <h3 className="font-display text-[oklch(0.18_0.018_55)] mb-2" style={{ fontWeight: 400, fontSize: "1.25rem" }}>
+                          <Link
+                            href={`/masajes/${masaje.slug}`}
+                            className="no-underline text-inherit hover:text-[oklch(0.42_0.08_148)] transition-colors"
+                          >
+                            {masaje.name}
+                          </Link>
                         </h3>
+
+                        {/* Precio destacado */}
+                        {masaje.price && (
+                          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-3">
+                            <span className="font-display text-[oklch(0.42_0.08_148)]" style={{ fontWeight: 500, fontSize: "2.1rem", lineHeight: 1 }}>
+                              {formatEuros(masaje.price)}
+                            </span>
+                            <span className="text-xs font-body text-[oklch(0.52_0.02_60)]" style={{ fontWeight: 400 }}>
+                              en consulta
+                              {getHomePrice(masaje) !== null && (
+                                <>
+                                  {" · "}
+                                  <strong className="text-[oklch(0.32_0.04_148)]" style={{ fontWeight: 600 }}>{formatEuros(getHomePrice(masaje))}</strong>
+                                  {" a domicilio"}
+                                </>
+                              )}
+                            </span>
+                          </div>
+                        )}
 
                         {/* Descripción corta */}
                         {masaje.shortDescription && (

@@ -152,3 +152,10 @@ export function validateHomeAddress(a: Partial<HomeAddress>): HomeAddressErrors 
 export function formatHomeAddress(a: HomeAddress): string {
   return `${a.street.trim()}, ${a.postalCode.trim()} ${a.city.trim()}`;
 }
+
+/** 80 → "80 €"; 72.5 → "72,50 €" (formato de precio de las tarjetas). */
+export function formatEuros(value: string | number | null | undefined): string {
+  const n = Number(value);
+  if (value == null || value === "" || !Number.isFinite(n)) return "";
+  return `${Number.isInteger(n) ? n : n.toFixed(2).replace(".", ",")} €`;
+}

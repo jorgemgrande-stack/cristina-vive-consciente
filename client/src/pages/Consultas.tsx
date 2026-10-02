@@ -6,6 +6,7 @@
 
 import { SITE_IMAGES } from "@/lib/siteImages";
 import { Link } from "wouter";
+import { formatEuros } from "@shared/booking";
 import { ArrowRight, Clock, CheckCircle, Monitor, MapPin, Loader2, Leaf } from "lucide-react";
 import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
@@ -89,13 +90,17 @@ export default function Consultas() {
 
                       {/* Imagen */}
                       {c.imageUrl && (
-                        <div className="md:w-56 lg:w-64 flex-shrink-0 overflow-hidden">
+                        <Link
+                          href={`/consultas/${c.slug}`}
+                          aria-label={`Ver ${c.name}`}
+                          className="block md:w-56 lg:w-64 flex-shrink-0 overflow-hidden cursor-pointer"
+                        >
                           <img
                             src={c.imageUrl}
                             alt={c.name}
-                            className="w-full h-48 md:h-full object-cover"
+                            className="w-full h-48 md:h-full object-cover transition-transform duration-500 hover:scale-105"
                           />
-                        </div>
+                        </Link>
                       )}
 
                       {/* Contenido */}
@@ -121,8 +126,11 @@ export default function Consultas() {
                             )}
                           </div>
                           {c.price ? (
-                            <span className="font-display text-[oklch(0.52_0.08_148)]" style={{ fontWeight: 400, fontSize: "1.6rem", lineHeight: 1 }}>
-                              {parseFloat(c.price).toFixed(0)}€
+                            <span
+                              className="font-display text-[oklch(0.42_0.08_148)] bg-[oklch(0.52_0.08_148)]/10 px-3.5 py-2"
+                              style={{ fontWeight: 500, fontSize: "2.1rem", lineHeight: 1 }}
+                            >
+                              {formatEuros(c.price)}
                             </span>
                           ) : (
                             <span className="text-[oklch(0.52_0.02_60)] text-xs italic font-body" style={{ fontWeight: 300 }}>
@@ -133,7 +141,12 @@ export default function Consultas() {
 
                         {/* Título */}
                         <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-2" style={{ fontWeight: 400, fontSize: "clamp(1.1rem, 2.5vw, 1.4rem)" }}>
-                          {c.name}
+                          <Link
+                            href={`/consultas/${c.slug}`}
+                            className="no-underline text-inherit hover:text-[oklch(0.42_0.08_148)] transition-colors"
+                          >
+                            {c.name}
+                          </Link>
                         </h2>
 
                         {/* Descripción corta */}
