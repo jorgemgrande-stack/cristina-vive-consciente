@@ -367,14 +367,11 @@ export default function Home() {
             {/* Image Side */}
             <div className="relative">
               <div className="relative overflow-hidden" style={{ aspectRatio: "4/5" }}>
-                {/* TODO: cuando Cristina suba su foto (CRM → Galería), colocarla aquí. Hasta entonces, panel de marca. */}
-                <div className="w-full h-full flex items-center justify-center bg-[oklch(0.985_0.006_85)] p-10">
-                  <img
-                    src={SITE_IMAGES.logo}
-                    alt="BION — Cristina Vive Consciente"
-                    className="w-full max-w-[320px] object-contain"
-                  />
-                </div>
+                <img
+                  src={SITE_IMAGES.cristina}
+                  alt="Cristina — Bienestar Holístico"
+                  className="w-full h-full object-cover object-top"
+                />
               </div>
               {/* Floating accent */}
               <div

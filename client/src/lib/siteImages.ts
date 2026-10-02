@@ -16,5 +16,6 @@ export const SITE_IMAGES = {
   heroAceites: "/site/hero-aceites.webp",
   heroAgua: "/site/hero-agua.webp",
   heroSistemasAgua: "/site/hero-sistemas-agua.webp",
+  cristina: "/site/cristina-sobre-mi.webp",
   logo: "/logo-bion.png",
 } as const;
