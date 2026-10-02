@@ -22,7 +22,7 @@ import { defaultGallery } from "@shared/serviceGallery";
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import {
-  ArrowLeft, ArrowRight, Clock, MapPin, Star, Wallet,
+  ArrowLeft, ArrowRight, Check, Clock, MapPin, Star,
   CheckCircle, AlertCircle, Leaf, Loader2, ChevronDown, ChevronUp, CalendarCheck
 } from "lucide-react";
 import Layout from "@/components/Layout";
@@ -131,28 +131,44 @@ export default function MasajeDetalle() {
       <Layout>
 
         {/* ── Cabecera: título, galería y bloque de reserva ── */}
-        <section className="bg-[oklch(0.985_0.006_85)] pt-6 pb-10 sm:pt-8 sm:pb-14 border-b border-[oklch(0.92_0.01_75)]">
+        <section className="bg-[oklch(0.985_0.006_85)] pt-28 pb-12 sm:pb-16 lg:pt-36 border-b border-[oklch(0.92_0.01_75)]">
           <div className="container">
             <Link
               href="/masajes"
-              className="inline-flex items-center gap-2 text-[oklch(0.52_0.08_148)] text-xs font-body no-underline hover:gap-3 transition-all mb-5"
+              className="inline-flex items-center gap-2 text-[oklch(0.52_0.08_148)] text-xs font-body no-underline hover:gap-3 transition-all mb-6 lg:mb-8"
             >
               <ArrowLeft size={12} />
               Masajes
             </Link>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-x-12 gap-y-5 lg:gap-y-0 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:grid-rows-[auto_1fr] gap-x-10 xl:gap-x-14 gap-y-6 items-start">
               {/* Título: arriba en móvil; en escritorio, encima del bloque de reserva */}
               <div className="order-1 lg:col-start-2 lg:row-start-1">
-                {masaje.featured === 1 && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[oklch(0.52_0.08_148)] text-white text-[10px] font-body tracking-wider uppercase mb-3 w-fit" style={{ fontWeight: 500 }}>
-                    <Star size={9} fill="currentColor" />
-                    Más popular
-                  </span>
-                )}
-                <h1 className="font-display text-[oklch(0.18_0.018_55)] lg:mb-5" style={{ fontWeight: 400, fontSize: "clamp(1.75rem, 3.2vw, 2.5rem)", lineHeight: 1.15 }}>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3">
+                  <p className="text-[oklch(0.52_0.08_148)] text-[11px] tracking-[0.2em] uppercase font-body" style={{ fontWeight: 500 }}>
+                    Masaje · Navas de Riofrío
+                  </p>
+                  {masaje.featured === 1 && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[oklch(0.52_0.08_148)] text-white text-[10px] font-body tracking-wider uppercase" style={{ fontWeight: 500 }}>
+                      <Star size={9} fill="currentColor" />
+                      Más popular
+                    </span>
+                  )}
+                </div>
+                <h1 className="font-display text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 400, fontSize: "clamp(1.9rem, 3.4vw, 2.7rem)", lineHeight: 1.12 }}>
                   {masaje.name}
                 </h1>
+
+                {/* Resumen rápido (solo móvil): precio, duración y lugar a la vista antes de la galería */}
+                <div className="lg:hidden mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 font-body text-sm text-[oklch(0.38_0.02_55)]">
+                  {priceText && (
+                    <span className="font-display text-[oklch(0.42_0.08_148)]" style={{ fontWeight: 500, fontSize: "1.7rem", lineHeight: 1 }}>
+                      {priceText}
+                    </span>
+                  )}
+                  {masaje.durationLabel && <span>· {masaje.durationLabel}</span>}
+                  <span>· {massagePlaceLabel(masaje)}</span>
+                </div>
               </div>
 
               {/* Galería */}
@@ -160,32 +176,32 @@ export default function MasajeDetalle() {
                 <ServiceGallery images={images} title={masaje.name} />
               </div>
 
-              {/* Bloque de reserva */}
-              <aside className="order-3 lg:col-start-2 lg:row-start-2 lg:sticky lg:top-24" aria-label="Precio y reserva">
+              {/* Descripción corta y bloque de reserva */}
+              <aside className="order-3 lg:col-start-2 lg:row-start-2 lg:sticky lg:top-28 lg:-mt-1" aria-label="Precio y reserva">
                 {masaje.shortDescription && (
-                  <p className="text-[oklch(0.38_0.02_55)] font-body text-[0.95rem] leading-relaxed mb-5" style={{ fontWeight: 300 }}>
+                  <p className="text-[oklch(0.38_0.02_55)] font-body text-base leading-relaxed mb-6" style={{ fontWeight: 300 }}>
                     {masaje.shortDescription}
                   </p>
                 )}
 
-                <div className="border border-[oklch(0.88_0.015_75)] bg-white p-5 sm:p-6">
+                <div className="border border-[oklch(0.88_0.015_75)] bg-white p-5 sm:p-6 shadow-[0_1px_0_rgba(0,0,0,0.02)]">
                   {priceText && (
-                    <div className="mb-5">
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-display text-[oklch(0.42_0.08_148)]" style={{ fontWeight: 500, fontSize: "2.6rem", lineHeight: 1 }}>
+                    <div className="mb-5 pb-5 border-b border-[oklch(0.93_0.01_75)]">
+                      <div className="flex items-baseline gap-2.5">
+                        <span className="font-display text-[oklch(0.42_0.08_148)]" style={{ fontWeight: 500, fontSize: "2.75rem", lineHeight: 1 }}>
                           {priceText}
                         </span>
                         <span className="text-[oklch(0.52_0.02_60)] font-body text-sm">por sesión en consulta</span>
                       </div>
                       {homeText && (
-                        <p className="mt-1.5 text-[oklch(0.38_0.02_55)] font-body text-sm" style={{ fontWeight: 300 }}>
+                        <p className="mt-2 text-[oklch(0.38_0.02_55)] font-body text-sm" style={{ fontWeight: 300 }}>
                           A domicilio: <strong style={{ fontWeight: 600 }}>{homeText}</strong>
                         </p>
                       )}
                     </div>
                   )}
 
-                  <ul className="space-y-3 mb-5 text-sm font-body text-[oklch(0.30_0.02_55)]">
+                  <ul className="space-y-3 mb-6 text-sm font-body text-[oklch(0.30_0.02_55)]">
                     {masaje.durationLabel && (
                       <li className="flex items-start gap-3">
                         <Clock size={16} className="text-[oklch(0.52_0.08_148)] mt-0.5 flex-shrink-0" />
@@ -199,10 +215,6 @@ export default function MasajeDetalle() {
                         <a href={CENTER_MAPS_URL} target="_blank" rel="noopener noreferrer" className="underline text-[oklch(0.40_0.07_148)]">Cómo llegar</a>
                       </span>
                     </li>
-                    <li className="flex items-start gap-3">
-                      <Wallet size={16} className="text-[oklch(0.52_0.08_148)] mt-0.5 flex-shrink-0" />
-                      <span><span style={{ fontWeight: 500 }}>Pago:</span> en la cita; no se cobra nada al reservar</span>
-                    </li>
                   </ul>
 
                   <button
@@ -213,9 +225,17 @@ export default function MasajeDetalle() {
                     Reservar ahora
                     <ArrowRight size={13} />
                   </button>
-                  <p className="mt-3 text-center text-[11px] text-[oklch(0.52_0.02_60)] font-body leading-relaxed" style={{ fontWeight: 300 }}>
-                    Es una solicitud: queda pendiente hasta que Cristina la confirme (24–48 h).
-                  </p>
+
+                  <ul className="mt-4 space-y-1.5 text-[12px] text-[oklch(0.42_0.02_55)] font-body" style={{ fontWeight: 300 }}>
+                    <li className="flex items-start gap-2">
+                      <Check size={13} className="text-[oklch(0.52_0.08_148)] mt-0.5 flex-shrink-0" />
+                      <span>No se cobra nada al reservar: pagas en la cita</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check size={13} className="text-[oklch(0.52_0.08_148)] mt-0.5 flex-shrink-0" />
+                      <span>Es una solicitud: Cristina te confirma en 24–48 h</span>
+                    </li>
+                  </ul>
                 </div>
               </aside>
             </div>

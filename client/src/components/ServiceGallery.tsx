@@ -105,7 +105,7 @@ export default function ServiceGallery({ images, title }: { images: GalleryImage
               key={`${img.url}-${i}`}
               type="button"
               onClick={(e) => openLightbox(i, e)}
-              className="relative w-full flex-none snap-center aspect-[4/3] cursor-zoom-in block"
+              className="relative w-full flex-none snap-center aspect-[4/3] lg:aspect-[3/2] cursor-zoom-in block"
               aria-label={`Ampliar foto ${i + 1} de ${count}: ${img.alt}`}
             >
               <img
