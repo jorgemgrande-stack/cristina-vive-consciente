@@ -19,6 +19,7 @@ import { generateInvoicePdf } from "../invoicePdf";
 import { sdk } from "./sdk";
 import { uploadRouter } from "../upload";
 import { createRedirectMiddleware } from "../redirects";
+import { sitemapRouter } from "../sitemap";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -234,6 +235,8 @@ async function startServer() {
       createContext,
     })
   );
+  // ─── SEO: sitemap.xml y robots.txt ─────────────────────────────────────────
+  app.use(sitemapRouter);
   // ─── SEO 301 Redirects (Shopify legacy paths) ───────────────────────────────
   app.use(createRedirectMiddleware());
 
