@@ -6,8 +6,9 @@
 
 import { useState } from "react";
 import { X, MessageCircle } from "lucide-react";
+import { CRISTINA_WHATSAPP_NUMBER } from "@shared/booking";
 
-const WHATSAPP_NUMBER = "34657165343";
+const WHATSAPP_NUMBER = CRISTINA_WHATSAPP_NUMBER;
 const WHATSAPP_MESSAGE = encodeURIComponent(
   "Hola Cristina, me gustaría obtener más información sobre tus servicios de bienestar. 🌿"
 );

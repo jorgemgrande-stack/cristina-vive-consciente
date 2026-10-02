@@ -24,10 +24,7 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script
-      defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"
-    ></script>
+    <!-- Sin etiquetas de analítica/publicidad: se cargarán solo con consentimiento (ver client/src/lib/analytics.ts).
+         El script de Umami que había aquí tenía variables sin sustituir (%VITE_ANALYTICS_*%) y nunca midió nada. -->
   </body>
 </html>

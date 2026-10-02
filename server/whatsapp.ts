@@ -17,8 +17,9 @@
 
 import { getDb } from "./db";
 import { automationLogs } from "../drizzle/schema";
+import { CRISTINA_WHATSAPP_NUMBER } from "../shared/booking";
 
-const WHATSAPP_ADMIN_NUMBER = process.env.WHATSAPP_ADMIN_NUMBER ?? "34657165343";
+const WHATSAPP_ADMIN_NUMBER = process.env.WHATSAPP_ADMIN_NUMBER || CRISTINA_WHATSAPP_NUMBER;
 
 // ─── TIPOS ────────────────────────────────────────────────────────────────────
 
@@ -53,6 +54,12 @@ export interface WhatsAppPurchaseData {
 
 // ─── GENERADORES DE MENSAJES ──────────────────────────────────────────────────
 
+/** "10:00" -> " a las 10:00"; una franja ("Mañana (9:00 – 13:00)") -> " · Mañana (9:00 – 13:00)". */
+function formatPreferredTime(t?: string): string {
+  if (!t) return "";
+  return /^\d{1,2}:\d{2}$/.test(t) ? ` a las ${t}` : ` · ${t}`;
+}
+
 export function generateAdminBookingNotification(data: WhatsAppBookingData): string {
   return [
     `🌿 *Nueva solicitud de cita*`,
@@ -62,7 +69,7 @@ export function generateAdminBookingNotification(data: WhatsAppBookingData): str
     data.email ? `📧 ${data.email}` : "",
     ``,
     `📋 Servicio: ${data.serviceLabel}`,
-    `📅 Fecha preferida: ${data.preferredDate}${data.preferredTime ? ` a las ${data.preferredTime}` : ""}`,
+    `📅 Fecha preferida: ${data.preferredDate}${formatPreferredTime(data.preferredTime)}`,
     `💻 Modalidad: ${data.modality}`,
     data.notes ? `📝 Notas: ${data.notes}` : "",
     ``,
@@ -111,7 +118,7 @@ export function generateAdminPurchaseNotification(data: WhatsAppPurchaseData): s
 export function generateBookingWhatsAppUrl(data: WhatsAppBookingData): string {
   const text = [
     `Hola Cristina, acabo de solicitar una cita de ${data.serviceLabel}`,
-    `para el ${data.preferredDate}${data.preferredTime ? ` a las ${data.preferredTime}` : ""}.`,
+    `para el ${data.preferredDate}${formatPreferredTime(data.preferredTime)}.`,
     `Modalidad: ${data.modality}.`,
     `Quedo a la espera de tu confirmación. Gracias 🌿`,
   ].join(" ");

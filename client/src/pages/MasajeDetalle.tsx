@@ -18,7 +18,8 @@ import { trpc } from "@/lib/trpc";
 const MODALITY_LABEL: Record<string, string> = {
   online: "Online",
   presencial: "Presencial",
-  ambos: "Presencial / Online",
+  // Un masaje nunca es online: "ambos" (dato heredado de la BD) se muestra solo como Presencial.
+  ambos: "Presencial",
 };
 
 const FALLBACK_IMG = SITE_IMAGES.heroMasajes;
