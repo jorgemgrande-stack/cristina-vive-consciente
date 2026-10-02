@@ -43,6 +43,10 @@ const SERVICES: Record<string, any> = {
   [CONSULTA.slug]: CONSULTA,
 };
 
+vi.hoisted(() => {
+  process.env.JWT_SECRET = "secreto-de-prueba-enlaces";
+});
+
 const db = vi.hoisted(() => ({
   createClient: vi.fn(async () => 1),
   createAppointment: vi.fn(async () => ({ insertId: 99 })),
@@ -84,6 +88,7 @@ vi.mock("./invoicePdf", () => ({ generateInvoicePdf: vi.fn() }));
 import { bookingsRouter } from "./routers/bookings";
 import { crmRouter } from "./routers/crm";
 import { todayInMadrid } from "./bookingRules";
+import { signAdminActionToken } from "./adminActionLink";
 
 const futureDate = () => {
   const d = new Date(Date.now() + 10 * 86400000);
@@ -413,5 +418,64 @@ describe("bookings.request — hora fija en masajes", () => {
 
   it("un masaje sin hora ni franja se rechaza", async () => {
     await expect(publicCaller().request(baseInput({ preferredDate: nextDow(3), timeSlot: undefined }))).rejects.toThrow(/hora/i);
+  });
+});
+
+describe("bookings.adminLink* — enlace firmado del aviso", () => {
+  const row = (status: string) => ({
+    appointment: { id: 5, status, serviceType: "masaje", serviceLabel: "Masaje Relajante — 45 min", scheduledAt: Date.now() + 86400000, modality: "presencial", internalNotes: "Hora solicitada: 11:30" },
+    client: { id: 1, firstName: "Ana", lastName: "García", email: "ana@example.com", phone: "600111222" },
+  });
+  const goodToken = () => signAdminActionToken(5, process.env.JWT_SECRET!);
+
+  it("la solicitud nueva incluye el enlace firmado en el aviso por email y WhatsApp", async () => {
+    await publicCaller().request(baseInput({ preferredDate: nextDow(3), timeSlot: undefined, preferredTime: "11:30" }));
+    await new Promise((r) => setTimeout(r, 20));
+    const emailArg = (mail.sendAdminNotificationEmail.mock.calls as any[][])[0][0];
+    expect(emailArg.actionUrl).toMatch(/^https:\/\/cristinaviveconsciente\.es\/a\/99\.\d+\./);
+  });
+
+  it("adminLinkInfo con token válido devuelve los datos; con token alterado, NOT_FOUND genérico", async () => {
+    db.getAppointmentById.mockResolvedValue(row("pending"));
+    const info = await publicCaller().adminLinkInfo({ token: goodToken() });
+    expect(info).toMatchObject({ canAct: true, clientName: "Ana García", serviceLabel: "Masaje Relajante — 45 min" });
+    await expect(publicCaller().adminLinkInfo({ token: goodToken() + "x" })).rejects.toThrow(/no válido|caducado/i);
+  });
+
+  it("aceptar desde el enlace confirma la cita y deja constancia sin usuario (enlace del aviso)", async () => {
+    db.getAppointmentById.mockResolvedValue(row("pending"));
+    await publicCaller().adminLinkAct({ token: goodToken(), action: "accept" });
+    expect(db.updateAppointment).toHaveBeenCalledWith(5, { status: "confirmed" });
+    const ev = (db.logAppointmentEvent.mock.calls as any[][]).map((c) => c[0]).find((e) => e.type === "status_changed");
+    expect(ev).toMatchObject({ toStatus: "confirmed", actorUserId: null, detail: "Desde el enlace del aviso" });
+  });
+
+  it("declinar desde el enlace cancela con el motivo por defecto o el indicado", async () => {
+    db.getAppointmentById.mockResolvedValue(row("pending"));
+    await publicCaller().adminLinkAct({ token: goodToken(), action: "decline" });
+    expect(db.updateAppointment).toHaveBeenCalledWith(5, expect.objectContaining({ status: "cancelled", cancellationReason: expect.stringMatching(/no es posible/i) }));
+    db.updateAppointment.mockClear();
+    await publicCaller().adminLinkAct({ token: goodToken(), action: "decline", reason: "Estoy de vacaciones" });
+    expect(db.updateAppointment).toHaveBeenCalledWith(5, expect.objectContaining({ cancellationReason: "Estoy de vacaciones" }));
+  });
+
+  it("posponer desde el enlace propone fechas y la cita pasa a rescheduled", async () => {
+    db.getAppointmentById.mockResolvedValue(row("pending"));
+    await publicCaller().adminLinkPropose({ token: goodToken(), slots: [{ date: nextDow(3), time: "11:00" }] });
+    expect(db.updateAppointment).toHaveBeenCalledWith(5, expect.objectContaining({ status: "rescheduled" }));
+  });
+
+  it("un enlace reutilizado no cambia una cita ya resuelta", async () => {
+    for (const st of ["confirmed", "cancelled", "rescheduled", "completed"]) {
+      db.getAppointmentById.mockResolvedValue(row(st));
+      await expect(publicCaller().adminLinkAct({ token: goodToken(), action: "accept" })).rejects.toThrow(/ya se ha resuelto/i);
+      await expect(publicCaller().adminLinkPropose({ token: goodToken(), slots: [{ date: nextDow(3), time: "11:00" }] })).rejects.toThrow(/ya se ha resuelto/i);
+    }
+    expect(db.updateAppointment).not.toHaveBeenCalled();
+  });
+
+  it("un token válido de otra cita inexistente da el mismo error genérico", async () => {
+    db.getAppointmentById.mockResolvedValue(null);
+    await expect(publicCaller().adminLinkAct({ token: goodToken(), action: "accept" })).rejects.toThrow(/no válido|caducado/i);
   });
 });

@@ -155,6 +155,8 @@ export interface BookingEmailData {
   preferredTime?: string;
   modality: string;
   message?: string;
+  /** Enlace firmado para aceptar/declinar/posponer sin entrar al CRM (solo emails al admin). */
+  actionUrl?: string;
 }
 
 export interface LeadEmailData {
@@ -333,6 +335,8 @@ export async function sendAdminNotificationEmail(data: BookingEmailData): Promis
             </td>
           </tr>` : ""}
         </table>
+        ${data.actionUrl ? ctaButton(data.actionUrl, "Aceptar · Declinar · Posponer") : ""}
+        ${data.actionUrl ? `<p style="margin:0 0 8px;text-align:center;font-size:12px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;">Se abre una página con los datos de la cita y los tres botones. Válido 14 días.</p>` : ""}
         ${ctaButton(`${BASE_URL}/crm`, "Gestionar en el CRM")}
       </td>
     </tr>

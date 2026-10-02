@@ -1,6 +1,6 @@
 # Estudio: aviso de reserva a Cristina con botones Aceptar / Declinar / Posponer
 
-Fecha: 2026-10-02 · Estado: **estudio, sin implementar** (decisión pendiente)
+Fecha: 2026-10-02 · Estado: **Opción B implementada** (enlaces firmados). Opción A (API de WhatsApp) sin implementar, pendiente de decisión.
 
 ## Qué hay hoy
 - Al llegar una solicitud, el servidor registra el aviso a Cristina por email (si hay SMTP y ADMIN_EMAIL) y genera un enlace `wa.me` que **no se envía solo**: `server/whatsapp.ts` solo manda de verdad si existen `WHATSAPP_API_TOKEN` y `WHATSAPP_PHONE_ID`, y lo hace con texto libre.
@@ -30,3 +30,10 @@ El aviso (email hoy; también el enlace `wa.me`) incluye un enlace único `https
 ## Cambios previos relacionados (esta rama)
 - Horas fijas en el formulario de masajes (en lugar de franjas): cada 30 min dentro del horario, la sesión debe terminar antes de cerrar.
 - El selector de servicio, al abrir el formulario desde un masaje, solo muestra masajes.
+
+## Opción B — implementada
+
+- El aviso por email a Cristina incluye el botón «Aceptar · Declinar · Posponer» y el aviso de WhatsApp (enlace `wa.me`) incluye el mismo enlace `/a/<token>`.
+- Token sin base de datos: `idCita.caducidad.firma` (HMAC-SHA256 con `JWT_SECRET`), válido 14 días (`server/adminActionLink.ts`). Sin secreto no se generan enlaces.
+- Página `/a/:token` (noindex, `Disallow: /a/` en robots): datos de la cita y tres botones; las acciones son POST y solo actúan sobre solicitudes `pending`.
+- Aceptar/Declinar/Posponer reutilizan las mismas funciones que el CRM (`bookingActions.ts`); el historial indica «Desde el enlace del aviso».

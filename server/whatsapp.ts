@@ -33,6 +33,8 @@ export interface WhatsAppBookingData {
   preferredTime?: string;
   modality: string;
   notes?: string;
+  /** Enlace firmado para aceptar/declinar/posponer desde el móvil. */
+  actionUrl?: string;
 }
 
 export interface WhatsAppLeadData {
@@ -73,7 +75,7 @@ export function generateAdminBookingNotification(data: WhatsAppBookingData): str
     `💻 Modalidad: ${data.modality}`,
     data.notes ? `📝 Notas: ${data.notes}` : "",
     ``,
-    `Accede al CRM → cristinaviveconsciente.es/crm`,
+    data.actionUrl ? `👉 Aceptar, declinar o posponer: ${data.actionUrl}` : `Accede al CRM → cristinaviveconsciente.es/crm`,
   ]
     .filter(Boolean)
     .join("\n");

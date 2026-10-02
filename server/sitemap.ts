@@ -114,6 +114,7 @@ sitemapRouter.get("/robots.txt", (_req, res) => {
       "Disallow: /api/",
       "Disallow: /mi-consulta",
       "Disallow: /cita/",
+      "Disallow: /a/",
       "Disallow: /ebooks/",
       "",
       `Sitemap: ${SITE_URL}/sitemap.xml`,

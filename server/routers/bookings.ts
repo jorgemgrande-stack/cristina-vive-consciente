@@ -20,6 +20,7 @@ import {
   createClient,
   createAppointment,
   findClientByEmail,
+  getAppointmentById,
   getAppointmentByRescheduleToken,
   getServiceBySlug,
   findOpenDuplicateAppointment,
@@ -28,7 +29,15 @@ import {
 import { notifyOwner } from "../_core/notification";
 import { sendClientConfirmationEmail, sendAdminNotificationEmail } from "../email";
 import { notifyAdminNewBooking } from "../whatsapp";
-import { selectProposedSlot, trackNotification } from "../bookingActions";
+import {
+  acceptAppointment,
+  cancelAppointmentWithReason,
+  proposeAppointmentSlots,
+  selectProposedSlot,
+  trackNotification,
+} from "../bookingActions";
+import { buildAdminActionUrl, verifyAdminActionToken } from "../adminActionLink";
+import { ENV } from "../_core/env";
 import { CRISTINA_WHATSAPP_NUMBER, HOME_LABEL_SUFFIX, getHomePrice, isBookableTime, slotsForDate } from "../../shared/booking";
 import {
   APPOINTMENT_SERVICE_TYPES,
@@ -54,6 +63,18 @@ const LEGACY_SERVICE_LABELS: Record<string, string> = {
 };
 
 const WHATSAPP_ADMIN_NUMBER = process.env.WHATSAPP_ADMIN_NUMBER || CRISTINA_WHATSAPP_NUMBER;
+
+const SITE_URL = "https://cristinaviveconsciente.es";
+
+const DEFAULT_DECLINE_REASON = "No es posible atender la cita en esa fecha y hora.";
+
+/** Carga la cita del token; cualquier fallo (firma, caducidad, cita inexistente) responde igual. */
+async function loadLinkedAppointment(token: string) {
+  const verified = verifyAdminActionToken(token, ENV.cookieSecret);
+  const row = verified ? await getAppointmentById(verified.appointmentId) : null;
+  if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Enlace no válido o caducado" });
+  return row;
+}
 
 export const bookingsRouter = router({
   /**
@@ -234,7 +255,9 @@ export const bookingsRouter = router({
       };
 
       notify("email", "client", "request_received", () => sendClientConfirmationEmail(emailData));
-      notify("email", "admin", "new_request", () => sendAdminNotificationEmail(emailData));
+      // Enlace firmado para que Cristina acepte/declare/posponga desde el aviso (null si no hay secreto)
+      const actionUrl = appointmentId ? buildAdminActionUrl(appointmentId, ENV.cookieSecret, SITE_URL) ?? undefined : undefined;
+      notify("email", "admin", "new_request", () => sendAdminNotificationEmail({ ...emailData, actionUrl }));
       notify("whatsapp", "admin", "new_request", () =>
         notifyAdminNewBooking({
           firstName: input.firstName,
@@ -246,6 +269,7 @@ export const bookingsRouter = router({
           preferredTime: displayTime,
           modality: input.modality,
           notes: [isHome ? `A domicilio — ${input.serviceAddress}` : null, input.message].filter(Boolean).join(" · ") || undefined,
+          actionUrl,
         })
       );
       notify("owner", "admin", "new_request", () =>
@@ -279,5 +303,61 @@ export const bookingsRouter = router({
         slots,
         status: appt.status,
       };
+    }),
+
+  // ─── Enlace firmado del aviso a Cristina (Aceptar / Declinar / Posponer) ─────
+  // Público, pero protegido por el token firmado (ver adminActionLink.ts). Mismas acciones y transiciones que el CRM.
+
+  /** Datos de la cita para la página del enlace. Un token inválido o caducado da NOT_FOUND genérico. */
+  adminLinkInfo: publicProcedure
+    .input(z.object({ token: z.string().max(200) }))
+    .query(async ({ input }) => {
+      const appt = await loadLinkedAppointment(input.token);
+      return {
+        status: appt.appointment.status,
+        canAct: appt.appointment.status === "pending",
+        clientName: `${appt.client?.firstName ?? ""} ${appt.client?.lastName ?? ""}`.trim(),
+        clientPhone: appt.client?.phone ?? null,
+        clientEmail: appt.client?.email ?? null,
+        serviceLabel: appt.appointment.serviceLabel ?? appt.appointment.serviceType,
+        scheduledAt: new Date(appt.appointment.scheduledAt).getTime(),
+        modality: appt.appointment.modality ?? "presencial",
+        notes: appt.appointment.internalNotes ?? null,
+      };
+    }),
+
+  /** Acepta o declina la solicitud desde el enlace. Solo si sigue pendiente. */
+  adminLinkAct: publicProcedure
+    .input(
+      z.object({
+        token: z.string().max(200),
+        action: z.enum(["accept", "decline"]),
+        reason: z.string().trim().max(300).optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { appointment } = await loadLinkedAppointment(input.token);
+      if (appointment.status !== "pending") {
+        throw new TRPCError({ code: "CONFLICT", message: "Esta solicitud ya se ha resuelto" });
+      }
+      if (input.action === "accept") return acceptAppointment(appointment.id, null);
+      return cancelAppointmentWithReason(appointment.id, input.reason || DEFAULT_DECLINE_REASON, null);
+    }),
+
+  /** Propone otras fechas desde el enlace (la cita pasa a "rescheduled" y el cliente elige). */
+  adminLinkPropose: publicProcedure
+    .input(
+      z.object({
+        token: z.string().max(200),
+        slots: z.array(z.object({ date: z.string(), time: z.string() })).min(1).max(3),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { appointment } = await loadLinkedAppointment(input.token);
+      if (appointment.status !== "pending") {
+        throw new TRPCError({ code: "CONFLICT", message: "Esta solicitud ya se ha resuelto" });
+      }
+      const out = await proposeAppointmentSlots(appointment.id, input.slots, null);
+      return { success: out.success };
     }),
 });
