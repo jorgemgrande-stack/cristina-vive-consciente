@@ -4,6 +4,7 @@
  * Grid 3 columnas con tarjetas verticales ricas en contenido + botón Ver detalle
  */
 
+import { SITE_IMAGES } from "@/lib/siteImages";
 import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, MapPin, Clock, Euro, Star, Loader2, ChevronDown, ChevronUp, Leaf, CheckCircle, Eye } from "lucide-react";
@@ -11,7 +12,7 @@ import Layout from "@/components/Layout";
 import BookingModal from "@/components/BookingModal";
 import { trpc } from "@/lib/trpc";
 
-const HERO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-masajes-PUiFsGVb8gAs6i4s8VF7U8.webp";
+const HERO = SITE_IMAGES.heroMasajes;
 
 const MODALITY_LABEL: Record<string, string> = {
   online: "Online",

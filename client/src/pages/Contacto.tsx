@@ -4,6 +4,7 @@
  * Formulario conectado al backend: crea lead en CRM + envía emails automáticos
  */
 
+import { SITE_IMAGES } from "@/lib/siteImages";
 import { useState } from "react";
 import { Mail, Phone, Clock, MapPin, Instagram, Send, Users, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -11,7 +12,7 @@ import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
 import { trpc } from "@/lib/trpc";
 
-const HERO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-consultas-VRAFvns5UX68Kqd64cBawH.webp";
+const HERO = SITE_IMAGES.heroConsultas;
 
 const contactInfo = [
   {

@@ -6,6 +6,7 @@
  * Todos los enlaces usan rel="nofollow sponsored noopener noreferrer"
  */
 
+import { SITE_IMAGES } from "@/lib/siteImages";
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { ExternalLink, ShoppingBag, Leaf, Star, ArrowRight } from "lucide-react";
@@ -14,7 +15,7 @@ import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
 
 const HERO =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-aceites-cn5cmPNwkFkzA35ejtXJUa.webp";
+  SITE_IMAGES.heroAceites;
 
 type Product = {
   id: number;
@@ -62,6 +63,7 @@ function getProductBadge(product: Product) {
 }
 
 function ProductCard({ product }: { product: Product }) {
+  const [imgFailed, setImgFailed] = useState(false);
   const badge = getProductBadge(product);
   const ribbon = product.isAffiliate ? getProviderRibbon(product.provider) : null;
 
@@ -69,9 +71,10 @@ function ProductCard({ product }: { product: Product }) {
     <article className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-stone-100 shadow-sm hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 ease-out">
       {/* Imagen */}
       <div className="relative aspect-[4/3] bg-[oklch(0.97_0.006_85)] overflow-hidden">
-        {product.imageUrl ? (
+        {product.imageUrl && !imgFailed ? (
           <img
             src={product.imageUrl}
+            onError={() => setImgFailed(true)}
             alt={product.name}
             className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500 ease-out"
             loading="lazy"

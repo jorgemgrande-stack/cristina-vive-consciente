@@ -3,6 +3,7 @@
  * Página pública con artículos dinámicos desde la base de datos
  * Design: "Luz Botánica"
  */
+import { SITE_IMAGES } from "@/lib/siteImages";
 import { useState } from "react";
 import { Link } from "wouter";
 import { Clock, Tag, ArrowRight, Search } from "lucide-react";
@@ -10,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
 
-const HERO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-main-T6UmVzyg8XHyq4zLvU5RfZ.webp";
+const HERO = SITE_IMAGES.heroMain;
 const FALLBACK_IMG = "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80";
 
 // ─── Post Card Component ──────────────────────────────────────────────────────

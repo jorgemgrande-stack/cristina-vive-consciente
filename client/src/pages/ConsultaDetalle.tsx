@@ -4,6 +4,7 @@
  * Design: "Luz Botánica"
  */
 
+import { SITE_IMAGES } from "@/lib/siteImages";
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import {
@@ -27,7 +28,7 @@ const MODALITY_ICON: Record<string, React.ReactNode> = {
 };
 
 const FALLBACK_IMG =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-consultas-VRAFvns5UX68Kqd64cBawH.webp";
+  SITE_IMAGES.heroConsultas;
 
 function parseJsonArray(raw: string | null | undefined): string[] {
   if (!raw) return [];

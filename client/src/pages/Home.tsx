@@ -4,6 +4,7 @@
  * Secciones: Hero, Servicios, Sobre Mí, Filosofía, Testimonios, CTA
  */
 
+import { SITE_IMAGES } from "@/lib/siteImages";
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { ArrowRight, Leaf, Droplets, BookOpen, Star, ChevronRight, Calendar, Clock, CheckCircle } from "lucide-react";
@@ -12,11 +13,11 @@ import BookingModal from "@/components/BookingModal";
 import { ReservaModal as WaterReservaModal } from "@/pages/SistemasAgua";
 import { trpc } from "@/lib/trpc";
 
-const HERO_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-main-T6UmVzyg8XHyq4zLvU5RfZ.webp";
-const CONSULTAS_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-consultas-VRAFvns5UX68Kqd64cBawH.webp";
-const MASAJES_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-masajes-PUiFsGVb8gAs6i4s8VF7U8.webp";
-const ACEITES_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-aceites-cn5cmPNwkFkzA35ejtXJUa.webp";
-const AGUA_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-agua-BJHXyW4FibywwKgaqzvu2q.webp";
+const HERO_IMG = SITE_IMAGES.heroMain;
+const CONSULTAS_IMG = SITE_IMAGES.heroConsultas;
+const MASAJES_IMG = SITE_IMAGES.heroMasajes;
+const ACEITES_IMG = SITE_IMAGES.heroAceites;
+const AGUA_IMG = SITE_IMAGES.heroAgua;
 
 const services = [
   {
@@ -366,11 +367,14 @@ export default function Home() {
             {/* Image Side */}
             <div className="relative">
               <div className="relative overflow-hidden" style={{ aspectRatio: "4/5" }}>
-                <img
-                  src="https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/cristina-sobre-mi_45486ba2.png"
-                  alt="Cristina — Bienestar Holístico"
-                  className="w-full h-full object-cover object-top"
-                />
+                {/* TODO: cuando Cristina suba su foto (CRM → Galería), colocarla aquí. Hasta entonces, panel de marca. */}
+                <div className="w-full h-full flex items-center justify-center bg-[oklch(0.985_0.006_85)] p-10">
+                  <img
+                    src={SITE_IMAGES.logo}
+                    alt="BION — Cristina Vive Consciente"
+                    className="w-full max-w-[320px] object-contain"
+                  />
+                </div>
               </div>
               {/* Floating accent */}
               <div

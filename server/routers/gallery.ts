@@ -70,6 +70,48 @@ async function getUsedUploadUrls(): Promise<Set<string>> {
   return usedUrls;
 }
 
+/**
+ * Recoge TODAS las URLs de imagen/archivo guardadas en BD con su origen (tabla.campo).
+ * Sirve para el chequeo de integridad: detectar archivos referenciados que ya no existen
+ * en disco y URLs externas (CDN de terceros) que pueden desaparecer.
+ */
+export async function collectImageRefs(): Promise<Map<string, string[]>> {
+  const db = await getDb();
+  const refs = new Map<string, string[]>();
+  if (!db) return refs;
+
+  const push = (src: string, v: unknown) => {
+    if (typeof v !== "string" || !v) return;
+    let items: unknown[] = [v];
+    if (v.trim().startsWith("[")) {
+      try { items = JSON.parse(v); } catch { /* ignore malformed JSON */ }
+    }
+    for (const it of items) {
+      if (typeof it === "string" && (it.startsWith("/uploads/") || /^https?:\/\//.test(it))) {
+        refs.set(it, [...(refs.get(it) ?? []), src]);
+      }
+    }
+  };
+
+  const jobs: Array<[string, Promise<any[]>]> = [
+    ["afiliados", db.select({ a: affiliateProducts.imageUrl }).from(affiliateProducts)],
+    ["servicios", db.select({ a: services.imageUrl, b: services.detailImage }).from(services)],
+    ["ebooks", db.select({ a: ebooks.coverImage, b: ebooks.galleryImages, c: ebooks.pdfUrl }).from(ebooks)],
+    ["agua-categorías", db.select({ a: waterCategories.imageUrl }).from(waterCategories)],
+    ["agua-productos", db.select({ a: waterProducts.mainImage, b: waterProducts.galleryImages }).from(waterProducts)],
+    ["aceites-categorías", db.select({ a: oilCategories.imageUrl }).from(oilCategories)],
+    ["aceites-productos", db.select({ a: oilProducts.imagen }).from(oilProducts)],
+    ["blog", db.select({ a: blogPosts.coverImage }).from(blogPosts)],
+    ["hero-home", db.select({ a: heroImages.url }).from(heroImages)],
+  ];
+  for (const [src, job] of jobs) {
+    try {
+      for (const row of await job) for (const v of Object.values(row)) push(src, v);
+    } catch { /* tabla no disponible: se ignora */ }
+  }
+  return refs;
+}
+
 function getUploadDir(): string {
   return process.env.UPLOAD_DIR
     ? path.resolve(process.env.UPLOAD_DIR)
@@ -121,6 +163,27 @@ export const galleryRouter = router({
       ...f,
       inUse: usedUrls.has(f.url),
     }));
+  }),
+
+  /**
+   * Chequeo de integridad: imágenes/PDF referenciados en la BD que ya no existen en disco
+   * y URLs externas que pueden desaparecer. Se muestra como aviso en /crm/galeria.
+   */
+  integrity: protectedProcedure.query(async () => {
+    const uploadDir = getUploadDir();
+    const refs = await collectImageRefs();
+    const missing: Array<{ url: string; usedBy: string[] }> = [];
+    const external: Array<{ url: string; usedBy: string[] }> = [];
+    for (const [url, usedBy] of Array.from(refs.entries())) {
+      const uniq = Array.from(new Set(usedBy));
+      if (url.startsWith("/uploads/")) {
+        const file = path.join(uploadDir, url.replace(/^\/uploads\//, ""));
+        if (!file.startsWith(uploadDir) || !fs.existsSync(file)) missing.push({ url, usedBy: uniq });
+      } else {
+        external.push({ url, usedBy: uniq });
+      }
+    }
+    return { total: refs.size, missing, external };
   }),
 
   delete: protectedProcedure

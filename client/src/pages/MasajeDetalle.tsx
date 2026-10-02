@@ -4,6 +4,7 @@
  * Design: "Luz Botánica"
  */
 
+import { SITE_IMAGES } from "@/lib/siteImages";
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import {
@@ -20,7 +21,7 @@ const MODALITY_LABEL: Record<string, string> = {
   ambos: "Presencial / Online",
 };
 
-const FALLBACK_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-masajes-PUiFsGVb8gAs6i4s8VF7U8.webp";
+const FALLBACK_IMG = SITE_IMAGES.heroMasajes;
 
 // Beneficios por defecto
 const DEFAULT_BENEFITS = [

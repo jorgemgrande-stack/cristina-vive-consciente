@@ -4,6 +4,7 @@
  * 100% dinámico desde BD — cada tarjeta enlaza a /consultas/:slug
  */
 
+import { SITE_IMAGES } from "@/lib/siteImages";
 import { Link } from "wouter";
 import { ArrowRight, Clock, CheckCircle, Monitor, MapPin, Loader2, Leaf } from "lucide-react";
 import Layout from "@/components/Layout";
@@ -11,7 +12,7 @@ import PageHero from "@/components/PageHero";
 import { trpc } from "@/lib/trpc";
 
 const HERO =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-consultas-VRAFvns5UX68Kqd64cBawH.webp";
+  SITE_IMAGES.heroConsultas;
 
 const MODALITY_ICON: Record<string, React.ReactNode> = {
   online: <Monitor size={11} />,

@@ -5,6 +5,7 @@
  * Contenido dinámico desde BD + modal de reserva
  */
 
+import { SITE_IMAGES } from "@/lib/siteImages";
 import { useState } from "react";
 import { Link } from "wouter";
 import Layout from "@/components/Layout";
@@ -383,7 +384,7 @@ export default function SistemasAgua() {
       <section className="relative text-white overflow-hidden">
         <div className="absolute inset-0">
           <img
-            src="https://cristinaviveconsciente.es/uploads/crm-uploads/images/1786784764684-sn3yxah7.png"
+            src={SITE_IMAGES.heroSistemasAgua}
             alt=""
             className="w-full h-full object-cover"
           />

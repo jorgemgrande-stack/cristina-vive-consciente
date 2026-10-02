@@ -42,9 +42,9 @@ export const EBOOKS: Record<string, EbookProduct> = {
     priceCents: 1200,
     currency: "EUR",
     stripePriceId: null, // Añadir cuando se configure Stripe: "price_xxxxxxxxxxxxxxxx"
-    pdfUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/ebook-agua_83415515.pdf",
+    pdfUrl: "/uploads/ebooks/ebook-agua.pdf",
     downloadExpiryHours: 72,
-    coverImage: "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-agua-BJHXyW4FibywwKgaqzvu2q.webp",
+    coverImage: "/site/hero-agua.webp",
     crmTag: "comprador_ebook_agua",
     includesSession: true,
   },
@@ -58,9 +58,9 @@ export const EBOOKS: Record<string, EbookProduct> = {
     priceCents: 700,
     currency: "EUR",
     stripePriceId: null, // Añadir cuando se configure Stripe: "price_xxxxxxxxxxxxxxxx"
-    pdfUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/ebook-aceites_ac7d8e5a.pdf",
+    pdfUrl: "/uploads/ebooks/ebook-aceites.pdf",
     downloadExpiryHours: 72,
-    coverImage: "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/hero-aceites-cn5cmPNwkFkzA35ejtXJUa.webp",
+    coverImage: "/site/hero-aceites.webp",
     crmTag: "comprador_ebook_aceites",
     includesSession: false,
   },

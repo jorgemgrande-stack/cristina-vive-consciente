@@ -32,6 +32,7 @@ export default function Galeria() {
 
   const utils = trpc.useUtils();
   const { data: files = [], isLoading } = trpc.gallery.list.useQuery();
+  const { data: integrity } = trpc.gallery.integrity.useQuery(undefined, { staleTime: 60_000 });
 
   const deleteMutation = trpc.gallery.delete.useMutation({
     onSuccess: () => {
@@ -92,6 +93,27 @@ export default function Galeria() {
   return (
     <CRMLayout title="Galería">
       <div className="space-y-6">
+        {/* Aviso de integridad: referencias a archivos que ya no existen o a URLs externas */}
+        {integrity && (integrity.missing.length > 0 || integrity.external.length > 0) && (
+          <div className="border border-amber-300 bg-amber-50 text-amber-900 text-sm font-body p-4 space-y-2">
+            <p className="font-medium">
+              Atención: {integrity.missing.length} imagen(es) de la web apuntan a archivos que ya no existen
+              {integrity.external.length > 0 && ` y ${integrity.external.length} a enlaces externos`}.
+            </p>
+            <ul className="list-disc pl-5 space-y-0.5 max-h-40 overflow-auto">
+              {integrity.missing.map((m) => (
+                <li key={m.url}>
+                  <span className="font-mono text-xs">{m.url.split("/").pop()}</span> — usada en: {m.usedBy.join(", ")} (volver a subir y reasignar)
+                </li>
+              ))}
+              {integrity.external.map((m) => (
+                <li key={m.url}>
+                  <span className="font-mono text-xs break-all">{m.url}</span> — externo, usada en: {m.usedBy.join(", ")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {/* Header stats */}
         <div className="flex flex-wrap items-center gap-4 justify-between">
           <div className="flex gap-6 text-sm font-body text-gray-500">
@@ -116,6 +138,17 @@ export default function Galeria() {
             onChange={handleUpload}
             className="hidden"
           />
+          <div className="flex flex-wrap gap-2">
+          <a
+            href="/api/upload/backup"
+            download
+            title="Descarga todos los archivos de la galería (.tar.gz). Recomendado una vez al mes."
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 text-sm font-body hover:bg-gray-50 transition-colors"
+            style={{ borderRadius: 0 }}
+          >
+            <ShieldCheck size={14} />
+            Copia de seguridad
+          </a>
           <button
             type="button"
             onClick={() => !uploading && fileInputRef.current?.click()}
@@ -135,6 +168,7 @@ export default function Galeria() {
               </>
             )}
           </button>
+          </div>
         </div>
 
         {/* Filters */}

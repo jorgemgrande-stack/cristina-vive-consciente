@@ -4,7 +4,7 @@
 import fs from "fs";
 import path from "path";
 
-function getUploadDir(): string {
+export function getUploadDir(): string {
   if (process.env.UPLOAD_DIR) {
     return path.resolve(process.env.UPLOAD_DIR);
   }
