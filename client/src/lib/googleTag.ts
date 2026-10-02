@@ -10,7 +10,8 @@
  *
  * Reglas:
  * - Consent Mode v2: todo en "denied" por defecto; solo pasa a "granted" lo que el usuario acepta
- *   (analítica → analytics_storage; publicidad → ad_storage, ad_user_data, ad_personalization).
+ *   (analítica → analytics_storage; publicidad → ad_storage y ad_user_data). `ad_personalization` queda SIEMPRE
+ *   en "denied": solo medimos conversiones, no se hace remarketing ni personalización de anuncios.
  * - La conversión de Google Ads es `booking_request_submitted` (solicitud enviada), nunca una visita
  *   ni un clic. No se envía valor, nombre, email, teléfono ni texto libre.
  * - Un identificador de clic (gclid) lo gestiona gtag.js en sus cookies propias, solo con consentimiento.
@@ -67,7 +68,7 @@ function applyConsent(): void {
   gtag("consent", "update", {
     ad_storage: consent.ads ? "granted" : "denied",
     ad_user_data: consent.ads ? "granted" : "denied",
-    ad_personalization: consent.ads ? "granted" : "denied",
+    ad_personalization: "denied", // sin remarketing: la política de cookies solo declara medición
     analytics_storage: consent.analytics ? "granted" : "denied",
   });
 
@@ -78,7 +79,7 @@ function applyConsent(): void {
     s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(IDS[0])}`;
     document.head.appendChild(s);
     gtag("js", new Date());
-    for (const id of IDS) gtag("config", id, { allow_ad_personalization_signals: consent.ads });
+    for (const id of IDS) gtag("config", id, { allow_ad_personalization_signals: false });
   }
 }
 
@@ -95,4 +96,15 @@ export function reportBookingRequestConversion(): void {
   const w = window as GoogleWindow;
   if (!ADS_ID || !ID_PATTERN.test(ADS_ID) || !BOOKING_LABEL || !consent?.ads || !w.gtag) return;
   w.gtag("event", "conversion", { send_to: `${ADS_ID}/${BOOKING_LABEL}` });
+}
+
+/**
+ * Evento de reserva hacia Google Analytics 4 (solo con consentimiento de analítica e ID de GA4 configurado).
+ * `params` ya viene saneado (lista blanca: service_slug, service_group, modality, currency): nunca datos personales.
+ */
+export function sendGa4Event(name: string, params: Record<string, string> = {}): void {
+  const consent = getConsent();
+  const w = window as GoogleWindow;
+  if (!GA4_ID || !ID_PATTERN.test(GA4_ID) || !consent?.analytics || !w.gtag) return;
+  w.gtag("event", name, params);
 }

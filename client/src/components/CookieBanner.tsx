@@ -52,7 +52,7 @@ export default function CookieBanner() {
           <Cookie size={18} className="mt-0.5 flex-shrink-0 text-[oklch(0.52_0.08_148)]" />
           <div className="flex-1">
             <p className="text-sm text-[oklch(0.30_0.02_55)] font-body leading-relaxed" style={{ fontWeight: 300 }}>
-              Usamos cookies técnicas, necesarias para que la web funcione. Con tu permiso también usaríamos cookies de
+              Usamos cookies técnicas, necesarias para que la web funcione. Con tu permiso también usamos cookies de
               analítica y de publicidad (Google) para medir y mejorar. Puedes aceptarlas, rechazarlas o elegir.{" "}
               <Link href="/politica-de-cookies" className="underline text-[oklch(0.40_0.07_148)]">Política de cookies</Link>
             </p>

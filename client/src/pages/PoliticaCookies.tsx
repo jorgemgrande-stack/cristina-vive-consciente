@@ -10,8 +10,8 @@ const ROWS: Array<{ name: string; type: string; purpose: string; duration: strin
   { name: "Sesión de acceso privado", type: "Técnica (propia)", purpose: "Mantener la sesión de Cristina en el área privada (CRM). Los visitantes no la reciben.", duration: "Sesión / hasta cerrar sesión", consent: "No requiere" },
   { name: "cvc_consent_v1", type: "Técnica (propia, localStorage)", purpose: "Recordar tus preferencias de cookies.", duration: "Hasta que la borres", consent: "No requiere" },
   { name: "Lista «Mi consulta»", type: "Técnica (propia, localStorage)", purpose: "Recordar los aceites que añades a tu consulta personalizada.", duration: "Hasta que la borres", consent: "No requiere" },
-  { name: "Google Analytics", type: "Analítica (terceros)", purpose: "Medir de forma agregada cómo se usa la web. Hoy NO está activada.", duration: "Según Google", consent: "Sí" },
-  { name: "Google Ads", type: "Publicidad (terceros)", purpose: "Medir si un anuncio de Google lleva a una solicitud de reserva. Hoy NO está activada.", duration: "Según Google", consent: "Sí" },
+  { name: "Google Analytics", type: "Analítica (terceros)", purpose: "Medir de forma agregada cómo se usa la web (páginas vistas y solicitudes de reserva enviadas). Solo se activa si la aceptas.", duration: "Hasta 2 años (según Google)", consent: "Sí" },
+  { name: "Google Ads", type: "Publicidad (terceros)", purpose: "Medir si un anuncio de Google lleva a una solicitud de reserva. No se usa para mostrarte anuncios personalizados. Solo se activa si la aceptas.", duration: "Hasta 90 días (según Google)", consent: "Sí" },
 ];
 
 export default function PoliticaCookies() {
@@ -26,7 +26,7 @@ export default function PoliticaCookies() {
             <p>
               Esta web (BION — Cristina Vive Consciente) usa únicamente las cookies y el almacenamiento local que se
               describen a continuación. Las técnicas son imprescindibles y no necesitan tu consentimiento; las de
-              analítica y publicidad solo se activarían si las aceptas, y puedes cambiar de opinión en cualquier momento.
+              analítica y publicidad solo se activan si las aceptas, y puedes cambiar de opinión en cualquier momento.
             </p>
 
             <div className="overflow-x-auto">

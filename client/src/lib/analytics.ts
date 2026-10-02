@@ -17,7 +17,7 @@ import {
   type BookingEventParams,
 } from "@shared/bookingAnalytics";
 import { getConsent } from "./consent";
-import { reportBookingRequestConversion } from "./googleTag";
+import { reportBookingRequestConversion, sendGa4Event } from "./googleTag";
 
 export { CONSENT_KEY, CONSENT_CHANGED_EVENT, OPEN_COOKIE_SETTINGS_EVENT, getConsent, setConsent } from "./consent";
 
@@ -26,7 +26,10 @@ export function trackBookingEvent(name: BookingEventName, params: Record<string,
   if (!mayEmit(getConsent())) return;
   const w = window as unknown as { dataLayer?: unknown[] };
   w.dataLayer = w.dataLayer || [];
-  const payload: { event: BookingEventName } & BookingEventParams = { event: name, ...sanitizeBookingEventParams(params) };
+  const clean = sanitizeBookingEventParams(params);
+  const payload: { event: BookingEventName } & BookingEventParams = { event: name, ...clean };
   w.dataLayer.push(payload);
+  // gtag.js ignora los objetos planos del dataLayer: para que GA4 reciba el evento hay que enviarlo con gtag()
+  sendGa4Event(name, clean as Record<string, string>);
   if (name === BOOKING_EVENTS.REQUEST_SUBMITTED) reportBookingRequestConversion();
 }
