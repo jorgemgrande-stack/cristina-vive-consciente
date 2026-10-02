@@ -158,11 +158,14 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
 
   const requestMutation = trpc.bookings.request.useMutation({
     onSuccess: (data) => {
-      trackBookingEvent(BOOKING_EVENTS.REQUEST_SUBMITTED, {
-        service_slug: form.serviceType,
-        service_group: isMassage ? "masaje" : "consulta",
-        modality: isMassage ? "presencial" : form.modality,
-      });
+      // Solo cuenta como conversión una solicitud NUEVA aceptada por el servidor (un reenvío duplicado no).
+      if (!("duplicate" in data && data.duplicate)) {
+        trackBookingEvent(BOOKING_EVENTS.REQUEST_SUBMITTED, {
+          service_slug: form.serviceType,
+          service_group: isMassage ? "masaje" : "consulta",
+          modality: isMassage ? "presencial" : form.modality,
+        });
+      }
       setSubmitted(true);
       if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
     },
