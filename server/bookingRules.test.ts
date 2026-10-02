@@ -11,6 +11,7 @@ import {
   CANCELLABLE_FROM,
   MASSAGE_TIME_SLOTS,
 } from "./bookingRules";
+import { HOME_SERVICE_PRICES, getHomePrice, isWeekend, slotsForDate, MASSAGE_TIME_SLOTS as SLOTS } from "../shared/booking";
 
 describe("madridLocalToEpoch", () => {
   it("verano (CEST, UTC+2): 10:00 en Madrid = 08:00 UTC", () => {
@@ -90,5 +91,37 @@ describe("transiciones de estado", () => {
 describe("franjas de masaje", () => {
   it("tienen una hora de referencia válida", () => {
     for (const s of Object.values(MASSAGE_TIME_SLOTS)) expect(s.start).toMatch(/^\d{2}:\d{2}$/);
+  });
+});
+
+describe("horario de Cristina (shared/booking)", () => {
+  it("detecta fin de semana sin depender de la zona horaria", () => {
+    expect(isWeekend("2026-10-03")).toBe(true); // sábado
+    expect(isWeekend("2026-10-04")).toBe(true); // domingo
+    expect(isWeekend("2026-10-05")).toBe(false); // lunes
+    expect(isWeekend("2026-10-09")).toBe(false); // viernes
+  });
+  it("entre semana: mañana y tarde; fin de semana: además mediodía", () => {
+    expect(slotsForDate("2026-10-07")).toEqual(["morning", "afternoon", "any"]);
+    expect(slotsForDate("2026-10-03")).toEqual(["morning", "midday", "afternoon", "any"]);
+    expect(slotsForDate(undefined)).toEqual(["morning", "afternoon", "any"]);
+  });
+  it("las franjas coinciden con el horario facilitado", () => {
+    expect(SLOTS.morning.start).toBe("10:00");
+    expect(SLOTS.afternoon.start).toBe("16:00");
+    expect(SLOTS.midday.start).toBe("13:00");
+    expect(SLOTS.morning.label).toContain("10:00 – 13:00");
+    expect(SLOTS.afternoon.label).toContain("16:00 – 19:00");
+  });
+});
+
+describe("tarifas a domicilio", () => {
+  it("Relajante 100 €, Terapéutico 110 €; el resto no tiene domicilio", () => {
+    expect(getHomePrice("masaje_relajante_navas_de_rio_frio_segovia")).toBe(100);
+    expect(getHomePrice("masaje_terapeutico_navas_de_rio_frio_segovia")).toBe(110);
+    expect(getHomePrice("masaje_terapeutico_90_min")).toBeNull();
+    expect(getHomePrice("consulta_naturopata")).toBeNull();
+    expect(getHomePrice(undefined)).toBeNull();
+    expect(Object.keys(HOME_SERVICE_PRICES)).toHaveLength(2);
   });
 });

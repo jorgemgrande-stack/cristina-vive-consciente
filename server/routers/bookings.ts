@@ -29,7 +29,7 @@ import { notifyOwner } from "../_core/notification";
 import { sendClientConfirmationEmail, sendAdminNotificationEmail } from "../email";
 import { notifyAdminNewBooking } from "../whatsapp";
 import { selectProposedSlot, trackNotification } from "../bookingActions";
-import { CRISTINA_WHATSAPP_NUMBER } from "../../shared/booking";
+import { CRISTINA_WHATSAPP_NUMBER, HOME_LABEL_SUFFIX, getHomePrice, slotsForDate } from "../../shared/booking";
 import {
   APPOINTMENT_SERVICE_TYPES,
   MASSAGE_TIME_SLOTS,
@@ -74,8 +74,12 @@ export const bookingsRouter = router({
         serviceType: z.string().trim().min(1).max(100),
         preferredDate: z.string().min(1, "La fecha preferida es obligatoria"), // "YYYY-MM-DD"
         preferredTime: z.string().optional(), // "HH:MM" (consultas)
-        /** Franja preferida (masajes): mañana / tarde / sin preferencia */
-        timeSlot: z.enum(["morning", "afternoon", "any"]).optional(),
+        /** Franja preferida (masajes): mañana / mediodía (solo fin de semana) / tarde / sin preferencia */
+        timeSlot: z.enum(["morning", "midday", "afternoon", "any"]).optional(),
+        /** Masajes: en consulta (Navas de Riofrío) o a domicilio (solo servicios con tarifa a domicilio) */
+        serviceLocation: z.enum(["consulta", "domicilio"]).default("consulta"),
+        /** Dirección del servicio a domicilio (obligatoria si serviceLocation = domicilio) */
+        serviceAddress: z.string().trim().max(200).optional(),
         modality: z.enum(["presencial", "telefono", "zoom", "whatsapp"]).default("zoom"),
         message: z.string().trim().max(1000).optional(),
       })
@@ -94,10 +98,23 @@ export const bookingsRouter = router({
       const serviceType: AppointmentServiceType = service
         ? resolveAppointmentServiceType(service)
         : (input.serviceType as AppointmentServiceType);
-      const serviceLabel = service
+      const baseLabel = service
         ? buildServiceLabel(service.name, service.durationLabel, service.durationMinutes)
         : LEGACY_SERVICE_LABELS[input.serviceType] ?? input.serviceType;
       const isMassage = serviceType === "masaje";
+
+      // 1b. Servicio a domicilio: solo masajes con tarifa a domicilio configurada y con dirección
+      const isHome = input.serviceLocation === "domicilio";
+      const homePrice = isHome ? getHomePrice(service?.slug) : null;
+      if (isHome) {
+        if (!isMassage || homePrice === null) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Este servicio no se ofrece a domicilio" });
+        }
+        if (!input.serviceAddress || input.serviceAddress.length < 5) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Indica la dirección donde quieres recibir el masaje" });
+        }
+      }
+      const serviceLabel = isHome ? `${baseLabel} · ${HOME_LABEL_SUFFIX}` : baseLabel;
 
       // 2. Modalidad: un masaje solo es presencial (no se acepta Zoom/teléfono/WhatsApp)
       if (!allowedModalities(serviceType).includes(input.modality)) {
@@ -109,6 +126,9 @@ export const bookingsRouter = router({
       if (dateError) throw new TRPCError({ code: "BAD_REQUEST", message: dateError });
 
       const slotKey = isMassage ? input.timeSlot ?? "any" : null;
+      if (slotKey && !slotsForDate(input.preferredDate).includes(slotKey)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Esa franja horaria no está disponible el día elegido" });
+      }
       const timeStr = isMassage
         ? MASSAGE_TIME_SLOTS[slotKey!].start
         : input.preferredTime && /^\d{2}:\d{2}$/.test(input.preferredTime)
@@ -156,6 +176,7 @@ export const bookingsRouter = router({
       // 6. Crear la cita con status pending
       const notes = [
         isMassage ? `Franja preferida: ${MASSAGE_TIME_SLOTS[slotKey!].label}` : null,
+        isHome ? `Servicio a domicilio (${homePrice} €) — Dirección: ${input.serviceAddress}` : null,
         input.message ? `Mensaje del solicitante: ${input.message}` : null,
       ].filter(Boolean);
       const insert: any = await createAppointment({
@@ -164,7 +185,7 @@ export const bookingsRouter = router({
         serviceLabel,
         scheduledAt,
         durationMinutes: service?.durationMinutes ?? undefined,
-        price: service?.price ?? undefined,
+        price: isHome ? homePrice!.toFixed(2) : service?.price ?? undefined,
         modality: input.modality,
         status: "pending",
         internalNotes: notes.length ? notes.join("\n") : null,
@@ -190,7 +211,7 @@ export const bookingsRouter = router({
         preferredDate: input.preferredDate,
         preferredTime: displayTime,
         modality: input.modality,
-        message: input.message,
+        message: [isHome ? `A domicilio — Dirección: ${input.serviceAddress}` : null, input.message].filter(Boolean).join("\n") || undefined,
       };
 
       // 7. Notificaciones (no bloqueantes; cada una deja constancia de su resultado)
@@ -214,7 +235,7 @@ export const bookingsRouter = router({
           preferredDate: input.preferredDate,
           preferredTime: displayTime,
           modality: input.modality,
-          notes: input.message,
+          notes: [isHome ? `A domicilio — ${input.serviceAddress}` : null, input.message].filter(Boolean).join(" · ") || undefined,
         })
       );
       notify("owner", "admin", "new_request", () =>

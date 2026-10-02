@@ -7,6 +7,10 @@ import superjson from "superjson";
 import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
+import { initGoogleTag } from "@/lib/googleTag";
+
+// Google tag: no hace nada sin IDs configurados ni consentimiento (ver lib/googleTag.ts)
+initGoogleTag();
 
 const queryClient = new QueryClient();
 

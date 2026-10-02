@@ -21,6 +21,7 @@ import AceitesEsenciales from "./pages/AceitesEsenciales";
 import GuiasDigitales from "./pages/GuiasDigitales";
 import Recomendados from "./pages/Recomendados";
 import Contacto from "./pages/Contacto";
+import PoliticaCookies from "./pages/PoliticaCookies";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import BlogArticulos from "./pages/crm/BlogArticulos";
@@ -118,6 +119,8 @@ function Router() {
       <Route path="/crm/citas" component={CRMCitas} />
       <Route path="/crm/citas/nueva" component={CitaForm} />
       <Route path="/crm/calendario" component={Calendario} />
+
+      <Route path="/politica-de-cookies" component={PoliticaCookies} />
 
       {/* Public — Selección de slot de reprogramación */}
       <Route path="/cita/seleccionar/:token" component={SeleccionarSlot} />
