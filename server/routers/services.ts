@@ -113,7 +113,8 @@ export const servicesRouter = router({
         durationMinutes: input.durationMinutes,
         durationLabel: input.durationLabel ?? null,
         type: input.type,
-        modality: input.modality,
+        // Un masaje se hace siempre en persona (consulta o domicilio): nunca online
+        modality: input.type === "masaje" ? "presencial" : input.modality,
         imageUrl: input.imageUrl || null,
         detailImage: input.detailImage || null,
         longDescription: input.longDescription ?? null,
@@ -143,7 +144,7 @@ export const servicesRouter = router({
         durationMinutes: input.data.durationMinutes,
         durationLabel: input.data.durationLabel ?? null,
         type: input.data.type,
-        modality: input.data.modality,
+        modality: input.data.type === "masaje" ? "presencial" : input.data.modality,
         imageUrl: input.data.imageUrl || null,
         detailImage: input.data.detailImage || null,
         longDescription: input.data.longDescription ?? null,

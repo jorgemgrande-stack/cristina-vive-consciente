@@ -19,7 +19,9 @@ import {
   MASSAGE_LOCATION,
   OPENING_HOURS_TEXT,
   PAYMENT_NOTE,
+  formatHomeAddress,
   getHomePrice,
+  validateHomeAddress,
   bookableTimes,
   type ServiceLocation,
 } from "@shared/booking";
@@ -61,7 +63,9 @@ type FormData = {
   preferredTime: string;
   modality: string;
   serviceLocation: ServiceLocation;
-  serviceAddress: string;
+  serviceStreet: string;
+  servicePostalCode: string;
+  serviceCity: string;
   message: string;
 };
 
@@ -75,7 +79,9 @@ const initialForm: FormData = {
   preferredTime: "",
   modality: "zoom",
   serviceLocation: "consulta",
-  serviceAddress: "",
+  serviceStreet: "",
+  servicePostalCode: "",
+  serviceCity: "",
   message: "",
 };
 
@@ -183,7 +189,12 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
     }
     if (!form.preferredDate) newErrors.preferredDate = "Selecciona una fecha";
     if (isMassage && form.preferredDate && !timeOptions.includes(form.preferredTime)) newErrors.preferredTime = "Elige una hora";
-    if (isHome && form.serviceAddress.trim().length < 5) newErrors.serviceAddress = "Indica la dirección donde quieres recibir el masaje";
+    if (isHome) {
+      const ae = validateHomeAddress({ street: form.serviceStreet, postalCode: form.servicePostalCode, city: form.serviceCity });
+      if (ae.street) newErrors.serviceStreet = ae.street;
+      if (ae.postalCode) newErrors.servicePostalCode = ae.postalCode;
+      if (ae.city) newErrors.serviceCity = ae.city;
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -205,7 +216,9 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
       preferredDate: form.preferredDate,
       preferredTime: form.preferredTime || undefined,
       serviceLocation: isMassage ? (isHome ? "domicilio" : "consulta") : undefined,
-      serviceAddress: isHome ? form.serviceAddress.trim() : undefined,
+      serviceStreet: isHome ? form.serviceStreet.trim() : undefined,
+      servicePostalCode: isHome ? form.servicePostalCode.trim() : undefined,
+      serviceCity: isHome ? form.serviceCity.trim() : undefined,
       modality: (isMassage ? "presencial" : form.modality) as any,
       message: form.message.trim() || undefined,
     });
@@ -534,22 +547,56 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                   ))}
                 </div>
                 {isHome && (
-                  <div className="mt-3">
-                    <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
-                      Dirección del servicio *
-                    </label>
-                    <input
-                      type="text"
-                      value={form.serviceAddress}
-                      onChange={set("serviceAddress")}
-                      placeholder="Calle, número, localidad"
-                      maxLength={200}
-                      className={`w-full px-3 py-2.5 bg-white border text-sm font-body text-[oklch(0.18_0.018_55)] placeholder:text-[oklch(0.72_0.02_60)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors ${errors.serviceAddress ? "border-red-400" : "border-[oklch(0.88_0.015_75)]"}`}
-                      style={{ borderRadius: 0, fontWeight: 300 }}
-                    />
-                    {errors.serviceAddress && <p className="text-red-500 text-[0.7rem] mt-1">{errors.serviceAddress}</p>}
-                    <p className="mt-2 text-[0.7rem] font-body text-[oklch(0.52_0.02_60)] leading-relaxed" style={{ fontWeight: 300 }}>
-                      Cristina confirmará si puede desplazarse a tu zona al responder a tu solicitud.
+                  <div className="mt-3 space-y-3">
+                    <p className="text-xs text-[oklch(0.38_0.02_55)] font-body uppercase tracking-wider" style={{ fontWeight: 500 }}>
+                      Dirección donde quieres el masaje *
+                    </p>
+                    <div>
+                      <input
+                        type="text"
+                        value={form.serviceStreet}
+                        onChange={set("serviceStreet")}
+                        placeholder="Calle y número (piso, puerta…)"
+                        autoComplete="address-line1"
+                        maxLength={160}
+                        aria-label="Calle y número"
+                        className={`w-full px-3 py-2.5 bg-white border text-sm font-body text-[oklch(0.18_0.018_55)] placeholder:text-[oklch(0.72_0.02_60)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors ${errors.serviceStreet ? "border-red-400" : "border-[oklch(0.88_0.015_75)]"}`}
+                        style={{ borderRadius: 0, fontWeight: 300 }}
+                      />
+                      {errors.serviceStreet && <p className="text-red-500 text-[0.7rem] mt-1">{errors.serviceStreet}</p>}
+                    </div>
+                    <div className="grid grid-cols-[7.5rem_1fr] gap-3">
+                      <div>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={form.servicePostalCode}
+                          onChange={(e) => setForm((prev) => ({ ...prev, servicePostalCode: e.target.value.replace(/\D/g, "").slice(0, 5) }))}
+                          placeholder="C. postal"
+                          autoComplete="postal-code"
+                          aria-label="Código postal"
+                          className={`w-full px-3 py-2.5 bg-white border text-sm font-body text-[oklch(0.18_0.018_55)] placeholder:text-[oklch(0.72_0.02_60)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors ${errors.servicePostalCode ? "border-red-400" : "border-[oklch(0.88_0.015_75)]"}`}
+                          style={{ borderRadius: 0, fontWeight: 300 }}
+                        />
+                        {errors.servicePostalCode && <p className="text-red-500 text-[0.7rem] mt-1">{errors.servicePostalCode}</p>}
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          value={form.serviceCity}
+                          onChange={set("serviceCity")}
+                          placeholder="Localidad"
+                          autoComplete="address-level2"
+                          maxLength={80}
+                          aria-label="Localidad"
+                          className={`w-full px-3 py-2.5 bg-white border text-sm font-body text-[oklch(0.18_0.018_55)] placeholder:text-[oklch(0.72_0.02_60)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors ${errors.serviceCity ? "border-red-400" : "border-[oklch(0.88_0.015_75)]"}`}
+                          style={{ borderRadius: 0, fontWeight: 300 }}
+                        />
+                        {errors.serviceCity && <p className="text-red-500 text-[0.7rem] mt-1">{errors.serviceCity}</p>}
+                      </div>
+                    </div>
+                    <p className="text-[0.7rem] font-body text-[oklch(0.52_0.02_60)] leading-relaxed" style={{ fontWeight: 300 }}>
+                      Cristina valorará la dirección y te confirmará si puede desplazarse a tu zona.
                     </p>
                   </div>
                 )}
@@ -613,7 +660,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                 <p><span style={{ fontWeight: 500 }}>Precio:</span> {shownPrice} <span className="text-[0.7rem]">({PAYMENT_NOTE})</span></p>
                 <p>
                   <span style={{ fontWeight: 500 }}>Lugar:</span>{" "}
-                  {isHome ? `A domicilio — ${form.serviceAddress}` : `En consulta — ${MASSAGE_LOCATION}`}
+                  {isHome ? `A domicilio — ${formatHomeAddress({ street: form.serviceStreet, postalCode: form.servicePostalCode, city: form.serviceCity })}` : `En consulta — ${MASSAGE_LOCATION}`}
                 </p>
                 <p>
                   <span style={{ fontWeight: 500 }}>Fecha preferida:</span>{" "}

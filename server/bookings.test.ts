@@ -348,7 +348,7 @@ describe("bookings.request — horario de Cristina", () => {
 
 describe("bookings.request — servicio a domicilio", () => {
   const home = (over: Record<string, unknown> = {}) =>
-    baseInput({ serviceLocation: "domicilio", serviceAddress: "Calle Mayor 5, Segovia", ...over });
+    baseInput({ serviceLocation: "domicilio", serviceStreet: "Calle Mayor 5, 2ºB", servicePostalCode: "40100", serviceCity: "Segovia", ...over });
 
   it("Masaje Relajante a domicilio: 100 €, etiqueta y dirección en la cita; modalidad sigue siendo presencial", async () => {
     await publicCaller().request(home());
@@ -357,7 +357,7 @@ describe("bookings.request — servicio a domicilio", () => {
     expect(created.price).toBe("100.00");
     expect(created.modality).toBe("presencial");
     expect(created.internalNotes).toContain("Servicio a domicilio (100 €)");
-    expect(created.internalNotes).toContain("Calle Mayor 5, Segovia");
+    expect(created.internalNotes).toContain("Calle Mayor 5, 2ºB, 40100 Segovia");
   });
 
   it("Masaje Terapéutico a domicilio: 110 €", async () => {
@@ -372,9 +372,17 @@ describe("bookings.request — servicio a domicilio", () => {
     expect((db.createAppointment.mock.calls as any[][])[0][0].price).toBe("70.00");
   });
 
-  it("exige dirección para el domicilio", async () => {
-    await expect(publicCaller().request(home({ serviceAddress: "" }))).rejects.toThrow(/dirección/i);
-    await expect(publicCaller().request(home({ serviceAddress: "abc" }))).rejects.toThrow(/dirección/i);
+  it("exige la dirección postal completa: calle y número, código postal y localidad", async () => {
+    await expect(publicCaller().request(home({ serviceStreet: "" }))).rejects.toThrow(/dirección.*calle/i);
+    await expect(publicCaller().request(home({ serviceStreet: "abc" }))).rejects.toThrow(/dirección.*calle/i);
+    await expect(publicCaller().request(home({ servicePostalCode: "" }))).rejects.toThrow(/código postal/i);
+    await expect(publicCaller().request(home({ servicePostalCode: "4010" }))).rejects.toThrow(/código postal/i);
+    await expect(publicCaller().request(home({ servicePostalCode: "99999" }))).rejects.toThrow(/código postal/i);
+    await expect(publicCaller().request(home({ serviceCity: "" }))).rejects.toThrow(/localidad/i);
+    // un cliente antiguo que solo envía un texto libre no puede saltarse la validación
+    await expect(
+      publicCaller().request(baseInput({ serviceLocation: "domicilio", serviceAddress: "Calle Mayor 5, Segovia" } as any)),
+    ).rejects.toThrow(/dirección/i);
     expect(db.createAppointment).not.toHaveBeenCalled();
   });
 
@@ -477,5 +485,27 @@ describe("bookings.adminLink* — enlace firmado del aviso", () => {
   it("un token válido de otra cita inexistente da el mismo error genérico", async () => {
     db.getAppointmentById.mockResolvedValue(null);
     await expect(publicCaller().adminLinkAct({ token: goodToken(), action: "accept" })).rejects.toThrow(/no válido|caducado/i);
+  });
+});
+
+import { validateHomeAddress, formatHomeAddress, isSpanishPostalCode, massagePlaceLabel } from "../shared/booking";
+
+describe("dirección a domicilio y lugar del masaje", () => {
+  it("valida calle, código postal (5 dígitos, provincia 01–52) y localidad", () => {
+    expect(validateHomeAddress({ street: "Calle Mayor 5", postalCode: "40100", city: "Segovia" })).toEqual({});
+    expect(validateHomeAddress({ street: "Camino s/n", postalCode: "40100", city: "Navas" })).toEqual({});
+    expect(Object.keys(validateHomeAddress({}))).toEqual(["street", "postalCode", "city"]);
+    expect(isSpanishPostalCode("00100")).toBe(false);
+    expect(isSpanishPostalCode("53000")).toBe(false);
+    expect(isSpanishPostalCode("4010")).toBe(false);
+    expect(isSpanishPostalCode("40100")).toBe(true);
+  });
+  it("da formato a la dirección", () => {
+    expect(formatHomeAddress({ street: " Calle Mayor 5, 2ºB ", postalCode: "40100", city: " Segovia " })).toBe("Calle Mayor 5, 2ºB, 40100 Segovia");
+  });
+  it("el lugar del masaje es en Navas de Riofrío y, si hay tarifa, también a domicilio (nunca online)", () => {
+    expect(massagePlaceLabel("masaje_relajante_navas_de_rio_frio_segovia")).toBe("En Navas de Riofrío o a domicilio");
+    expect(massagePlaceLabel("masaje_terapeutico_90_min")).toBe("En Navas de Riofrío");
+    expect(massagePlaceLabel("masaje_relajante_navas_de_rio_frio_segovia")).not.toMatch(/online/i);
   });
 });

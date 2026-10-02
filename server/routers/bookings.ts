@@ -38,7 +38,15 @@ import {
 } from "../bookingActions";
 import { buildAdminActionUrl, verifyAdminActionToken } from "../adminActionLink";
 import { ENV } from "../_core/env";
-import { CRISTINA_WHATSAPP_NUMBER, HOME_LABEL_SUFFIX, getHomePrice, isBookableTime, slotsForDate } from "../../shared/booking";
+import {
+  CRISTINA_WHATSAPP_NUMBER,
+  HOME_LABEL_SUFFIX,
+  formatHomeAddress,
+  getHomePrice,
+  isBookableTime,
+  slotsForDate,
+  validateHomeAddress,
+} from "../../shared/booking";
 import {
   APPOINTMENT_SERVICE_TYPES,
   MASSAGE_TIME_SLOTS,
@@ -100,7 +108,9 @@ export const bookingsRouter = router({
         /** Masajes: en consulta (Navas de Riofrío) o a domicilio (solo servicios con tarifa a domicilio) */
         serviceLocation: z.enum(["consulta", "domicilio"]).default("consulta"),
         /** Dirección del servicio a domicilio (obligatoria si serviceLocation = domicilio) */
-        serviceAddress: z.string().trim().max(200).optional(),
+        serviceStreet: z.string().trim().max(160).optional(),
+        servicePostalCode: z.string().trim().max(10).optional(),
+        serviceCity: z.string().trim().max(80).optional(),
         modality: z.enum(["presencial", "telefono", "zoom", "whatsapp"]).default("zoom"),
         message: z.string().trim().max(1000).optional(),
       })
@@ -131,10 +141,16 @@ export const bookingsRouter = router({
         if (!isMassage || homePrice === null) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Este servicio no se ofrece a domicilio" });
         }
-        if (!input.serviceAddress || input.serviceAddress.length < 5) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Indica la dirección donde quieres recibir el masaje" });
+        // Cristina valora la solicitud según la dirección: calle y número, código postal y localidad
+        const addressErrors = validateHomeAddress({ street: input.serviceStreet, postalCode: input.servicePostalCode, city: input.serviceCity });
+        const firstError = Object.values(addressErrors)[0];
+        if (firstError) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Dirección a domicilio incompleta: ${firstError}` });
         }
       }
+      const homeAddress = isHome
+        ? formatHomeAddress({ street: input.serviceStreet!, postalCode: input.servicePostalCode!, city: input.serviceCity! })
+        : null;
       const serviceLabel = isHome ? `${baseLabel} · ${HOME_LABEL_SUFFIX}` : baseLabel;
 
       // 2. Modalidad: un masaje solo es presencial (no se acepta Zoom/teléfono/WhatsApp)
@@ -207,7 +223,7 @@ export const bookingsRouter = router({
       // 6. Crear la cita con status pending
       const notes = [
         isMassage ? (fixedTime ? `Hora solicitada: ${fixedTime}` : `Franja preferida: ${MASSAGE_TIME_SLOTS[slotKey!].label}`) : null,
-        isHome ? `Servicio a domicilio (${homePrice} €) — Dirección: ${input.serviceAddress}` : null,
+        isHome ? `Servicio a domicilio (${homePrice} €) — Dirección: ${homeAddress}` : null,
         input.message ? `Mensaje del solicitante: ${input.message}` : null,
       ].filter(Boolean);
       const insert: any = await createAppointment({
@@ -242,7 +258,7 @@ export const bookingsRouter = router({
         preferredDate: input.preferredDate,
         preferredTime: displayTime,
         modality: input.modality,
-        message: [isHome ? `A domicilio — Dirección: ${input.serviceAddress}` : null, input.message].filter(Boolean).join("\n") || undefined,
+        message: [isHome ? `A domicilio — Dirección: ${homeAddress}` : null, input.message].filter(Boolean).join("\n") || undefined,
       };
 
       // 7. Notificaciones (no bloqueantes; cada una deja constancia de su resultado)
@@ -268,7 +284,7 @@ export const bookingsRouter = router({
           preferredDate: input.preferredDate,
           preferredTime: displayTime,
           modality: input.modality,
-          notes: [isHome ? `A domicilio — ${input.serviceAddress}` : null, input.message].filter(Boolean).join(" · ") || undefined,
+          notes: [isHome ? `A domicilio — ${homeAddress}` : null, input.message].filter(Boolean).join(" · ") || undefined,
           actionUrl,
         })
       );

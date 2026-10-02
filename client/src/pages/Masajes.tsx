@@ -5,7 +5,7 @@
  */
 
 import { SITE_IMAGES } from "@/lib/siteImages";
-import { getHomePrice } from "@shared/booking";
+import { getHomePrice, massagePlaceLabel } from "@shared/booking";
 import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, MapPin, Clock, Euro, Star, Loader2, ChevronDown, ChevronUp, Leaf, CheckCircle, Eye } from "lucide-react";
@@ -14,13 +14,6 @@ import BookingModal from "@/components/BookingModal";
 import { trpc } from "@/lib/trpc";
 
 const HERO = SITE_IMAGES.heroMasajes;
-
-const MODALITY_LABEL: Record<string, string> = {
-  online: "Online",
-  presencial: "Presencial",
-  // Un masaje nunca es online: "ambos" (dato heredado de la BD) se muestra solo como Presencial.
-  ambos: "Presencial",
-};
 
 const ACEITES = [
   { nombre: "Balance", accion: "Enraizamiento" },
@@ -288,12 +281,10 @@ export default function Masajes() {
                               {masaje.durationLabel}
                             </span>
                           )}
-                          {masaje.modality && (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-1 font-body">
-                              <MapPin size={9} className="text-[oklch(0.52_0.08_148)]" />
-                              {MODALITY_LABEL[masaje.modality] ?? masaje.modality}
-                            </span>
-                          )}
+                          <span className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-1 font-body">
+                            <MapPin size={9} className="text-[oklch(0.52_0.08_148)]" />
+                            {massagePlaceLabel(masaje.slug)}
+                          </span>
                           {masaje.price && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-body text-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]/8 px-2 py-1" style={{ fontWeight: 600 }}>
                               <Euro size={9} />

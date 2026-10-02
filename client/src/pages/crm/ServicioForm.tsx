@@ -4,6 +4,7 @@
  * contraindicaciones e imagen de detalle.
  */
 
+import { getHomePrice } from "@shared/booking";
 import { useState, useEffect } from "react";
 import { useLocation, useParams } from "wouter";
 import { ArrowLeft, Save, Loader2, Plus, Trash2 } from "lucide-react";
@@ -194,7 +195,8 @@ export default function ServicioForm() {
       durationMinutes: form.durationMinutes,
       durationLabel: form.durationLabel.trim() || undefined,
       type: (["consulta", "masaje", "otro"] as const).includes(form.type) ? form.type : "consulta",
-      modality: (["online", "presencial", "ambos"] as const).includes(form.modality) ? form.modality : "ambos",
+      // Un masaje se hace siempre en persona (consulta o domicilio): nunca "online" ni "ambos"
+      modality: form.type === "masaje" ? "presencial" : (["online", "presencial", "ambos"] as const).includes(form.modality) ? form.modality : "ambos",
       imageUrl: form.imageUrl.trim() || null,
       detailImage: form.detailImage.trim() || null,
       longDescription: form.longDescription.trim() || null,
@@ -403,19 +405,36 @@ export default function ServicioForm() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label>Modalidad</Label>
-                <Select value={form.modality} onValueChange={(v) => set("modality", v as FormData["modality"])}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ambos">Presencial / Online</SelectItem>
-                    <SelectItem value="online">Solo Online</SelectItem>
-                    <SelectItem value="presencial">Solo Presencial</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {form.type === "masaje" ? (
+                <div className="space-y-1.5">
+                  <Label>Lugar del masaje</Label>
+                  <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm leading-relaxed">
+                    <p>En consulta: Navas de Riofrío (Segovia).</p>
+                    <p className="text-muted-foreground">
+                      {getHomePrice(form.slug) !== null
+                        ? `A domicilio: ${getHomePrice(form.slug)} € (el cliente debe indicar su dirección postal completa).`
+                        : "A domicilio: no se ofrece (no tiene tarifa a domicilio configurada)."}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Un masaje nunca es online. La tarifa a domicilio se fija en la configuración del sitio (shared/booking.ts), no aquí.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <Label>Modalidad</Label>
+                  <Select value={form.modality} onValueChange={(v) => set("modality", v as FormData["modality"])}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ambos">Presencial / Online</SelectItem>
+                      <SelectItem value="online">Solo Online</SelectItem>
+                      <SelectItem value="presencial">Solo Presencial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
             {/* Imagen principal */}

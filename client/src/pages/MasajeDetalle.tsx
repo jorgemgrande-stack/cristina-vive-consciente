@@ -5,7 +5,7 @@
  */
 
 import { SITE_IMAGES } from "@/lib/siteImages";
-import { getHomePrice, CENTER_MAPS_URL, OPENING_HOURS_TEXT, CANCELLATION_POLICY } from "@shared/booking";
+import { getHomePrice, massagePlaceAnswer, massagePlaceLabel, CENTER_MAPS_URL, OPENING_HOURS_TEXT, CANCELLATION_POLICY } from "@shared/booking";
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import {
@@ -15,13 +15,6 @@ import {
 import Layout from "@/components/Layout";
 import BookingModal from "@/components/BookingModal";
 import { trpc } from "@/lib/trpc";
-
-const MODALITY_LABEL: Record<string, string> = {
-  online: "Online",
-  presencial: "Presencial",
-  // Un masaje nunca es online: "ambos" (dato heredado de la BD) se muestra solo como Presencial.
-  ambos: "Presencial",
-};
 
 const FALLBACK_IMG = SITE_IMAGES.heroMasajes;
 
@@ -112,11 +105,7 @@ export default function MasajeDetalle() {
     },
     {
       q: "¿Dónde se realiza el masaje?",
-      a: masaje.modality === "presencial"
-        ? `Las sesiones son presenciales en Navas de Riofrío (Segovia).${getHomePrice(masaje.slug) !== null ? ` También ofrezco el servicio a domicilio por ${getHomePrice(masaje.slug)} €; Cristina confirmará si puede desplazarse a tu zona.` : " También puedo desplazarme a domicilio: consulta tarifa."}`
-        : masaje.modality === "online"
-        ? "Las sesiones se realizan de forma online a través de videollamada."
-        : `Las sesiones son presenciales en Navas de Riofrío (Segovia).${getHomePrice(masaje.slug) !== null ? ` También ofrezco el servicio a domicilio por ${getHomePrice(masaje.slug)} €; Cristina confirmará si puede desplazarse a tu zona.` : " También puedo desplazarme a domicilio: consulta tarifa."}`,
+      a: massagePlaceAnswer(masaje.slug),
     },
     {
       q: "¿Necesito preparación previa?",
@@ -176,12 +165,10 @@ export default function MasajeDetalle() {
                   {masaje.durationLabel}
                 </span>
               )}
-              {masaje.modality && (
-                <span className="inline-flex items-center gap-1 text-white/80 text-xs font-body">
-                  <MapPin size={11} className="text-[oklch(0.72_0.08_148)]" />
-                  {MODALITY_LABEL[masaje.modality] ?? masaje.modality}
-                </span>
-              )}
+              <span className="inline-flex items-center gap-1 text-white/80 text-xs font-body">
+                <MapPin size={11} className="text-[oklch(0.72_0.08_148)]" />
+                {massagePlaceLabel(masaje.slug)}
+              </span>
               {masaje.price && (
                 <span className="inline-flex items-center gap-1 text-[oklch(0.72_0.08_148)] text-sm font-body" style={{ fontWeight: 600 }}>
                   <Euro size={12} />

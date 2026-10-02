@@ -113,3 +113,45 @@ export const CANCELLATION_POLICY =
   "Puedes cancelar o cambiar tu cita sin coste avisando con al menos 24 horas de antelación (por WhatsApp o email). " +
   "Si cancelas con menos de 24 horas o no te presentas, Cristina podrá pedirte una señal previa para darte una nueva cita. " +
   "Si has adelantado una señal, se te devuelve íntegra al cancelar con 24 horas o más.";
+
+// ─── Lugar del masaje y dirección a domicilio ────────────────────────────────
+
+/** Texto corto del lugar: un masaje es en consulta (Navas de Riofrío) y, si tiene tarifa, también a domicilio. */
+export function massagePlaceLabel(slug?: string | null): string {
+  return getHomePrice(slug) !== null ? "En Navas de Riofrío o a domicilio" : "En Navas de Riofrío";
+}
+
+/** Respuesta de «¿Dónde se realiza el masaje?». */
+export function massagePlaceAnswer(slug?: string | null): string {
+  const home = getHomePrice(slug);
+  return home !== null
+    ? `En consulta, en Navas de Riofrío (Segovia), o a domicilio por ${home} €. Para el domicilio necesito tu dirección postal completa y Cristina confirmará si puede desplazarse a tu zona.`
+    : "En consulta, en Navas de Riofrío (Segovia). Si te interesa un servicio a domicilio, consúltalo con Cristina.";
+}
+
+export type HomeAddress = { street: string; postalCode: string; city: string };
+export type HomeAddressErrors = Partial<Record<keyof HomeAddress, string>>;
+
+/** Código postal español: 5 dígitos con provincia 01–52. */
+export function isSpanishPostalCode(cp: string): boolean {
+  if (!/^\d{5}$/.test(cp)) return false;
+  const prov = Number(cp.slice(0, 2));
+  return prov >= 1 && prov <= 52;
+}
+
+/** Errores por campo de una dirección a domicilio; objeto vacío = válida. */
+export function validateHomeAddress(a: Partial<HomeAddress>): HomeAddressErrors {
+  const errors: HomeAddressErrors = {};
+  const street = (a.street ?? "").trim();
+  const postalCode = (a.postalCode ?? "").trim();
+  const city = (a.city ?? "").trim();
+  if (street.length < 5 || !/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{2}/.test(street)) errors.street = "Indica la calle y el número (y piso o puerta si los hay)";
+  if (!isSpanishPostalCode(postalCode)) errors.postalCode = "Indica un código postal válido de 5 dígitos";
+  if (city.length < 2) errors.city = "Indica la localidad";
+  return errors;
+}
+
+/** "Calle Mayor 5, 2ºB, 40100 Segovia" */
+export function formatHomeAddress(a: HomeAddress): string {
+  return `${a.street.trim()}, ${a.postalCode.trim()} ${a.city.trim()}`;
+}
