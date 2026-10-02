@@ -27,6 +27,7 @@ import {
 } from "@shared/booking";
 import { BOOKING_EVENTS } from "@shared/bookingAnalytics";
 import { trackBookingEvent } from "@/lib/analytics";
+import { isValidPhone } from "@shared/phone";
 
 // Fallback estático por si la BD no responde
 const FALLBACK_SERVICES = [
@@ -187,6 +188,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = "Introduce un email válido";
     }
+    if (!isValidPhone(form.phone)) newErrors.phone = form.phone.trim() ? "Introduce un teléfono válido (con prefijo si no es español)" : "El teléfono es obligatorio";
     if (!form.preferredDate) newErrors.preferredDate = "Selecciona una fecha";
     if (isMassage && form.preferredDate && !timeOptions.includes(form.preferredTime)) newErrors.preferredTime = "Elige una hora";
     if (isHome) {
@@ -211,7 +213,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
       email: form.email.trim(),
-      phone: form.phone.trim() || undefined,
+      phone: form.phone.trim(),
       serviceType: form.serviceType as any,
       preferredDate: form.preferredDate,
       preferredTime: form.preferredTime || undefined,
@@ -293,7 +295,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                 <>
                   <strong style={{ fontWeight: 500 }}>Tu cita queda pendiente de confirmación de Cristina.</strong>{" "}
                   La fecha y la franja que has indicado son una preferencia: todavía no es una reserva confirmada.
-                  Cristina te escribirá por email (y por teléfono si lo has indicado) en las próximas 24–48 horas para confirmar la hora o proponerte otra.
+                  Cristina te escribirá por email y por teléfono o WhatsApp en las próximas 24–48 horas para confirmar la hora o proponerte otra.
                   Mientras tanto recibirás un email con el resumen de tu solicitud.
                 </>
               ) : (
@@ -389,16 +391,19 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
               </div>
               <div>
                 <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
-                  Teléfono
+                  Teléfono *
                 </label>
                 <input
                   type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
                   value={form.phone}
                   onChange={set("phone")}
                   placeholder="+34 600 000 000"
-                  className="w-full px-3 py-2.5 bg-white border border-[oklch(0.88_0.015_75)] text-sm font-body text-[oklch(0.18_0.018_55)] placeholder:text-[oklch(0.72_0.02_60)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors"
+                  className={`w-full px-3 py-2.5 bg-white border text-sm font-body text-[oklch(0.18_0.018_55)] placeholder:text-[oklch(0.72_0.02_60)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors ${errors.phone ? "border-red-400" : "border-[oklch(0.88_0.015_75)]"}`}
                   style={{ borderRadius: 0, fontWeight: 300 }}
                 />
+                {errors.phone && <p className="text-red-500 text-[0.7rem] mt-1">{errors.phone}</p>}
               </div>
             </div>
 

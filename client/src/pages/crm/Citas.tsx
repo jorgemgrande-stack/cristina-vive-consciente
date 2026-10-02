@@ -2,6 +2,8 @@
  * CRM Citas — Listado y gestión de citas
  */
 
+import { formatPhoneDisplay, whatsappNumber } from "@shared/phone";
+import { confirmationWhatsAppText } from "@shared/booking";
 import { useState } from "react";
 import { Link } from "wouter";
 import { Plus, CalendarDays, MessageCircle, ChevronDown, Clock, ArrowRight, Check, X, RefreshCw, Loader2, History } from "lucide-react";
@@ -192,11 +194,15 @@ export default function CRMCitas() {
                     ) : (
                       <p className="text-sm text-[oklch(0.52_0.02_60)] font-body">—</p>
                     )}
-                    {client?.phone && (
-                      <p className="text-xs text-[oklch(0.52_0.02_60)] font-body" style={{ fontWeight: 300 }}>
-                        {client.phone}
+                    {client?.phone ? (
+                      <a href={`tel:${client.phone}`} className="text-xs text-[oklch(0.40_0.07_148)] font-body no-underline hover:underline" style={{ fontWeight: 400 }}>
+                        {formatPhoneDisplay(client.phone)}
+                      </a>
+                    ) : client ? (
+                      <p className="text-xs text-red-600 font-body" style={{ fontWeight: 500 }}>
+                        Sin teléfono: añádelo en la ficha del cliente
                       </p>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Service */}
@@ -228,13 +234,17 @@ export default function CRMCitas() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1.5">
-                    {client?.phone && (
+                    {client?.phone && whatsappNumber(client.phone) && (
                       <a
-                        href={`https://wa.me/${client.phone.replace(/\D/g, "")}`}
+                        href={`https://wa.me/${whatsappNumber(client.phone)}${
+                          appt.status === "confirmed"
+                            ? `?text=${encodeURIComponent(confirmationWhatsAppText({ firstName: client.firstName ?? "", serviceLabel: svcLabel, scheduledAt: Number(appt.scheduledAt) }))}`
+                            : ""
+                        }`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-7 h-7 flex items-center justify-center bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
-                        title="WhatsApp"
+                        title={appt.status === "confirmed" ? "Avisar por WhatsApp: cita confirmada" : "WhatsApp"}
                       >
                         <MessageCircle size={13} />
                       </a>

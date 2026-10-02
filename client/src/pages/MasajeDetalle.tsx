@@ -109,7 +109,7 @@ export default function MasajeDetalle() {
     ...(includes.length > 0 ? [{ q: "¿Qué incluye la sesión?", a: `${includes.join(". ")}.` }] : []),
     {
       q: "¿Cómo reservo y cuándo se confirma?",
-      a: "Envías una solicitud con la fecha y la hora que prefieres. Cristina la revisa y te escribe por email (y por teléfono si lo has indicado) en las próximas 24–48 horas para confirmar la hora o proponerte otra. Hasta entonces la cita no está confirmada.",
+      a: "Envías una solicitud con la fecha y la hora que prefieres. Cristina la revisa y te escribe por email y por teléfono o WhatsApp en las próximas 24–48 horas para confirmar la hora o proponerte otra. Hasta entonces la cita no está confirmada.",
     },
     { q: "¿Cuándo atiende Cristina?", a: `${OPENING_HOURS_TEXT}.` },
     { q: "¿Cuándo y cómo se paga?", a: PAYMENT_NOTE },

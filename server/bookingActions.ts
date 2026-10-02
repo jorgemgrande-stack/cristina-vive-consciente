@@ -17,6 +17,7 @@ import {
   sendAppointmentCancelledAdminEmail,
   sendRescheduleProposalEmail,
 } from "./email";
+import { sendClientConfirmationWhatsApp } from "./whatsapp";
 import {
   ACCEPTABLE_FROM,
   CANCELLABLE_FROM,
@@ -188,6 +189,20 @@ export async function acceptAppointment(id: number, actorUserId: number | null) 
     appointmentId: id, channel: "email", audience: "admin", template: "accepted", actorUserId,
     run: () => sendAppointmentAcceptedAdminEmail({ ...emailData, clientLastName: client?.lastName ?? "", clientPhone: client?.phone ?? undefined }),
   });
+  // WhatsApp automático al cliente: solo si hay teléfono y la API de WhatsApp Business está configurada
+  // (si no, queda registrado como «omitido» y Cristina usa el botón «Avisar por WhatsApp»)
+  if (client?.phone) {
+    void trackNotification({
+      appointmentId: id, channel: "whatsapp", audience: "client", template: "accepted", actorUserId,
+      run: () =>
+        sendClientConfirmationWhatsApp({
+          phone: client.phone as string,
+          firstName: client.firstName ?? "",
+          serviceLabel: appt.serviceLabel ?? appt.serviceType,
+          scheduledAt: Number(appt.scheduledAt),
+        }),
+    });
+  }
   return { success: true };
 }
 

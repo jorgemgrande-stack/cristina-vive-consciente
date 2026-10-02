@@ -159,3 +159,33 @@ export function formatEuros(value: string | number | null | undefined): string {
   if (value == null || value === "" || !Number.isFinite(n)) return "";
   return `${Number.isInteger(n) ? n : n.toFixed(2).replace(".", ",")} €`;
 }
+
+// ─── Confirmación por WhatsApp al cliente ────────────────────────────────────
+
+/** Fecha y hora de una cita en hora de Madrid: { date: "sábado 3 de octubre", time: "14:00" }. */
+export function formatMadridDateTime(epochMs: number): { date: string; time: string } {
+  const d = new Date(epochMs);
+  return {
+    date: d.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Madrid" }),
+    time: d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "Europe/Madrid" }),
+  };
+}
+
+/** Texto (y datos de la plantilla de WhatsApp Business) del aviso de cita confirmada. */
+export function confirmationMessageParts(opts: { firstName: string; serviceLabel: string; scheduledAt: number }) {
+  const { date, time } = formatMadridDateTime(opts.scheduledAt);
+  const suffix = ` · ${HOME_LABEL_SUFFIX}`;
+  const atHome = opts.serviceLabel.toLowerCase().endsWith(suffix.toLowerCase());
+  const place = atHome ? "en tu domicilio" : `en ${MASSAGE_LOCATION}`;
+  const service = atHome ? opts.serviceLabel.slice(0, opts.serviceLabel.length - suffix.length) : opts.serviceLabel;
+  const first = opts.firstName.trim().split(/\s+/)[0] || "";
+  return { name: first, service, date, time, place };
+}
+
+export function confirmationWhatsAppText(opts: { firstName: string; serviceLabel: string; scheduledAt: number }): string {
+  const p = confirmationMessageParts(opts);
+  return (
+    `Hola ${p.name}, soy Cristina (BION). Tu cita de ${p.service} está confirmada para el ${p.date} a las ${p.time}, ${p.place}. ` +
+    `Si necesitas cambiarla, respóndeme por aquí. ¡Hasta pronto! 🌿`
+  );
+}

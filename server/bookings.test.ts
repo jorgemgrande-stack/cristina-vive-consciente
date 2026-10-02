@@ -51,6 +51,7 @@ vi.hoisted(() => {
 
 const db = vi.hoisted(() => ({
   createClient: vi.fn(async () => 1),
+  updateClient: vi.fn(async () => undefined),
   createAppointment: vi.fn(async () => ({ insertId: 99 })),
   findClientByEmail: vi.fn(async () => undefined as any),
   getAppointmentByRescheduleToken: vi.fn(),
@@ -77,9 +78,12 @@ const mail = vi.hoisted(() => ({
   sendInvoiceEmail: vi.fn(),
 }));
 vi.mock("./email", () => mail);
-vi.mock("./whatsapp", () => ({
+const wa = vi.hoisted(() => ({
   notifyAdminNewBooking: vi.fn(async () => ({ sent: false, waUrl: "x", note: "" })),
+  // aviso al cliente por WhatsApp Business: sin API configurada devuelve sent:false (queda como «omitido»)
+  sendClientConfirmationWhatsApp: vi.fn(async (_o: any) => ({ sent: false, note: "WhatsApp API no configurada" })),
 }));
+vi.mock("./whatsapp", () => wa);
 vi.mock("./_core/notification", () => ({
   notifyOwner: vi.fn(async () => {
     throw new Error("Notification service URL is not configured.");
@@ -221,6 +225,7 @@ describe("bookings.request — consultas (sin cambios de comportamiento)", () =>
       firstName: "Luis",
       lastName: "Pérez",
       email: "luis@example.com",
+      phone: "611222333",
       serviceType: CONSULTA.slug,
       preferredDate: futureDate(),
       preferredTime: "11:30",
@@ -246,7 +251,7 @@ describe("crm.appointments — acciones del admin", () => {
     await new Promise((r) => setTimeout(r, 20));
     const events = (db.logAppointmentEvent.mock.calls as any[][]).map((c) => c[0]);
     expect(events.find((e) => e.type === "status_changed")).toMatchObject({ fromStatus: "pending", toStatus: "confirmed", actorUserId: 1 });
-    expect(events.find((e) => e.type === "notification" && e.audience === "client")?.result).toBe("sent");
+    expect(events.find((e) => e.type === "notification" && e.audience === "client" && e.channel === "email")?.result).toBe("sent");
   });
 
   it("no se puede confirmar dos veces ni confirmar una cita cancelada", async () => {
@@ -540,5 +545,66 @@ describe("bookings.request — el domicilio y su precio salen de la base de dato
     db.getServiceBySlug.mockImplementation(async (slug: string) => (slug === MASSAGE_RELAX.slug ? { ...MASSAGE_RELAX, homePrice: null } : SERVICES[slug] ?? null));
     await expect(publicCaller().request(home())).rejects.toThrow(/no se ofrece a domicilio/i);
     expect(db.createAppointment).not.toHaveBeenCalled();
+  });
+});
+
+describe("bookings.request — el teléfono es obligatorio", () => {
+  it("sin teléfono o con uno no válido se rechaza y no se crea nada", async () => {
+    for (const phone of [undefined, "", "   ", "123", "abc", "12345678"]) {
+      await expect(publicCaller().request(baseInput({ phone } as any))).rejects.toThrow(/tel[eé]fono/i);
+    }
+    expect(db.createAppointment).not.toHaveBeenCalled();
+    expect(db.createClient).not.toHaveBeenCalled();
+  });
+
+  it("se guarda en formato único +34… aunque se escriba con espacios", async () => {
+    await publicCaller().request(baseInput({ phone: "693 02 68 94", email: "nuevo@example.com" }));
+    expect((db.createClient.mock.calls as any[][])[0][0].phone).toBe("+34693026894");
+  });
+
+  it("si el cliente ya existe sin teléfono (como el del CRM), la reserva se lo añade", async () => {
+    db.findClientByEmail.mockResolvedValue({ id: 2, firstName: "jorge", lastName: "grande", email: "jorge@example.com", phone: null } as any);
+    await publicCaller().request(baseInput({ phone: "+34 693 026 894", email: "jorge@example.com" }));
+    expect(db.updateClient).toHaveBeenCalledWith(2, { phone: "+34693026894" });
+    expect(db.createClient).not.toHaveBeenCalled();
+  });
+
+  it("si ya tenía ese mismo teléfono (con otro formato) no lo vuelve a escribir", async () => {
+    db.findClientByEmail.mockResolvedValue({ id: 3, firstName: "Ana", lastName: "García", email: "ana@example.com", phone: "+34600111222" } as any);
+    await publicCaller().request(baseInput({ phone: "600 111 222", email: "ana@example.com" }));
+    expect(db.updateClient).not.toHaveBeenCalled();
+  });
+
+  it("si indica otro teléfono distinto, se actualiza al más reciente", async () => {
+    db.findClientByEmail.mockResolvedValue({ id: 3, firstName: "Ana", lastName: "García", email: "ana@example.com", phone: "+34600111222" } as any);
+    await publicCaller().request(baseInput({ phone: "699888777", email: "ana@example.com" }));
+    expect(db.updateClient).toHaveBeenCalledWith(3, { phone: "+34699888777" });
+  });
+
+  it("el aviso a Cristina lleva el teléfono normalizado", async () => {
+    await publicCaller().request(baseInput({ phone: "600 111 222" }));
+    await new Promise((r) => setTimeout(r, 20));
+    expect((mail.sendAdminNotificationEmail.mock.calls as any[][])[0][0].phone).toBe("+34600111222");
+  });
+});
+
+describe("crm.appointments.accept — WhatsApp al cliente", () => {
+  const row = (phone: string | null) => ({
+    appointment: { id: 5, status: "pending", serviceType: "masaje", serviceLabel: "Masaje Relajante — 45 min", scheduledAt: Date.UTC(2026, 9, 3, 12, 0), modality: "presencial" },
+    client: { id: 1, firstName: "Jorge", lastName: "Grande", email: "j@example.com", phone },
+  });
+  it("con teléfono: intenta el aviso por WhatsApp con los datos de la cita y queda registrado (omitido si la API no está configurada)", async () => {
+    db.getAppointmentById.mockResolvedValue(row("+34693026894"));
+    await adminCaller().appointments.accept({ id: 5 });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(wa.sendClientConfirmationWhatsApp).toHaveBeenCalledWith({ phone: "+34693026894", firstName: "Jorge", serviceLabel: "Masaje Relajante — 45 min", scheduledAt: Date.UTC(2026, 9, 3, 12, 0) });
+    const ev = (db.logAppointmentEvent.mock.calls as any[][]).map((c) => c[0]).find((e) => e.type === "notification" && e.channel === "whatsapp");
+    expect(ev).toMatchObject({ audience: "client", result: "skipped" });
+  });
+  it("sin teléfono no intenta WhatsApp", async () => {
+    db.getAppointmentById.mockResolvedValue(row(null));
+    await adminCaller().appointments.accept({ id: 5 });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(wa.sendClientConfirmationWhatsApp).not.toHaveBeenCalled();
   });
 });

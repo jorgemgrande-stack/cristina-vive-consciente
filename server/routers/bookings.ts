@@ -20,6 +20,7 @@ import {
   createClient,
   createAppointment,
   findClientByEmail,
+  updateClient,
   getAppointmentById,
   getAppointmentByRescheduleToken,
   getServiceBySlug,
@@ -37,6 +38,7 @@ import {
   trackNotification,
 } from "../bookingActions";
 import { buildAdminActionUrl, verifyAdminActionToken } from "../adminActionLink";
+import { isValidPhone, normalizePhone } from "../../shared/phone";
 import { ENV } from "../_core/env";
 import {
   CRISTINA_WHATSAPP_NUMBER,
@@ -98,7 +100,13 @@ export const bookingsRouter = router({
         firstName: z.string().trim().min(1, "El nombre es obligatorio").max(100),
         lastName: z.string().trim().min(1, "Los apellidos son obligatorios").max(100),
         email: z.string().trim().email("Email no válido").max(320),
-        phone: z.string().trim().max(30).optional(),
+        // Cristina necesita siempre el teléfono del cliente
+        phone: z
+          .string({ error: "El teléfono es obligatorio" })
+          .trim()
+          .min(1, "El teléfono es obligatorio")
+          .max(30)
+          .refine(isValidPhone, "Indica un teléfono válido (con prefijo internacional si no es español)"),
         // Datos de la cita
         serviceType: z.string().trim().min(1).max(100),
         preferredDate: z.string().min(1, "La fecha preferida es obligatoria"), // "YYYY-MM-DD"
@@ -190,14 +198,17 @@ export const bookingsRouter = router({
 
       // 4. Buscar o crear cliente (deduplicación por email, case-insensitive)
       const emailNormalized = input.email.toLowerCase();
+      const phone = normalizePhone(input.phone)!; // ya validado por el esquema: formato único +34…
       const existing = await findClientByEmail(emailNormalized);
+      // Un cliente que ya existía (mismo email) puede no tener teléfono o tener otro: se guarda el que acaba de indicar
+      if (existing && normalizePhone(existing.phone) !== phone) await updateClient(existing.id, { phone });
       const clientId = existing
         ? existing.id
         : await createClient({
             firstName: input.firstName,
             lastName: input.lastName,
             email: emailNormalized,
-            phone: input.phone || null,
+            phone,
             status: "lead",
           });
 
@@ -253,7 +264,7 @@ export const bookingsRouter = router({
         firstName: input.firstName,
         lastName: input.lastName,
         email: emailNormalized,
-        phone: input.phone || undefined,
+        phone: phone,
         serviceLabel,
         preferredDate: input.preferredDate,
         preferredTime: displayTime,
@@ -278,7 +289,7 @@ export const bookingsRouter = router({
         notifyAdminNewBooking({
           firstName: input.firstName,
           lastName: input.lastName,
-          phone: input.phone || undefined,
+          phone: phone,
           email: emailNormalized,
           serviceLabel,
           preferredDate: input.preferredDate,
@@ -291,7 +302,7 @@ export const bookingsRouter = router({
       notify("owner", "admin", "new_request", () =>
         notifyOwner({
           title: `Nueva solicitud de cita — ${input.firstName} ${input.lastName}`,
-          content: `${input.firstName} ${input.lastName} (${emailNormalized}${input.phone ? ` · ${input.phone}` : ""}) ha solicitado una cita de ${serviceLabel} para el ${input.preferredDate}${displayTime ? ` (${displayTime})` : ""}. Modalidad: ${input.modality}.`,
+          content: `${input.firstName} ${input.lastName} (${emailNormalized} · ${phone}) ha solicitado una cita de ${serviceLabel} para el ${input.preferredDate}${displayTime ? ` (${displayTime})` : ""}. Modalidad: ${input.modality}.`,
         })
       );
 

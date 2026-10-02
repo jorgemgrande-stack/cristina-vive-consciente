@@ -11,7 +11,8 @@ import { useParams } from "wouter";
 import { Leaf, CheckCircle2, CalendarDays, Phone, Mail, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { bookableTimes } from "@shared/booking";
+import { bookableTimes, confirmationWhatsAppText } from "@shared/booking";
+import { formatPhoneDisplay, whatsappNumber } from "@shared/phone";
 
 type Mode = "summary" | "decline" | "postpone" | "done";
 type Slot = { date: string; time: string };
@@ -38,6 +39,7 @@ export default function AccionCita() {
   const { token } = useParams<{ token: string }>();
   const [mode, setMode] = useState<Mode>("summary");
   const [doneText, setDoneText] = useState("");
+  const [accepted, setAccepted] = useState(false);
   const [reason, setReason] = useState("");
   const [slots, setSlots] = useState<Slot[]>([{ date: "", time: "" }]);
 
@@ -56,6 +58,7 @@ export default function AccionCita() {
 
   const act = trpc.bookings.adminLinkAct.useMutation({
     onSuccess: (_r, v) => {
+      setAccepted(v.action === "accept");
       setDoneText(v.action === "accept" ? "Cita confirmada. Hemos avisado al cliente por email." : "Solicitud declinada. Hemos avisado al cliente por email.");
       setMode("done");
     },
@@ -114,6 +117,18 @@ export default function AccionCita() {
             <div className="text-center py-8">
               <CheckCircle2 size={48} className="mx-auto text-[oklch(0.52_0.08_148)] mb-5" />
               <p className="text-sm text-[oklch(0.18_0.018_55)] font-body leading-relaxed">{doneText}</p>
+              {accepted && data && data.clientPhone && whatsappNumber(data.clientPhone) && (
+                <a
+                  href={`https://wa.me/${whatsappNumber(data.clientPhone)}?text=${encodeURIComponent(
+                    confirmationWhatsAppText({ firstName: data.clientName.split(" ")[0] ?? "", serviceLabel: data.serviceLabel, scheduledAt: data.scheduledAt }),
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#25D366] text-white text-xs tracking-widest uppercase font-body no-underline hover:opacity-90"
+                >
+                  Avisar a {data.clientName.split(" ")[0]} por WhatsApp
+                </a>
+              )}
               <a href="/crm/citas" className="inline-block mt-6 text-[oklch(0.52_0.08_148)] text-xs font-body hover:underline">
                 Ver las citas en el CRM
               </a>
@@ -126,7 +141,7 @@ export default function AccionCita() {
                 <p className="capitalize" style={{ fontWeight: 500 }}>{formatWhen(data.scheduledAt)}</p>
                 {data.clientPhone && (
                   <p className="flex items-center gap-2" style={{ fontWeight: 300 }}>
-                    <Phone size={13} /> <a href={`tel:${data.clientPhone}`} className="text-[oklch(0.52_0.08_148)]">{data.clientPhone}</a>
+                    <Phone size={13} /> <a href={`tel:${data.clientPhone}`} className="text-[oklch(0.52_0.08_148)]">{formatPhoneDisplay(data.clientPhone)}</a>
                   </p>
                 )}
                 {data.clientEmail && (

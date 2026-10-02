@@ -17,7 +17,8 @@
 
 import { getDb } from "./db";
 import { automationLogs } from "../drizzle/schema";
-import { CRISTINA_WHATSAPP_NUMBER } from "../shared/booking";
+import { CRISTINA_WHATSAPP_NUMBER, confirmationMessageParts } from "../shared/booking";
+import { whatsappNumber } from "../shared/phone";
 
 const WHATSAPP_ADMIN_NUMBER = process.env.WHATSAPP_ADMIN_NUMBER || CRISTINA_WHATSAPP_NUMBER;
 
@@ -242,4 +243,48 @@ export async function notifyAdminNewPurchase(data: WhatsAppPurchaseData) {
     message,
     `${data.firstName} (${data.email})`
   );
+}
+
+
+// ─── AVISO AL CLIENTE: cita confirmada (WhatsApp Business, plantilla aprobada) ──
+/**
+ * Un mensaje que inicia la empresa (el cliente no ha escrito en las últimas 24 h) SOLO puede enviarse con una
+ * PLANTILLA aprobada por Meta. Se activa cuando existen estas variables en Railway:
+ *   WHATSAPP_API_TOKEN, WHATSAPP_PHONE_ID           (WhatsApp Business Platform / Cloud API)
+ *   WHATSAPP_TEMPLATE_CONFIRMED                     nombre de la plantilla aprobada (categoría Utilidad)
+ *   WHATSAPP_TEMPLATE_LANG                          opcional, por defecto "es"
+ * La plantilla debe tener 5 variables de texto en este orden: {{1}} nombre, {{2}} servicio, {{3}} día, {{4}} hora, {{5}} lugar.
+ * Texto sugerido: «Hola {{1}}, soy Cristina (BION). Tu cita de {{2}} está confirmada para el {{3}} a las {{4}}, {{5}}.
+ * Si necesitas cambiarla, respóndeme por aquí.»
+ */
+export function isClientWhatsAppConfigured(): boolean {
+  return !!(process.env.WHATSAPP_API_TOKEN && process.env.WHATSAPP_PHONE_ID && process.env.WHATSAPP_TEMPLATE_CONFIRMED);
+}
+
+export async function sendClientConfirmationWhatsApp(opts: {
+  phone: string;
+  firstName: string;
+  serviceLabel: string;
+  scheduledAt: number;
+}): Promise<{ sent: boolean; note: string }> {
+  if (!isClientWhatsAppConfigured()) return { sent: false, note: "WhatsApp API no configurada" };
+  const to = whatsappNumber(opts.phone);
+  if (!to) throw new Error("Teléfono del cliente no válido para WhatsApp");
+  const p = confirmationMessageParts(opts);
+  const res = await fetch(`https://graph.facebook.com/v21.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${process.env.WHATSAPP_API_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to,
+      type: "template",
+      template: {
+        name: process.env.WHATSAPP_TEMPLATE_CONFIRMED,
+        language: { code: process.env.WHATSAPP_TEMPLATE_LANG || "es" },
+        components: [{ type: "body", parameters: [p.name, p.service, p.date, p.time, p.place].map((text) => ({ type: "text", text })) }],
+      },
+    }),
+  });
+  if (!res.ok) throw new Error(`WhatsApp API ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  return { sent: true, note: "Enviado por WhatsApp Business API" };
 }
