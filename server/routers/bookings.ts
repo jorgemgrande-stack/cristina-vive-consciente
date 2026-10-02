@@ -29,6 +29,7 @@ import { notifyOwner } from "../_core/notification";
 import { sendClientConfirmationEmail, sendAdminNotificationEmail } from "../email";
 import { notifyAdminNewBooking } from "../whatsapp";
 import { selectProposedSlot, trackNotification } from "../bookingActions";
+import { CRISTINA_WHATSAPP_NUMBER } from "../../shared/booking";
 import {
   APPOINTMENT_SERVICE_TYPES,
   MASSAGE_TIME_SLOTS,
@@ -52,7 +53,7 @@ const LEGACY_SERVICE_LABELS: Record<string, string> = {
   otro: "Otro / Por definir",
 };
 
-const WHATSAPP_ADMIN_NUMBER = process.env.WHATSAPP_ADMIN_NUMBER ?? "34600000000"; // número de Cristina sin +
+const WHATSAPP_ADMIN_NUMBER = process.env.WHATSAPP_ADMIN_NUMBER || CRISTINA_WHATSAPP_NUMBER;
 
 export const bookingsRouter = router({
   /**

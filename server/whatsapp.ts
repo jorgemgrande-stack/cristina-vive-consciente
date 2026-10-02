@@ -17,8 +17,9 @@
 
 import { getDb } from "./db";
 import { automationLogs } from "../drizzle/schema";
+import { CRISTINA_WHATSAPP_NUMBER } from "../shared/booking";
 
-const WHATSAPP_ADMIN_NUMBER = process.env.WHATSAPP_ADMIN_NUMBER ?? "34657165343";
+const WHATSAPP_ADMIN_NUMBER = process.env.WHATSAPP_ADMIN_NUMBER || CRISTINA_WHATSAPP_NUMBER;
 
 // ─── TIPOS ────────────────────────────────────────────────────────────────────
 

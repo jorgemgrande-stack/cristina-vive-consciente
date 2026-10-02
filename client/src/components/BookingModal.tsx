@@ -205,7 +205,8 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+      {/* z-[70]: por encima de la cabecera (z-50) y del botón flotante de WhatsApp (z-50) */}
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-[oklch(0.18_0.018_55)]/70 backdrop-blur-sm"
@@ -331,8 +332,8 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
               </div>
             </div>
 
-            {/* Email + Teléfono */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Email + Teléfono (en una columna en móvil: el teléfono no cabía) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
                   Email *
@@ -399,8 +400,8 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
               )}
             </div>
 
-            {/* Fecha + Hora */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Fecha + Hora/Franja (en una columna en móvil: la franja salía cortada) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
                   Fecha preferida *

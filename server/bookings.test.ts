@@ -133,6 +133,12 @@ describe("bookings.request — masajes", () => {
     expect(created.internalNotes).toContain("Franja preferida: Tarde");
   });
 
+  it("el botón de WhatsApp de la confirmación apunta al número de Cristina (+34 657 165 343), no a un relleno", async () => {
+    const res = await publicCaller().request(baseInput());
+    expect(res.whatsappUrl).toContain("https://wa.me/34657165343?text=");
+    expect(res.whatsappUrl).not.toContain("34600000000");
+  });
+
   it("acepta el slug real del Masaje Terapéutico y no se mezcla con el Relajante", async () => {
     await publicCaller().request(baseInput({ serviceType: MASSAGE_THERAPEUTIC.slug }));
     const created = (db.createAppointment.mock.calls as any[][])[0][0];
