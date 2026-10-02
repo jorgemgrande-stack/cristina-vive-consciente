@@ -40,6 +40,18 @@ consentimiento, conversión sin datos). Tests unitarios y de router ampliados.
 (ids 16, 28, 50, 60, 76, 81). Verificado: las imágenes responden 200. Copia de los valores anteriores guardada fuera del
 repositorio.
 
+### Google Analytics 4 conectado (2026-10-02)
+
+- Flujo web "Cristina Flujo Web" (ID de medición `G-M6710YHDW8`). Se definió `VITE_GA4_ID` en Railway (variable de build; el
+  despliegue la incorpora). Junto a las variables de Google Ads (`VITE_GOOGLE_ADS_ID`, `VITE_GOOGLE_ADS_BOOKING_LABEL`).
+- Con consentimiento de analítica: páginas vistas (medición mejorada de GA4) y los eventos `booking_form_opened` y
+  `booking_request_submitted` (parámetros: `service_slug`, `service_group`, `modality`; nunca datos personales). Con
+  consentimiento de publicidad: la conversión de Google Ads por solicitud de reserva. Sin consentimiento, nada.
+- `ad_personalization` queda siempre denegado y las etiquetas se configuran sin personalización de anuncios: solo se mide, no
+  hay remarketing (coherente con la política de cookies).
+- Para ver los eventos en GA4: Informes → Tiempo real, tras navegar aceptando las cookies. Marcar `booking_request_submitted`
+  como "evento clave" desde Administrador → Eventos.
+
 ### Qué quedó implementado y desplegado
 
 - **PR #2** fusionado en `main` (commit `c0858af`; incluye `5a7fc51`, `f1479ef` y `6337a4f`). Railway lo desplegó
