@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploader } from "@/components/ImageUploader";
+import ServiceGalleryManager from "@/components/ServiceGalleryManager";
 import {
   Select,
   SelectContent,
@@ -531,6 +532,17 @@ export default function ServicioForm() {
               onChange={(url) => set("detailImage", url)}
               hint="Imagen adicional para la ficha de detalle. JPG, PNG, WEBP hasta 20 MB"
             />
+
+            {/* Galería de la ficha (solo masajes) */}
+            {isMassageForm && (
+              <div className="rounded-lg border p-4">
+                {isEdit && serviceId ? (
+                  <ServiceGalleryManager serviceId={serviceId} onCoverChange={(url) => set("imageUrl", url)} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">Guarda el masaje para poder añadir su galería de imágenes.</p>
+                )}
+              </div>
+            )}
 
             {/* Beneficios / Ideal para */}
             <div className="space-y-2">

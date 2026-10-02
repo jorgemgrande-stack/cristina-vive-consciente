@@ -15,7 +15,15 @@ import {
   updateService,
   deleteService,
   toggleServiceStatus,
+  getServiceImages,
+  addServiceImages,
+  updateServiceImageAlt,
+  getServiceImageById,
+  setServiceImageCover,
+  moveServiceImage,
+  removeServiceImage,
 } from "../db";
+import { MAX_SERVICE_IMAGES, buildServiceGallery, defaultGallery, imageKey, isAllowedImageUrl } from "../../shared/serviceGallery";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
@@ -89,6 +97,120 @@ export const servicesRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Servicio no encontrado" });
       }
       return service;
+    }),
+
+  // ── Público: galería de imágenes de la ficha (personalizada o por defecto) ──
+  gallery: publicProcedure
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ input }) => {
+      const service = await getServiceBySlug(input.slug);
+      if (!service || service.status !== "active") {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Servicio no encontrado" });
+      }
+      const { rows } = await getServiceImages(service.id);
+      return buildServiceGallery(service, rows).images;
+    }),
+
+  // ── Admin: gestión de la galería de un servicio ───────────────────────────
+  imagesList: adminProcedure
+    .input(z.object({ serviceId: z.number() }))
+    .query(async ({ input }) => {
+      const service = await getServiceById(input.serviceId);
+      if (!service) throw new TRPCError({ code: "NOT_FOUND", message: "Servicio no encontrado" });
+      const { available, rows } = await getServiceImages(input.serviceId);
+      const built = buildServiceGallery(service, rows);
+      return {
+        /** false = la tabla service_images no existe todavía (migración 0022 pendiente) */
+        available,
+        custom: built.custom,
+        images: built.images,
+        max: MAX_SERVICE_IMAGES,
+      };
+    }),
+
+  imagesAdd: adminProcedure
+    .input(
+      z.object({
+        serviceId: z.number(),
+        images: z
+          .array(z.object({ url: z.string().refine(isAllowedImageUrl, "Ruta de imagen no válida"), alt: z.string().max(300).optional() }))
+          .min(1)
+          .max(MAX_SERVICE_IMAGES),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const service = await getServiceById(input.serviceId);
+      if (!service) throw new TRPCError({ code: "NOT_FOUND", message: "Servicio no encontrado" });
+      const { available, rows } = await getServiceImages(input.serviceId);
+      if (!available) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "La galería aún no está activada en la base de datos (migración 0022 pendiente)." });
+      }
+      // Sin duplicados (ni entre sí ni con las existentes) y con el máximo respetado
+      const seen = new Set(rows.map((r) => imageKey(r.url)));
+      const fresh = input.images.filter((i) => {
+        const k = imageKey(i.url);
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+      if (rows.length + fresh.length > MAX_SERVICE_IMAGES) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Máximo ${MAX_SERVICE_IMAGES} imágenes por masaje` });
+      }
+      if (fresh.length) await addServiceImages(input.serviceId, fresh);
+      return { added: fresh.length, skippedDuplicates: input.images.length - fresh.length };
+    }),
+
+  /** Copia la galería por defecto (imágenes actuales + sala) a la tabla, para empezar a editarla. */
+  imagesAdopt: adminProcedure
+    .input(z.object({ serviceId: z.number() }))
+    .mutation(async ({ input }) => {
+      const service = await getServiceById(input.serviceId);
+      if (!service) throw new TRPCError({ code: "NOT_FOUND", message: "Servicio no encontrado" });
+      const { available, rows } = await getServiceImages(input.serviceId);
+      if (!available) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "La galería aún no está activada en la base de datos (migración 0022 pendiente)." });
+      }
+      if (rows.length > 0) return { added: 0 };
+      const defaults = defaultGallery(service).filter((i) => isAllowedImageUrl(i.url));
+      if (defaults.length) await addServiceImages(input.serviceId, defaults.map((i) => ({ url: i.url, alt: i.alt })));
+      return { added: defaults.length };
+    }),
+
+  imagesUpdateAlt: adminProcedure
+    .input(z.object({ id: z.number(), alt: z.string().max(300) }))
+    .mutation(async ({ input }) => {
+      const img = await getServiceImageById(input.id);
+      if (!img) throw new TRPCError({ code: "NOT_FOUND", message: "Imagen no encontrada" });
+      await updateServiceImageAlt(input.id, input.alt);
+      return { success: true };
+    }),
+
+  imagesSetCover: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const img = await getServiceImageById(input.id);
+      if (!img) throw new TRPCError({ code: "NOT_FOUND", message: "Imagen no encontrada" });
+      await setServiceImageCover(img.serviceId, img.id);
+      return { success: true };
+    }),
+
+  imagesMove: adminProcedure
+    .input(z.object({ id: z.number(), direction: z.enum(["up", "down"]) }))
+    .mutation(async ({ input }) => {
+      const img = await getServiceImageById(input.id);
+      if (!img) throw new TRPCError({ code: "NOT_FOUND", message: "Imagen no encontrada" });
+      await moveServiceImage(img.serviceId, img.id, input.direction);
+      return { success: true };
+    }),
+
+  /** Quita la imagen de la galería. El archivo NO se borra del disco (puede usarse en otros contenidos). */
+  imagesRemove: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const img = await getServiceImageById(input.id);
+      if (!img) throw new TRPCError({ code: "NOT_FOUND", message: "Imagen no encontrada" });
+      await removeServiceImage(img.serviceId, img.id);
+      return { success: true };
     }),
 
   // ── Admin: listado completo (activos + inactivos) ──────────────────────────

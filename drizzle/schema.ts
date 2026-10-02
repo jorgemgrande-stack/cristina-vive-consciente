@@ -124,6 +124,29 @@ export const appointmentEvents = mysqlTable("appointment_events", {
 export type AppointmentEvent = typeof appointmentEvents.$inferSelect;
 export type InsertAppointmentEvent = typeof appointmentEvents.$inferInsert;
 
+// ─── GALERÍA DE IMÁGENES DE SERVICIOS ─────────────────────────────────────────
+/**
+ * Imágenes de la ficha de un servicio (masajes). El orden y la portada se gestionan desde el CRM.
+ * Tabla nueva y aislada (migración 0022): el código tolera que todavía no exista y, mientras tanto,
+ * muestra la galería por defecto (imageUrl + detailImage + sala). Quitar una imagen solo borra la fila,
+ * nunca el archivo del disco.
+ */
+export const serviceImages = mysqlTable("service_images", {
+  id: int("id").autoincrement().primaryKey(),
+  serviceId: int("serviceId").notNull(),
+  /** Ruta propia: /uploads/… (subida del CRM) o /site/… (imagen fija del sitio) */
+  url: varchar("url", { length: 500 }).notNull(),
+  /** Texto alternativo (accesibilidad y SEO) */
+  alt: varchar("alt", { length: 300 }),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  /** 1 = portada (foto principal de la ficha y de la tarjeta) */
+  isCover: int("isCover").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ServiceImage = typeof serviceImages.$inferSelect;
+export type InsertServiceImage = typeof serviceImages.$inferInsert;
+
 // ─── EVENTOS DE CALENDARIO ────────────────────────────────────────────────────
 export const calendarEvents = mysqlTable("calendar_events", {
   id: int("id").autoincrement().primaryKey(),

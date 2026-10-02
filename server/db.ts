@@ -30,6 +30,7 @@ import {
   calendarEvents,
   type InsertCalendarEvent,
   appointmentEvents,
+  serviceImages,
   type InsertAppointmentEvent,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -783,4 +784,106 @@ export async function deleteCalendarEvent(id: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(calendarEvents).where(eq(calendarEvents.id, id));
+}
+
+// ─── GALERÍA DE IMÁGENES DE SERVICIOS ─────────────────────────────────────────
+// Tolerante: si la tabla `service_images` aún no existe (migración 0022 sin aplicar) no rompe la ficha pública:
+// se devuelve `available: false` y la web muestra la galería por defecto.
+
+export async function getServiceImages(serviceId: number) {
+  try {
+    const db = await getDb();
+    if (!db) return { available: false, rows: [] as Array<typeof serviceImages.$inferSelect> };
+    const rows = await db
+      .select()
+      .from(serviceImages)
+      .where(eq(serviceImages.serviceId, serviceId))
+      .orderBy(asc(serviceImages.sortOrder), asc(serviceImages.id));
+    return { available: true, rows };
+  } catch {
+    return { available: false, rows: [] as Array<typeof serviceImages.$inferSelect> };
+  }
+}
+
+/** Normaliza sortOrder a 0..n-1 y deja una sola portada (la primera marcada, o la primera de la lista). */
+async function renumberServiceImages(serviceId: number, orderedIds: number[], coverId: number | null) {
+  const db = await getDb();
+  if (!db) return;
+  for (let i = 0; i < orderedIds.length; i++) {
+    await db
+      .update(serviceImages)
+      .set({ sortOrder: i, isCover: orderedIds[i] === coverId ? 1 : 0 })
+      .where(and(eq(serviceImages.id, orderedIds[i]), eq(serviceImages.serviceId, serviceId)));
+  }
+}
+
+export async function addServiceImages(serviceId: number, images: Array<{ url: string; alt?: string | null }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { rows } = await getServiceImages(serviceId);
+  let next = rows.length ? Math.max(...rows.map((r) => r.sortOrder)) + 1 : 0;
+  for (const img of images) {
+    await db.insert(serviceImages).values({
+      serviceId,
+      url: img.url,
+      alt: img.alt?.trim() || null,
+      sortOrder: next++,
+      isCover: rows.length === 0 && next === 1 ? 1 : 0,
+    });
+  }
+  const after = await getServiceImages(serviceId);
+  if (after.rows.length && !after.rows.some((r) => r.isCover)) {
+    await renumberServiceImages(serviceId, after.rows.map((r) => r.id), after.rows[0].id);
+  }
+}
+
+export async function updateServiceImageAlt(id: number, alt: string | null) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(serviceImages).set({ alt: alt?.trim() || null }).where(eq(serviceImages.id, id));
+}
+
+export async function getServiceImageById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(serviceImages).where(eq(serviceImages.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+/** Marca una imagen como portada, la sube al primer lugar y actualiza la imagen de la tarjeta del servicio. */
+export async function setServiceImageCover(serviceId: number, imageId: number) {
+  const { rows } = await getServiceImages(serviceId);
+  const target = rows.find((r) => r.id === imageId);
+  if (!target) return false;
+  const ids = [imageId, ...rows.filter((r) => r.id !== imageId).map((r) => r.id)];
+  await renumberServiceImages(serviceId, ids, imageId);
+  await updateService(serviceId, { imageUrl: target.url });
+  return true;
+}
+
+export async function moveServiceImage(serviceId: number, imageId: number, direction: "up" | "down") {
+  const { rows } = await getServiceImages(serviceId);
+  const ids = rows.map((r) => r.id);
+  const i = ids.indexOf(imageId);
+  const j = direction === "up" ? i - 1 : i + 1;
+  if (i < 0 || j < 0 || j >= ids.length) return;
+  [ids[i], ids[j]] = [ids[j], ids[i]];
+  const cover = rows.find((r) => r.isCover)?.id ?? ids[0];
+  await renumberServiceImages(serviceId, ids, cover);
+}
+
+/** Quita la imagen de la galería (solo la fila; el archivo NO se borra del disco). */
+export async function removeServiceImage(serviceId: number, imageId: number) {
+  const db = await getDb();
+  if (!db) return;
+  const { rows } = await getServiceImages(serviceId);
+  const target = rows.find((r) => r.id === imageId);
+  if (!target) return;
+  await db.delete(serviceImages).where(and(eq(serviceImages.id, imageId), eq(serviceImages.serviceId, serviceId)));
+  const left = rows.filter((r) => r.id !== imageId);
+  if (left.length) {
+    const cover = target.isCover ? left[0].id : left.find((r) => r.isCover)?.id ?? left[0].id;
+    await renumberServiceImages(serviceId, left.map((r) => r.id), cover);
+    if (target.isCover) await updateService(serviceId, { imageUrl: left[0].url });
+  }
 }

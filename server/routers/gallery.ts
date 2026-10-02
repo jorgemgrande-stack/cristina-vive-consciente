@@ -18,6 +18,7 @@ import {
   oilProducts,
   blogPosts,
   heroImages,
+  serviceImages,
 } from "../../drizzle/schema";
 
 /**
@@ -45,6 +46,8 @@ async function getUsedUploadUrls(): Promise<Set<string>> {
     db.select({ v: oilProducts.imagen }).from(oilProducts),
     db.select({ v: blogPosts.coverImage }).from(blogPosts),
     db.select({ v: heroImages.url }).from(heroImages),
+    // Galería de las fichas de masajes: sus archivos no se pueden borrar desde /crm/galeria
+    db.select({ v: serviceImages.url }).from(serviceImages),
   ]);
 
   const usedUrls = new Set<string>();

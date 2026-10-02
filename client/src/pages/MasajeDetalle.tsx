@@ -1,69 +1,60 @@
 /**
  * MasajeDetalle — Cristina Vive Consciente
- * Página de detalle de un masaje terapéutico
+ * Ficha de un masaje: galería, bloque de reserva (precio, duración, lugar), experiencia, cómo reservar y dudas frecuentes.
  * Design: "Luz Botánica"
+ *
+ * Solo se muestran datos confirmados (los del propio servicio en la base de datos y las constantes de
+ * shared/booking.ts). No hay textos de relleno con beneficios, plazos o consejos que no consten.
  */
 
 import { SITE_IMAGES } from "@/lib/siteImages";
-import { getHomePrice, massagePlaceAnswer, massagePlaceLabel, CENTER_MAPS_URL, OPENING_HOURS_TEXT, CANCELLATION_POLICY } from "@shared/booking";
+import {
+  CANCELLATION_POLICY,
+  CENTER_MAPS_URL,
+  OPENING_HOURS_TEXT,
+  PAYMENT_NOTE,
+  formatEuros,
+  getHomePrice,
+  massagePlaceAnswer,
+  massagePlaceLabel,
+} from "@shared/booking";
+import { defaultGallery } from "@shared/serviceGallery";
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
 import {
-  ArrowLeft, ArrowRight, Clock, MapPin, Euro, Star,
-  CheckCircle, AlertCircle, Leaf, Loader2, ChevronDown, ChevronUp
+  ArrowLeft, ArrowRight, Clock, MapPin, Star, Wallet,
+  CheckCircle, AlertCircle, Leaf, Loader2, ChevronDown, ChevronUp, CalendarCheck
 } from "lucide-react";
 import Layout from "@/components/Layout";
 import BookingModal from "@/components/BookingModal";
+import ServiceGallery from "@/components/ServiceGallery";
 import { trpc } from "@/lib/trpc";
 
 const FALLBACK_IMG = SITE_IMAGES.heroMasajes;
 
-// Beneficios por defecto
-const DEFAULT_BENEFITS = [
-  "Reduce el estrés y la tensión acumulada",
-  "Mejora la circulación y el drenaje linfático",
-  "Equilibra el sistema nervioso",
-  "Potencia el sistema inmunológico",
-  "Alivia dolores musculares y articulares",
-  "Promueve un sueño reparador",
-];
-
-// Qué incluye por defecto
-const DEFAULT_INCLUDES = [
-  "Evaluación inicial de necesidades",
-  "Sesión de equilibrio energético",
-  "Masaje Aromatouch con 8 aceites esenciales",
-  "Recomendaciones personalizadas post-sesión",
-];
-
-function parseBenefits(raw: string | null | undefined): string[] {
-  if (!raw) return DEFAULT_BENEFITS;
+function parseList(raw: string | null | undefined): string[] {
+  if (!raw) return [];
   try {
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    return DEFAULT_BENEFITS;
-  } catch { return DEFAULT_BENEFITS; }
+    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string" && x.trim()) : [];
+  } catch {
+    return [];
+  }
 }
 
-function parseIncludes(raw: string | null | undefined): string[] {
-  if (!raw) return DEFAULT_INCLUDES;
-  try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    return DEFAULT_INCLUDES;
-  } catch { return DEFAULT_INCLUDES; }
-}
+const eyebrow = "text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase font-body";
 
 export default function MasajeDetalle() {
   const [, params] = useRoute("/masajes/:slug");
   const slug = params?.slug ?? "";
   const [bookingOpen, setBookingOpen] = useState(false);
-  const [faqOpen, setFaqOpen] = useState<number | null>(null);
+  const [faqOpen, setFaqOpen] = useState<number | null>(0);
 
   const { data: masaje, isLoading, error } = trpc.services.getBySlug.useQuery(
     { slug },
     { enabled: !!slug }
   );
+  const { data: galleryData } = trpc.services.gallery.useQuery({ slug }, { enabled: !!slug, retry: false });
 
   if (isLoading) {
     return (
@@ -89,32 +80,45 @@ export default function MasajeDetalle() {
     );
   }
 
-  const benefits = parseBenefits((masaje as any).benefits);
-  const includes = parseIncludes((masaje as any).includes);
-  const longDesc = (masaje as any).longDescription;
-  const contraindications = (masaje as any).contraindications;
-  const detailImage = (masaje as any).detailImage;
+  // Galería: la del servidor; mientras llega, la de por defecto calculada con los datos del servicio
+  const baseImages = galleryData && galleryData.length > 0 ? galleryData : defaultGallery(masaje as any);
+  const images = baseImages.length > 0 ? baseImages : [{ id: null, url: FALLBACK_IMG, alt: masaje.name, isCover: true }];
 
-  // FAQs por defecto para masajes
-  const faqs = [
+  const benefits = parseList((masaje as any).benefits);
+  const includes = parseList((masaje as any).includes);
+  const longDesc: string | null = (masaje as any).longDescription ?? null;
+  const contraindications: string | null = (masaje as any).contraindications ?? null;
+  const homePrice = getHomePrice(masaje);
+  const priceText = masaje.price ? formatEuros(masaje.price) : null;
+  const homeText = homePrice !== null ? formatEuros(homePrice) : null;
+
+  // Preguntas frecuentes: solo con datos confirmados del servicio y de las condiciones del centro
+  const faqs: Array<{ q: string; a: string }> = [
     {
-      q: "¿Cuánto dura una sesión?",
-      a: masaje.durationLabel
-        ? `La sesión tiene una duración de ${masaje.durationLabel}.`
-        : "La sesión dura aproximadamente 60 minutos, incluyendo la evaluación inicial y las recomendaciones finales.",
+      q: "¿Cuánto cuesta y cuánto dura?",
+      a:
+        [
+          masaje.durationLabel ? `La sesión dura ${masaje.durationLabel}.` : null,
+          priceText ? `Cuesta ${priceText} en consulta${homeText ? ` y ${homeText} a domicilio` : ""}.` : "Consulta la tarifa con Cristina.",
+        ]
+          .filter(Boolean)
+          .join(" "),
     },
+    { q: "¿Dónde se realiza el masaje?", a: massagePlaceAnswer(masaje) },
+    ...(includes.length > 0 ? [{ q: "¿Qué incluye la sesión?", a: `${includes.join(". ")}.` }] : []),
     {
-      q: "¿Dónde se realiza el masaje?",
-      a: massagePlaceAnswer(masaje),
+      q: "¿Cómo reservo y cuándo se confirma?",
+      a: "Envías una solicitud con la fecha y la hora que prefieres. Cristina la revisa y te escribe por email (y por teléfono si lo has indicado) en las próximas 24–48 horas para confirmar la hora o proponerte otra. Hasta entonces la cita no está confirmada.",
     },
-    {
-      q: "¿Necesito preparación previa?",
-      a: "No se requiere preparación especial. Es recomendable llegar con ropa cómoda y haber comido ligero. Evita el ejercicio intenso las 2 horas previas.",
-    },
-    {
-      q: "¿Con qué frecuencia se recomienda?",
-      a: "Para resultados óptimos, se recomienda una sesión mensual de mantenimiento. En casos de estrés elevado o dolor crónico, puede aumentarse la frecuencia según valoración.",
-    },
+    { q: "¿Cuándo atiende Cristina?", a: `${OPENING_HOURS_TEXT}.` },
+    { q: "¿Cuándo y cómo se paga?", a: PAYMENT_NOTE },
+    { q: "¿Puedo cancelar o cambiar mi cita?", a: CANCELLATION_POLICY },
+  ];
+
+  const steps = [
+    { t: "Elige fecha y hora", d: "Indica cuándo te viene bien y tus datos de contacto. Es solo una solicitud." },
+    { t: "Cristina te confirma", d: "Te responde en las próximas 24–48 horas para confirmar la hora o proponerte otra." },
+    { t: "Pagas en la cita", d: PAYMENT_NOTE },
   ];
 
   return (
@@ -126,133 +130,157 @@ export default function MasajeDetalle() {
       />
       <Layout>
 
-        {/* ── Hero con imagen ── */}
-        <section className="relative h-72 sm:h-96 overflow-hidden">
-          <img
-            src={masaje.imageUrl || FALLBACK_IMG}
-            alt={masaje.name}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[oklch(0.12_0.018_55)]/80 via-[oklch(0.12_0.018_55)]/30 to-transparent" />
-
-          {/* Breadcrumb */}
-          <div className="absolute top-6 left-0 right-0 container">
+        {/* ── Cabecera: título, galería y bloque de reserva ── */}
+        <section className="bg-[oklch(0.985_0.006_85)] pt-6 pb-10 sm:pt-8 sm:pb-14 border-b border-[oklch(0.92_0.01_75)]">
+          <div className="container">
             <Link
               href="/masajes"
-              className="inline-flex items-center gap-2 text-white/80 hover:text-white text-xs font-body no-underline bg-black/20 px-3 py-1.5 backdrop-blur-sm transition-colors"
-              style={{ borderRadius: 0 }}
+              className="inline-flex items-center gap-2 text-[oklch(0.52_0.08_148)] text-xs font-body no-underline hover:gap-3 transition-all mb-5"
             >
               <ArrowLeft size={12} />
-              Masajes terapéuticos
+              Masajes
             </Link>
-          </div>
 
-          {/* Título superpuesto */}
-          <div className="absolute bottom-0 left-0 right-0 container pb-8">
-            {masaje.featured === 1 && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[oklch(0.52_0.08_148)] text-white text-[10px] font-body tracking-wider uppercase mb-3 block w-fit" style={{ fontWeight: 500 }}>
-                <Star size={9} fill="currentColor" />
-                Más popular
-              </span>
-            )}
-            <h1 className="font-display text-white mb-2" style={{ fontWeight: 300, fontSize: "clamp(1.6rem, 3.5vw, 2.4rem)", lineHeight: 1.15 }}>
-              {masaje.name}
-            </h1>
-            <div className="flex flex-wrap gap-2">
-              {masaje.durationLabel && (
-                <span className="inline-flex items-center gap-1 text-white/80 text-xs font-body">
-                  <Clock size={11} className="text-[oklch(0.72_0.08_148)]" />
-                  {masaje.durationLabel}
-                </span>
-              )}
-              <span className="inline-flex items-center gap-1 text-white/80 text-xs font-body">
-                <MapPin size={11} className="text-[oklch(0.72_0.08_148)]" />
-                {massagePlaceLabel(masaje)}
-              </span>
-              {masaje.price && (
-                <span className="inline-flex items-center gap-1 text-[oklch(0.72_0.08_148)] text-sm font-body" style={{ fontWeight: 600 }}>
-                  <Euro size={12} />
-                  {masaje.price} €
-                </span>
-              )}
-              {getHomePrice(masaje) !== null && (
-                <span className="inline-flex items-center gap-1 text-white/80 text-sm font-body" style={{ fontWeight: 400 }}>
-                  · {getHomePrice(masaje)} € a domicilio
-                </span>
-              )}
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] gap-x-12 gap-y-5 lg:gap-y-0 items-start">
+              {/* Título: arriba en móvil; en escritorio, encima del bloque de reserva */}
+              <div className="order-1 lg:col-start-2 lg:row-start-1">
+                {masaje.featured === 1 && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[oklch(0.52_0.08_148)] text-white text-[10px] font-body tracking-wider uppercase mb-3 w-fit" style={{ fontWeight: 500 }}>
+                    <Star size={9} fill="currentColor" />
+                    Más popular
+                  </span>
+                )}
+                <h1 className="font-display text-[oklch(0.18_0.018_55)] lg:mb-5" style={{ fontWeight: 400, fontSize: "clamp(1.75rem, 3.2vw, 2.5rem)", lineHeight: 1.15 }}>
+                  {masaje.name}
+                </h1>
+              </div>
+
+              {/* Galería */}
+              <div className="order-2 lg:col-start-1 lg:row-start-1 lg:row-span-2">
+                <ServiceGallery images={images} title={masaje.name} />
+              </div>
+
+              {/* Bloque de reserva */}
+              <aside className="order-3 lg:col-start-2 lg:row-start-2 lg:sticky lg:top-24" aria-label="Precio y reserva">
+                {masaje.shortDescription && (
+                  <p className="text-[oklch(0.38_0.02_55)] font-body text-[0.95rem] leading-relaxed mb-5" style={{ fontWeight: 300 }}>
+                    {masaje.shortDescription}
+                  </p>
+                )}
+
+                <div className="border border-[oklch(0.88_0.015_75)] bg-white p-5 sm:p-6">
+                  {priceText && (
+                    <div className="mb-5">
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-display text-[oklch(0.42_0.08_148)]" style={{ fontWeight: 500, fontSize: "2.6rem", lineHeight: 1 }}>
+                          {priceText}
+                        </span>
+                        <span className="text-[oklch(0.52_0.02_60)] font-body text-sm">por sesión en consulta</span>
+                      </div>
+                      {homeText && (
+                        <p className="mt-1.5 text-[oklch(0.38_0.02_55)] font-body text-sm" style={{ fontWeight: 300 }}>
+                          A domicilio: <strong style={{ fontWeight: 600 }}>{homeText}</strong>
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <ul className="space-y-3 mb-5 text-sm font-body text-[oklch(0.30_0.02_55)]">
+                    {masaje.durationLabel && (
+                      <li className="flex items-start gap-3">
+                        <Clock size={16} className="text-[oklch(0.52_0.08_148)] mt-0.5 flex-shrink-0" />
+                        <span><span style={{ fontWeight: 500 }}>Duración:</span> {masaje.durationLabel}</span>
+                      </li>
+                    )}
+                    <li className="flex items-start gap-3">
+                      <MapPin size={16} className="text-[oklch(0.52_0.08_148)] mt-0.5 flex-shrink-0" />
+                      <span>
+                        <span style={{ fontWeight: 500 }}>Lugar:</span> {massagePlaceLabel(masaje)} ·{" "}
+                        <a href={CENTER_MAPS_URL} target="_blank" rel="noopener noreferrer" className="underline text-[oklch(0.40_0.07_148)]">Cómo llegar</a>
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Wallet size={16} className="text-[oklch(0.52_0.08_148)] mt-0.5 flex-shrink-0" />
+                      <span><span style={{ fontWeight: 500 }}>Pago:</span> en la cita; no se cobra nada al reservar</span>
+                    </li>
+                  </ul>
+
+                  <button
+                    onClick={() => setBookingOpen(true)}
+                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-4 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body"
+                    style={{ borderRadius: 0, letterSpacing: "0.1em" }}
+                  >
+                    Reservar ahora
+                    <ArrowRight size={13} />
+                  </button>
+                  <p className="mt-3 text-center text-[11px] text-[oklch(0.52_0.02_60)] font-body leading-relaxed" style={{ fontWeight: 300 }}>
+                    Es una solicitud: queda pendiente hasta que Cristina la confirme (24–48 h).
+                  </p>
+                </div>
+              </aside>
             </div>
           </div>
         </section>
 
-        {/* ── Contenido principal ── */}
-        <section className="py-12 bg-white">
+        {/* ── Contenido ── */}
+        <section className="py-12 bg-white pb-28 lg:pb-12">
           <div className="container">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
 
-              {/* Columna principal */}
-              <div className="lg:col-span-2 space-y-10">
+              <div className="lg:col-span-2 space-y-12">
 
-                {/* Descripción */}
-                <div>
-                  <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-3 font-body" style={{ fontWeight: 500 }}>
-                    Sobre esta sesión
-                  </p>
-                  {longDesc ? (
+                {/* Sobre esta sesión */}
+                {longDesc && (
+                  <div>
+                    <p className={`${eyebrow} mb-3`} style={{ fontWeight: 500 }}>Sobre esta sesión</p>
                     <div
                       className="text-[oklch(0.38_0.02_55)] font-body leading-relaxed space-y-4"
                       style={{ fontWeight: 300, fontSize: "0.95rem" }}
                       dangerouslySetInnerHTML={{ __html: longDesc.replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br/>") }}
                     />
-                  ) : (
-                    <div className="text-[oklch(0.38_0.02_55)] font-body leading-relaxed space-y-4" style={{ fontWeight: 300, fontSize: "0.95rem" }}>
-                      <p>
-                        {masaje.shortDescription || `${masaje.name} es una sesión terapéutica diseñada para restaurar el equilibrio natural de tu cuerpo y mente. Mediante técnicas especializadas y el poder de los aceites esenciales de grado terapéutico, trabajamos en profundidad para liberar tensiones acumuladas y activar los mecanismos naturales de sanación del organismo.`}
-                      </p>
-                      <p>
-                        Cada sesión comienza con una evaluación personalizada de tus necesidades, permitiéndome adaptar la técnica y los aceites específicos a tu estado actual. El resultado es una experiencia única y transformadora que va mucho más allá del masaje convencional.
-                      </p>
-                      <p>
-                        La combinación de equilibrio energético y masaje Aromatouch actúa de forma sinérgica sobre el sistema nervioso, el sistema inmunológico y el estado emocional, generando un bienestar profundo y duradero.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Imagen de detalle (si existe) */}
-                {detailImage && (
-                  <div className="overflow-hidden">
-                    <img
-                      src={detailImage}
-                      alt={`Detalle de ${masaje.name}`}
-                      className="w-full object-cover"
-                      style={{ maxHeight: "320px" }}
-                    />
                   </div>
                 )}
 
-                {/* Beneficios */}
-                <div>
-                  <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-4 font-body" style={{ fontWeight: 500 }}>
-                    Beneficios
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {benefits.map((benefit, i) => (
-                      <div key={i} className="flex items-start gap-3 p-3 bg-[oklch(0.97_0.006_80)] border border-[oklch(0.92_0.01_75)]">
-                        <CheckCircle size={15} className="text-[oklch(0.52_0.08_148)] mt-0.5 flex-shrink-0" />
-                        <span className="text-[oklch(0.38_0.02_55)] text-sm font-body" style={{ fontWeight: 300 }}>
-                          {benefit}
-                        </span>
-                      </div>
-                    ))}
+                {/* La experiencia: lo que incluye, paso a paso */}
+                {includes.length > 0 && (
+                  <div>
+                    <p className={`${eyebrow} mb-4`} style={{ fontWeight: 500 }}>La experiencia</p>
+                    <ol className="space-y-3">
+                      {includes.map((item, i) => (
+                        <li key={i} className="flex items-start gap-4 p-4 bg-[oklch(0.97_0.006_80)] border border-[oklch(0.92_0.01_75)]">
+                          <span className="flex-shrink-0 w-7 h-7 flex items-center justify-center bg-[oklch(0.52_0.08_148)] text-white text-xs font-body" style={{ fontWeight: 500 }}>
+                            {i + 1}
+                          </span>
+                          <span className="text-[oklch(0.30_0.02_55)] text-sm font-body leading-relaxed pt-0.5" style={{ fontWeight: 300 }}>
+                            {item}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
                   </div>
-                </div>
+                )}
 
-                {/* Contraindicaciones */}
+                {/* Beneficios (solo los de la ficha del servicio) */}
+                {benefits.length > 0 && (
+                  <div>
+                    <p className={`${eyebrow} mb-4`} style={{ fontWeight: 500 }}>Qué ofrece</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {benefits.map((benefit, i) => (
+                        <div key={i} className="flex items-start gap-3 p-3 bg-[oklch(0.97_0.006_80)] border border-[oklch(0.92_0.01_75)]">
+                          <CheckCircle size={15} className="text-[oklch(0.52_0.08_148)] mt-0.5 flex-shrink-0" />
+                          <span className="text-[oklch(0.38_0.02_55)] text-sm font-body" style={{ fontWeight: 300 }}>
+                            {benefit}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Consideraciones */}
                 {contraindications && (
                   <div>
-                    <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-3 font-body" style={{ fontWeight: 500 }}>
-                      Consideraciones importantes
-                    </p>
+                    <p className={`${eyebrow} mb-3`} style={{ fontWeight: 500 }}>Consideraciones importantes</p>
                     <div className="flex items-start gap-3 p-4 bg-[oklch(0.97_0.006_80)] border border-[oklch(0.92_0.01_75)]">
                       <AlertCircle size={15} className="text-[oklch(0.55_0.06_60)] mt-0.5 flex-shrink-0" />
                       <p className="text-[oklch(0.38_0.02_55)] text-sm font-body leading-relaxed" style={{ fontWeight: 300 }}>
@@ -262,17 +290,30 @@ export default function MasajeDetalle() {
                   </div>
                 )}
 
-                {/* FAQ */}
+                {/* Cómo reservar */}
                 <div>
-                  <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-4 font-body" style={{ fontWeight: 500 }}>
-                    Preguntas frecuentes
-                  </p>
+                  <p className={`${eyebrow} mb-4`} style={{ fontWeight: 500 }}>Cómo reservar</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {steps.map((s, i) => (
+                      <div key={i} className="p-4 border border-[oklch(0.88_0.015_75)] bg-white">
+                        <span className="font-display text-[oklch(0.52_0.08_148)]" style={{ fontSize: "1.6rem", lineHeight: 1 }}>{i + 1}</span>
+                        <p className="mt-2 mb-1 text-sm font-body text-[oklch(0.22_0.02_55)]" style={{ fontWeight: 500 }}>{s.t}</p>
+                        <p className="text-xs font-body text-[oklch(0.42_0.02_55)] leading-relaxed" style={{ fontWeight: 300 }}>{s.d}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preguntas frecuentes */}
+                <div>
+                  <p className={`${eyebrow} mb-4`} style={{ fontWeight: 500 }}>Preguntas frecuentes</p>
                   <div className="space-y-2">
                     {faqs.map((faq, i) => (
                       <div key={i} className="border border-[oklch(0.88_0.015_75)]">
                         <button
                           onClick={() => setFaqOpen(faqOpen === i ? null : i)}
-                          className="w-full flex items-center justify-between px-4 py-3 text-left"
+                          aria-expanded={faqOpen === i}
+                          className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
                         >
                           <span className="font-body text-[oklch(0.22_0.02_55)] text-sm" style={{ fontWeight: 400 }}>
                             {faq.q}
@@ -295,78 +336,33 @@ export default function MasajeDetalle() {
                 </div>
               </div>
 
-              {/* Sidebar de reserva */}
+              {/* Columna lateral: dónde y cuándo */}
               <div className="lg:col-span-1">
-                <div className="sticky top-24 space-y-4">
-
-                  {/* Card de precio y reserva */}
-                  <div className="border border-[oklch(0.88_0.015_75)] p-6 bg-white">
-                    <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-4 font-body" style={{ fontWeight: 500 }}>
-                      Reservar sesión
-                    </p>
-
-                    {masaje.price && (
-                      <div className="flex items-baseline gap-1 mb-4">
-                        <span className="font-display text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 400, fontSize: "2rem" }}>
-                          {masaje.price}
-                        </span>
-                        <span className="text-[oklch(0.55_0.04_75)] font-body text-sm">€ / sesión en consulta</span>
-                      </div>
-                    )}
-                    {getHomePrice(masaje) !== null && (
-                      <p className="-mt-2 mb-4 text-[oklch(0.42_0.02_55)] font-body text-xs" style={{ fontWeight: 300 }}>
-                        A domicilio: <strong style={{ fontWeight: 500 }}>{getHomePrice(masaje)} €</strong>
-                      </p>
-                    )}
-                    <div className="mb-4 space-y-1.5 text-[oklch(0.42_0.02_55)] font-body text-xs leading-relaxed" style={{ fontWeight: 300 }}>
-                      <p>
-                        <span style={{ fontWeight: 500 }}>Dónde:</span> Navas de Riofrío (Segovia) ·{" "}
-                        <a href={CENTER_MAPS_URL} target="_blank" rel="noopener noreferrer" className="underline text-[oklch(0.40_0.07_148)]">Ver en Google Maps</a>
-                      </p>
-                      <p><span style={{ fontWeight: 500 }}>Horario:</span> {OPENING_HOURS_TEXT}.</p>
-                      <p><span style={{ fontWeight: 500 }}>Pago:</span> se abona en la cita; no se cobra nada al reservar.</p>
-                      <p><span style={{ fontWeight: 500 }}>Cancelaciones:</span> {CANCELLATION_POLICY}</p>
-                    </div>
-
-                    {/* Qué incluye */}
-                    <div className="mb-5 space-y-2">
-                      {includes.map((item, i) => (
-                        <div key={i} className="flex items-start gap-2">
-                          <CheckCircle size={12} className="text-[oklch(0.52_0.08_148)] mt-0.5 flex-shrink-0" />
-                          <span className="text-[oklch(0.42_0.02_55)] text-xs font-body" style={{ fontWeight: 300 }}>
-                            {item}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <button
-                      onClick={() => setBookingOpen(true)}
-                      className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body"
-                      style={{ borderRadius: 0, letterSpacing: "0.1em" }}
-                    >
-                      Reservar ahora
-                      <ArrowRight size={13} />
-                    </button>
-                  </div>
-
-                  {/* Info de localización */}
-                  <div className="border border-[oklch(0.88_0.015_75)] p-4 bg-[oklch(0.97_0.006_80)]">
+                <div className="lg:sticky lg:top-24 space-y-4">
+                  <div className="border border-[oklch(0.88_0.015_75)] p-5 bg-[oklch(0.97_0.006_80)]">
                     <div className="flex items-start gap-3">
                       <MapPin size={15} className="text-[oklch(0.52_0.08_148)] mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-[oklch(0.22_0.02_55)] text-xs font-body mb-1" style={{ fontWeight: 500 }}>
-                          Ubicación
-                        </p>
+                        <p className="text-[oklch(0.22_0.02_55)] text-sm font-body mb-1" style={{ fontWeight: 500 }}>Dónde y cuándo</p>
                         <p className="text-[oklch(0.42_0.02_55)] text-xs font-body leading-relaxed" style={{ fontWeight: 300 }}>
-                          Navas de Río Frío, Segovia<br />
-                          También disponible a domicilio
+                          Navas de Riofrío (Segovia){homeText ? " · también a domicilio" : ""}
+                          <br />
+                          {OPENING_HOURS_TEXT}.
                         </p>
+                        <a href={CENTER_MAPS_URL} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-xs underline text-[oklch(0.40_0.07_148)] font-body">
+                          Ver en Google Maps
+                        </a>
                       </div>
                     </div>
                   </div>
-
-                  {/* Volver */}
+                  <button
+                    onClick={() => setBookingOpen(true)}
+                    className="hidden lg:inline-flex w-full items-center justify-center gap-2 px-5 py-3.5 border border-[oklch(0.52_0.08_148)] text-[oklch(0.40_0.07_148)] text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.52_0.08_148)]/5 transition-colors font-body"
+                    style={{ borderRadius: 0, letterSpacing: "0.1em" }}
+                  >
+                    <CalendarCheck size={14} />
+                    Solicitar cita
+                  </button>
                   <Link
                     href="/masajes"
                     className="inline-flex items-center gap-2 text-[oklch(0.52_0.08_148)] text-xs font-body no-underline hover:gap-3 transition-all"
@@ -379,6 +375,22 @@ export default function MasajeDetalle() {
             </div>
           </div>
         </section>
+
+        {/* ── Barra de reserva fija (solo móvil) ── */}
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-[oklch(0.88_0.015_75)] pl-4 pr-[5.25rem] py-3 flex items-center justify-between gap-4" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+          <div className="min-w-0">
+            {priceText && <p className="font-display text-[oklch(0.42_0.08_148)] leading-none" style={{ fontWeight: 500, fontSize: "1.5rem" }}>{priceText}</p>}
+            {masaje.durationLabel && <p className="mt-1 text-[11px] font-body text-[oklch(0.52_0.02_60)]">{masaje.durationLabel}</p>}
+          </div>
+          <button
+            onClick={() => setBookingOpen(true)}
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium font-body"
+            style={{ borderRadius: 0, letterSpacing: "0.1em" }}
+          >
+            Reservar
+            <ArrowRight size={13} />
+          </button>
+        </div>
 
       </Layout>
     </>
