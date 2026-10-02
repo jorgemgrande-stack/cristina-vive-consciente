@@ -356,6 +356,8 @@ export const services = mysqlTable("services", {
   shortDescription: varchar("shortDescription", { length: 500 }),
   description: text("description"),
   price: decimal("price", { precision: 10, scale: 2 }),
+  /** Precio del servicio a domicilio (€). NULL = no se ofrece a domicilio. Solo masajes. */
+  homePrice: decimal("homePrice", { precision: 10, scale: 2 }),
   /** Duración en minutos */
   durationMinutes: int("durationMinutes").default(60),
   /** Texto de duración legible (e.g. '60 min', 'Mínimo 60 min', 'Consulta inicial + 21 días') */

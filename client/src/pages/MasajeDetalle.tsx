@@ -105,7 +105,7 @@ export default function MasajeDetalle() {
     },
     {
       q: "¿Dónde se realiza el masaje?",
-      a: massagePlaceAnswer(masaje.slug),
+      a: massagePlaceAnswer(masaje),
     },
     {
       q: "¿Necesito preparación previa?",
@@ -167,7 +167,7 @@ export default function MasajeDetalle() {
               )}
               <span className="inline-flex items-center gap-1 text-white/80 text-xs font-body">
                 <MapPin size={11} className="text-[oklch(0.72_0.08_148)]" />
-                {massagePlaceLabel(masaje.slug)}
+                {massagePlaceLabel(masaje)}
               </span>
               {masaje.price && (
                 <span className="inline-flex items-center gap-1 text-[oklch(0.72_0.08_148)] text-sm font-body" style={{ fontWeight: 600 }}>
@@ -175,9 +175,9 @@ export default function MasajeDetalle() {
                   {masaje.price} €
                 </span>
               )}
-              {getHomePrice(masaje.slug) !== null && (
+              {getHomePrice(masaje) !== null && (
                 <span className="inline-flex items-center gap-1 text-white/80 text-sm font-body" style={{ fontWeight: 400 }}>
-                  · {getHomePrice(masaje.slug)} € a domicilio
+                  · {getHomePrice(masaje)} € a domicilio
                 </span>
               )}
             </div>
@@ -313,9 +313,9 @@ export default function MasajeDetalle() {
                         <span className="text-[oklch(0.55_0.04_75)] font-body text-sm">€ / sesión en consulta</span>
                       </div>
                     )}
-                    {getHomePrice(masaje.slug) !== null && (
+                    {getHomePrice(masaje) !== null && (
                       <p className="-mt-2 mb-4 text-[oklch(0.42_0.02_55)] font-body text-xs" style={{ fontWeight: 300 }}>
-                        A domicilio: <strong style={{ fontWeight: 500 }}>{getHomePrice(masaje.slug)} €</strong>
+                        A domicilio: <strong style={{ fontWeight: 500 }}>{getHomePrice(masaje)} €</strong>
                       </p>
                     )}
                     <div className="mb-4 space-y-1.5 text-[oklch(0.42_0.02_55)] font-body text-xs leading-relaxed" style={{ fontWeight: 300 }}>

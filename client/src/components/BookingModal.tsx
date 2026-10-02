@@ -131,7 +131,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
   const isMassage = selectedService?.type === "masaje" || form.serviceType === "masaje";
   const selectedOption = serviceOptions.find((o) => o.value === form.serviceType);
   // Servicio a domicilio: solo si el servicio tiene tarifa a domicilio configurada
-  const homePrice = isMassage ? getHomePrice(form.serviceType) : null;
+  const homePrice = isMassage ? getHomePrice(selectedService) : null;
   const isHome = homePrice !== null && form.serviceLocation === "domicilio";
   const inPlacePrice = selectedService?.price ?? null;
   const shownPrice = isHome ? `${homePrice} €` : formatPrice(inPlacePrice);
@@ -415,7 +415,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                     ...prev,
                     serviceType: slug,
                     modality: modalityFor(slug, prev.modality),
-                    serviceLocation: getHomePrice(slug) === null ? "consulta" : prev.serviceLocation,
+                    serviceLocation: getHomePrice(dbServices.find((s) => s.slug === slug)) === null ? "consulta" : prev.serviceLocation,
                     preferredTime: isMassageSlug(slug) ? "" : prev.preferredTime,
                   }));
                 }}

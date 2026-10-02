@@ -136,7 +136,7 @@ export const bookingsRouter = router({
 
       // 1b. Servicio a domicilio: solo masajes con tarifa a domicilio configurada y con dirección
       const isHome = input.serviceLocation === "domicilio";
-      const homePrice = isHome ? getHomePrice(service?.slug) : null;
+      const homePrice = isHome ? getHomePrice(service) : null;
       if (isHome) {
         if (!isMassage || homePrice === null) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Este servicio no se ofrece a domicilio" });

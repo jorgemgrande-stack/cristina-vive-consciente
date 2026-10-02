@@ -29,6 +29,11 @@ const serviceInput = z.object({
   shortDescription: z.string().max(500).optional(),
   description: z.string().optional(),
   price: z.string().regex(/^\d+(\.\d{1,2})?$/).optional().nullable(),
+  // Precio a domicilio (€): solo masajes; vacío = no se ofrece a domicilio
+  homePrice: z.preprocess(
+    (v) => (v === "" || v === undefined ? null : v),
+    z.string().regex(/^\d{1,4}(\.\d{1,2})?$/, "Precio a domicilio no válido").nullable()
+  ),
   durationMinutes: z.number().int().min(1).default(60),
   durationLabel: z.string().max(100).optional(),
   type: z.preprocess(
@@ -115,6 +120,7 @@ export const servicesRouter = router({
         type: input.type,
         // Un masaje se hace siempre en persona (consulta o domicilio): nunca online
         modality: input.type === "masaje" ? "presencial" : input.modality,
+        homePrice: input.type === "masaje" && input.homePrice && Number(input.homePrice) > 0 ? input.homePrice : null,
         imageUrl: input.imageUrl || null,
         detailImage: input.detailImage || null,
         longDescription: input.longDescription ?? null,
@@ -145,6 +151,7 @@ export const servicesRouter = router({
         durationLabel: input.data.durationLabel ?? null,
         type: input.data.type,
         modality: input.data.type === "masaje" ? "presencial" : input.data.modality,
+        homePrice: input.data.type === "masaje" && input.data.homePrice && Number(input.data.homePrice) > 0 ? input.data.homePrice : null,
         imageUrl: input.data.imageUrl || null,
         detailImage: input.data.detailImage || null,
         longDescription: input.data.longDescription ?? null,

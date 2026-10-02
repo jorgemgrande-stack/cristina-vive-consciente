@@ -283,7 +283,7 @@ export default function Masajes() {
                           )}
                           <span className="inline-flex items-center gap-1 text-[10px] text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-1 font-body">
                             <MapPin size={9} className="text-[oklch(0.52_0.08_148)]" />
-                            {massagePlaceLabel(masaje.slug)}
+                            {massagePlaceLabel(masaje)}
                           </span>
                           {masaje.price && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-body text-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]/8 px-2 py-1" style={{ fontWeight: 600 }}>
@@ -291,10 +291,10 @@ export default function Masajes() {
                               {masaje.price} €
                             </span>
                           )}
-                          {getHomePrice(masaje.slug) !== null && (
+                          {getHomePrice(masaje) !== null && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-body text-[oklch(0.42_0.02_55)] bg-[oklch(0.94_0.012_80)] px-2 py-1" style={{ fontWeight: 500 }}>
                               <Euro size={9} />
-                              {getHomePrice(masaje.slug)} € a domicilio
+                              {getHomePrice(masaje)} € a domicilio
                             </span>
                           )}
                         </div>

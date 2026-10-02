@@ -10,6 +10,7 @@ const MASSAGE_RELAX = {
   name: "Masaje Relajante",
   type: "masaje",
   price: "70.00",
+  homePrice: "100.00",
   durationMinutes: 45,
   durationLabel: "45 min",
   modality: "presencial",
@@ -21,6 +22,7 @@ const MASSAGE_THERAPEUTIC = {
   name: "Masaje Terapéutico 60 min",
   type: "masaje",
   price: "80.00",
+  homePrice: "110.00",
   durationMinutes: 60,
   durationLabel: "60 min",
   modality: "ambos",
@@ -388,7 +390,7 @@ describe("bookings.request — servicio a domicilio", () => {
 
   it("no ofrece domicilio en servicios sin tarifa a domicilio (consultas, Terapéutico 90 min)", async () => {
     db.getServiceBySlug.mockImplementation(async (slug: string) =>
-      slug === "masaje_terapeutico_90_min" ? { ...MASSAGE_THERAPEUTIC, slug, name: "Masaje Terapéutico 90 min", price: "120.00", durationMinutes: 90, durationLabel: "90 min" } : SERVICES[slug] ?? null);
+      slug === "masaje_terapeutico_90_min" ? { ...MASSAGE_THERAPEUTIC, slug, name: "Masaje Terapéutico 90 min", price: "120.00", homePrice: null, durationMinutes: 90, durationLabel: "90 min" } : SERVICES[slug] ?? null);
     await expect(publicCaller().request(home({ serviceType: "masaje_terapeutico_90_min" }))).rejects.toThrow(/no se ofrece a domicilio/i);
     await expect(publicCaller().request(home({ serviceType: CONSULTA.slug, modality: "zoom" }))).rejects.toThrow(/no se ofrece a domicilio/i);
     expect(db.createAppointment).not.toHaveBeenCalled();
@@ -504,8 +506,39 @@ describe("dirección a domicilio y lugar del masaje", () => {
     expect(formatHomeAddress({ street: " Calle Mayor 5, 2ºB ", postalCode: "40100", city: " Segovia " })).toBe("Calle Mayor 5, 2ºB, 40100 Segovia");
   });
   it("el lugar del masaje es en Navas de Riofrío y, si hay tarifa, también a domicilio (nunca online)", () => {
-    expect(massagePlaceLabel("masaje_relajante_navas_de_rio_frio_segovia")).toBe("En Navas de Riofrío o a domicilio");
-    expect(massagePlaceLabel("masaje_terapeutico_90_min")).toBe("En Navas de Riofrío");
-    expect(massagePlaceLabel("masaje_relajante_navas_de_rio_frio_segovia")).not.toMatch(/online/i);
+    expect(massagePlaceLabel({ homePrice: "100.00" })).toBe("En Navas de Riofrío o a domicilio");
+    expect(massagePlaceLabel({ homePrice: null })).toBe("En Navas de Riofrío");
+    expect(massagePlaceLabel({ homePrice: "100.00" })).not.toMatch(/online/i);
+  });
+});
+
+import { getHomePrice } from "../shared/booking";
+
+describe("tarifa a domicilio (services.homePrice)", () => {
+  it("un precio > 0 activa el domicilio; vacío, NULL, 0 o basura lo desactivan", () => {
+    expect(getHomePrice({ homePrice: "100.00" })).toBe(100);
+    expect(getHomePrice({ homePrice: 110 })).toBe(110);
+    for (const v of [null, undefined, "", "0", "0.00", "abc", -5]) expect(getHomePrice({ homePrice: v as any })).toBeNull();
+    expect(getHomePrice(null)).toBeNull();
+    expect(getHomePrice(undefined)).toBeNull();
+  });
+});
+
+describe("bookings.request — el domicilio y su precio salen de la base de datos", () => {
+  const home = (over: Record<string, unknown> = {}) =>
+    baseInput({ serviceLocation: "domicilio", serviceStreet: "Calle Mayor 5", servicePostalCode: "40100", serviceCity: "Segovia", ...over });
+
+  it("si Cristina cambia la tarifa en el CRM, la cita usa el precio nuevo", async () => {
+    db.getServiceBySlug.mockImplementation(async (slug: string) => (slug === MASSAGE_RELAX.slug ? { ...MASSAGE_RELAX, homePrice: "125.00" } : SERVICES[slug] ?? null));
+    await publicCaller().request(home());
+    const created = (db.createAppointment.mock.calls as any[][])[0][0];
+    expect(created.price).toBe("125.00");
+    expect(created.internalNotes).toContain("Servicio a domicilio (125 €)");
+  });
+
+  it("si Cristina quita la tarifa, ya no se puede pedir a domicilio", async () => {
+    db.getServiceBySlug.mockImplementation(async (slug: string) => (slug === MASSAGE_RELAX.slug ? { ...MASSAGE_RELAX, homePrice: null } : SERVICES[slug] ?? null));
+    await expect(publicCaller().request(home())).rejects.toThrow(/no se ofrece a domicilio/i);
+    expect(db.createAppointment).not.toHaveBeenCalled();
   });
 });

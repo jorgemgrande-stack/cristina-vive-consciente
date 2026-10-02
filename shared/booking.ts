@@ -89,17 +89,14 @@ export function isBookableTime(date: string, time: string, durationMinutes?: num
 
 // ─── Servicio a domicilio ────────────────────────────────────────────────────
 /**
- * Tarifa a domicilio por servicio (€). Solo los servicios listados aquí ofrecen domicilio.
- * La tabla `services` no tiene todavía un campo propio: cuando se añada `homePrice` (migración),
- * estos valores pasarán a la base de datos.
+ * Servicio a domicilio. La tarifa está en la base de datos (`services.homePrice`, editable en el CRM):
+ * un precio > 0 significa que ese servicio se ofrece a domicilio; vacío/NULL, que no.
  */
-export const HOME_SERVICE_PRICES: Record<string, number> = {
-  masaje_terapeutico_navas_de_rio_frio_segovia: 110,
-  masaje_relajante_navas_de_rio_frio_segovia: 100,
-};
+export type HomeServiceInfo = { homePrice?: string | number | null };
 
-export function getHomePrice(slug?: string | null): number | null {
-  return slug && slug in HOME_SERVICE_PRICES ? HOME_SERVICE_PRICES[slug] : null;
+export function getHomePrice(service?: HomeServiceInfo | null): number | null {
+  const n = service?.homePrice == null || service.homePrice === "" ? NaN : Number(service.homePrice);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 export type ServiceLocation = "consulta" | "domicilio";
@@ -117,13 +114,13 @@ export const CANCELLATION_POLICY =
 // ─── Lugar del masaje y dirección a domicilio ────────────────────────────────
 
 /** Texto corto del lugar: un masaje es en consulta (Navas de Riofrío) y, si tiene tarifa, también a domicilio. */
-export function massagePlaceLabel(slug?: string | null): string {
-  return getHomePrice(slug) !== null ? "En Navas de Riofrío o a domicilio" : "En Navas de Riofrío";
+export function massagePlaceLabel(service?: HomeServiceInfo | null): string {
+  return getHomePrice(service) !== null ? "En Navas de Riofrío o a domicilio" : "En Navas de Riofrío";
 }
 
 /** Respuesta de «¿Dónde se realiza el masaje?». */
-export function massagePlaceAnswer(slug?: string | null): string {
-  const home = getHomePrice(slug);
+export function massagePlaceAnswer(service?: HomeServiceInfo | null): string {
+  const home = getHomePrice(service);
   return home !== null
     ? `En consulta, en Navas de Riofrío (Segovia), o a domicilio por ${home} €. Para el domicilio necesito tu dirección postal completa y Cristina confirmará si puede desplazarse a tu zona.`
     : "En consulta, en Navas de Riofrío (Segovia). Si te interesa un servicio a domicilio, consúltalo con Cristina.";

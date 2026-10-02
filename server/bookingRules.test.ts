@@ -11,7 +11,7 @@ import {
   CANCELLABLE_FROM,
   MASSAGE_TIME_SLOTS,
 } from "./bookingRules";
-import { HOME_SERVICE_PRICES, getHomePrice, isWeekend, slotsForDate, MASSAGE_TIME_SLOTS as SLOTS } from "../shared/booking";
+import { isWeekend, slotsForDate, MASSAGE_TIME_SLOTS as SLOTS } from "../shared/booking";
 
 describe("madridLocalToEpoch", () => {
   it("verano (CEST, UTC+2): 10:00 en Madrid = 08:00 UTC", () => {
@@ -112,17 +112,6 @@ describe("horario de Cristina (shared/booking)", () => {
     expect(SLOTS.midday.start).toBe("13:00");
     expect(SLOTS.morning.label).toContain("10:00 – 13:00");
     expect(SLOTS.afternoon.label).toContain("16:00 – 19:00");
-  });
-});
-
-describe("tarifas a domicilio", () => {
-  it("Relajante 100 €, Terapéutico 110 €; el resto no tiene domicilio", () => {
-    expect(getHomePrice("masaje_relajante_navas_de_rio_frio_segovia")).toBe(100);
-    expect(getHomePrice("masaje_terapeutico_navas_de_rio_frio_segovia")).toBe(110);
-    expect(getHomePrice("masaje_terapeutico_90_min")).toBeNull();
-    expect(getHomePrice("consulta_naturopata")).toBeNull();
-    expect(getHomePrice(undefined)).toBeNull();
-    expect(Object.keys(HOME_SERVICE_PRICES)).toHaveLength(2);
   });
 });
 
