@@ -23,10 +23,10 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "";
 // URL base de la web (para enlaces en emails)
 const BASE_URL = "https://cristinaviveconsciente.es";
 
-// Logo de marca — AVIF alojado en CloudFront (soportado por Apple Mail, Gmail web, Outlook moderno)
+// Logo de marca — PNG servido desde el propio dominio (client/public/logo-bion.png)
 // Fallback visual mediante alt text + estructura de tabla para clientes sin imágenes
 const LOGO_URL =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/logo-bion-original_f6b56924.avif";
+  `${BASE_URL}/logo-bion.png`;
 
 function getTransporter() {
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {

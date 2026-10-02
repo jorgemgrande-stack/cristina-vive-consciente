@@ -10,7 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 const LOGO_URL =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/logo-bion-original_f6b56924.avif";
+  "/logo-bion.png";
 
 function formatSlot(slot: { date: string; time: string }) {
   const dt = new Date(`${slot.date}T${slot.time}:00`);

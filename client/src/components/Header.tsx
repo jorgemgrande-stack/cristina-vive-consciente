@@ -11,7 +11,7 @@ import { Menu, X, ShoppingBag } from "lucide-react";
 import BookingModal from "./BookingModal";
 import { useConsultaCart } from "@/contexts/ConsultaCartContext";
 
-const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/hMJHx75NmU74XtvDrfPREU/logo-bion_ba8968f6.avif";
+const LOGO_URL = "/logo-bion.png";
 
 const navLinks = [
   { href: "/", label: "Inicio" },
