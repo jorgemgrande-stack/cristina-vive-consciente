@@ -13,6 +13,12 @@
  * ACTIVACIÓN FUTURA con WhatsApp Business API:
  * - Añadir WHATSAPP_API_TOKEN y WHATSAPP_PHONE_ID como secrets
  * - El bloque de envío real se activará automáticamente
+ *
+ * AVISO A CRISTINA SIN META — CallMeBot (https://www.callmebot.com/blog/free-api-whatsapp-messages/):
+ * puente gratuito de uso personal que envía un WhatsApp al número de Cristina (el que activó el bot).
+ * Se activa con CALLMEBOT_APIKEY (secreto). Solo avisa de NUEVAS SOLICITUDES DE CITA y con el mínimo de
+ * datos (servicio, día, hora y lugar): es un tercero no oficial, así que NO lleva nombre, teléfono, email,
+ * notas ni el enlace firmado de aceptar/declinar (ese solo va por email).
  */
 
 import { getDb } from "./db";
@@ -209,10 +215,85 @@ export async function notifyAdminWhatsApp(
   };
 }
 
+// ─── CALLMEBOT (aviso gratuito a Cristina) ───────────────────────────────────
+
+const CALLMEBOT_URL = "https://api.callmebot.com/whatsapp.php";
+const CRM_CITAS_URL = "https://cristinaviveconsciente.es/crm/citas";
+
+export function isCallMeBotConfigured(): boolean {
+  return !!process.env.CALLMEBOT_APIKEY?.trim();
+}
+
+/** "2026-10-08" + "10:00" → "jueves 8 de octubre, 10:00". Si la hora no es HH:MM (franja antigua) se omite. */
+function describeWhen(date: string, time?: string): string {
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(`${date}T12:00:00Z`) : null;
+  const day = d
+    ? new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(d).replace(",", "")
+    : date;
+  return /^\d{1,2}:\d{2}$/.test(time ?? "") ? `${day}, ${time}` : day;
+}
+
+/**
+ * Texto mínimo para CallMeBot: sin datos del cliente ni enlace firmado (tercero no oficial).
+ * Cristina ve el detalle y actúa desde el email de aviso o el CRM.
+ */
+export function generateCallMeBotBookingText(data: Pick<WhatsAppBookingData, "serviceLabel" | "preferredDate" | "preferredTime">): string {
+  return [
+    "🌿 *Nueva solicitud de cita*",
+    `${data.serviceLabel}`,
+    `📅 ${describeWhen(data.preferredDate, data.preferredTime)}`,
+    "",
+    `Acéptala o respóndela desde el email de aviso o en el CRM: ${CRM_CITAS_URL}`,
+  ].join("\n");
+}
+
+/**
+ * Envía un WhatsApp con CallMeBot al número de Cristina. Lanza si falla (el historial de la cita lo
+ * registra como «fallida»). Nunca escribe la apikey en logs ni en el error (va en la URL).
+ */
+export async function sendCallMeBotMessage(text: string): Promise<void> {
+  const apikey = process.env.CALLMEBOT_APIKEY?.trim();
+  if (!apikey) throw new Error("CallMeBot no configurado (not configured)");
+  const url = `${CALLMEBOT_URL}?phone=${encodeURIComponent(WHATSAPP_ADMIN_NUMBER)}&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(apikey)}`;
+
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 12000);
+  let res: Response;
+  try {
+    res = await fetch(url, { signal: ctl.signal });
+  } catch (err) {
+    throw new Error(`CallMeBot no responde (${(err as Error).name === "AbortError" ? "tiempo agotado" : "error de red"})`);
+  } finally {
+    clearTimeout(timer);
+  }
+  const body = (await res.text().catch(() => "")).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  // CallMeBot responde 200 también en algunos errores: el motivo viene en el cuerpo ("ERROR: ...").
+  if (!res.ok || /error|invalid|wrong|not\s+(?:valid|activated)|blocked/i.test(body)) {
+    throw new Error(`CallMeBot rechazó el aviso (${res.status}): ${body.slice(0, 160)}`);
+  }
+}
+
 /**
  * Notifica al admin sobre una nueva reserva.
  */
 export async function notifyAdminNewBooking(data: WhatsAppBookingData) {
+  // Sin API oficial de Meta pero con CallMeBot: aviso automático con el mínimo de datos
+  if (isCallMeBotConfigured() && !(process.env.WHATSAPP_API_TOKEN && process.env.WHATSAPP_PHONE_ID)) {
+    await sendCallMeBotMessage(generateCallMeBotBookingText(data));
+    const db = await getDb();
+    await db
+      ?.insert(automationLogs)
+      .values({
+        event: "whatsapp_booking",
+        channel: "whatsapp",
+        recipientPhone: WHATSAPP_ADMIN_NUMBER,
+        status: "sent",
+        subject: `Aviso de nueva cita (${data.serviceLabel})`.substring(0, 300),
+        sentAt: Date.now(),
+      })
+      .catch(() => {});
+    return { sent: true, waUrl: "", note: "Enviado con CallMeBot" };
+  }
   const message = generateAdminBookingNotification(data);
   return notifyAdminWhatsApp(
     "booking",
