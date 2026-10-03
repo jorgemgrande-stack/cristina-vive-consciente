@@ -37,3 +37,14 @@ El aviso (email hoy; también el enlace `wa.me`) incluye un enlace único `https
 - Token sin base de datos: `idCita.caducidad.firma` (HMAC-SHA256 con `JWT_SECRET`), válido 14 días (`server/adminActionLink.ts`). Sin secreto no se generan enlaces.
 - Página `/a/:token` (noindex, `Disallow: /a/` en robots): datos de la cita y tres botones; las acciones son POST y solo actúan sobre solicitudes `pending`.
 - Aceptar/Declinar/Posponer reutilizan las mismas funciones que el CRM (`bookingActions.ts`); el historial indica «Desde el enlace del aviso».
+
+## Opción C — CallMeBot (aviso automático gratuito a Cristina, sin Meta) — implementada
+
+Fecha: 2026-10-03. Puente gratuito de uso personal (https://www.callmebot.com/blog/free-api-whatsapp-messages/): envía un WhatsApp al número de Cristina (+34 657 165 343) desde el bot «CallMeBot». Cristina lo activó escribiendo «I allow callmebot to send me messages» al +34 644 99 26 98.
+
+- **Variable en Railway:** `CALLMEBOT_APIKEY` (secreto). Sin ella no se llama a CallMeBot y todo queda como antes.
+- **Qué avisa:** solo nuevas solicitudes de cita. Prioridad: API oficial de Meta (si hubiera `WHATSAPP_API_TOKEN` y `WHATSAPP_PHONE_ID`) → CallMeBot → enlace `wa.me`.
+- **Qué lleva el mensaje (mínimo, por ser un tercero no oficial):** servicio, día y hora, y el enlace general `/crm/citas`. **No** lleva nombre, teléfono, email, dirección, notas ni el enlace firmado de aceptar/declinar (ese solo va por email).
+- **Resultado en el historial de la cita:** «enviada» o «FALLÓ» con el motivo (nunca se escribe la clave). Si CallMeBot rechaza el aviso aunque devuelva HTTP 200, se detecta por el cuerpo de la respuesta.
+- **Límites:** servicio gratuito sin garantías ni soporte; uso personal (solo al número que lo activó); sin botones ni respuestas. El email de aviso, con los botones Aceptar/Declinar/Posponer, sigue funcionando en paralelo.
+- **Para pausarlo:** Cristina puede escribir «Stop» al bot, o se borra `CALLMEBOT_APIKEY` en Railway.
