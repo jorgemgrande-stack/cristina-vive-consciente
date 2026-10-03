@@ -203,7 +203,7 @@ export default function Recomendados() {
         <div className="container">
           <div className="max-w-2xl mx-auto text-center">
             <p className="text-stone-500 leading-relaxed text-sm mb-6">
-              Esta sección reúne los productos y marcas que he investigado, probado y aprobado personalmente. No recomendaría absolutamente nada que no use o fuera a usar yo misma. Cada categoría está pensada para ayudarte a construir un hogar y un estilo de vida más natural y consciente.
+              Esta sección reúne los productos y marcas que he investigado, probado y aprobado personalmente. No recomendaría absolutamente nada que no use o fuera a usar yo misma. Cada categoría está pensada para ayudarte a construir un hogar y un estilo de vida más saludable y libre de tóxicos.
             </p>
             <div className="inline-flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-left">
               <Star size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />

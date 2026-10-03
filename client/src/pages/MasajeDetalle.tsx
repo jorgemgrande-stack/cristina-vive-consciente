@@ -28,7 +28,6 @@ import {
 import Layout from "@/components/Layout";
 import BookingModal from "@/components/BookingModal";
 import ServiceGallery from "@/components/ServiceGallery";
-import HealthDisclaimer from "@/components/HealthDisclaimer";
 import { trpc } from "@/lib/trpc";
 
 const FALLBACK_IMG = SITE_IMAGES.heroMasajes;
@@ -355,7 +354,6 @@ export default function MasajeDetalle() {
                     ))}
                   </div>
                 </div>
-                <HealthDisclaimer />
               </div>
 
               {/* Columna lateral: dónde y cuándo */}

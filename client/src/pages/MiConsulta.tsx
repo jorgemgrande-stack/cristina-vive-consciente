@@ -273,7 +273,7 @@ export default function MiConsulta() {
                     onChange={handleChange}
                     required
                     rows={4}
-                    placeholder="Ej: aprender sobre aromaterapia, cuidar mis rutinas, conocer aromas para relajarme..."
+                    placeholder="Ej: Mejorar el sueño, reducir el estrés, apoyo inmune, dolor muscular..."
                     className="w-full font-body text-sm border border-[oklch(0.88_0.01_80)] px-3 py-2 resize-none focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors"
                     style={{ borderRadius: 0 }}
                   />

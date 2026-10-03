@@ -53,7 +53,7 @@ export const EBOOKS: Record<string, EbookProduct> = {
     title: "Guía de Aceites Esenciales",
     subtitle: "La sabiduría de las plantas en tu vida diaria",
     description:
-      "Aprende a usar los aceites esenciales con seguridad: aromaterapia, aplicación tópica diluida, combinaciones y precauciones para las situaciones más comunes del día a día. Una guía práctica para integrar el aroma de las plantas en tu rutina de bienestar.",
+      "Aprende a usar los aceites esenciales de forma segura y efectiva: aromaterapia, aplicación tópica, uso interno, combinaciones y protocolos para las situaciones más comunes del día a día. Una guía práctica para integrar el poder de las plantas en tu rutina de bienestar.",
     price: 7,
     priceCents: 700,
     currency: "EUR",

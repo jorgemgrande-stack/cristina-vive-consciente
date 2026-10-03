@@ -114,6 +114,3 @@ uploads/
 
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
-
-# Copias de seguridad de la revisión de afirmaciones de salud (contienen textos originales)
-health-claims-backup-*.json

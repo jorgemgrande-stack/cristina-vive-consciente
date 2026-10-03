@@ -388,7 +388,7 @@ export default function AceiteProductos() {
               label="Etiquetas (para filtrado)"
               value={form.tags}
               onChange={(v) => setForm((f) => ({ ...f, tags: v }))}
-              placeholder="Ej: relajante, cítrico, difusor... (evita términos de salud)"
+              placeholder="Ej: relajante, digestivo, inmunidad..."
             />
 
             {/* Imagen */}

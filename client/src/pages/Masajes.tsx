@@ -15,20 +15,24 @@ import { trpc } from "@/lib/trpc";
 
 const HERO = SITE_IMAGES.heroMasajes;
 
-// Aroma de cada aceite (descripción sensorial; sin afirmaciones de salud)
 const ACEITES = [
-  { nombre: "Balance", accion: "Aroma amaderado" },
-  { nombre: "Lavanda", accion: "Aroma floral" },
-  { nombre: "Tea Tree", accion: "Aroma fresco" },
-  { nombre: "AromaTouch", accion: "Mezcla para masaje" },
-  { nombre: "Deep Blue", accion: "Sensación refrescante" },
-  { nombre: "Wild Orange", accion: "Aroma cítrico" },
-  { nombre: "Peppermint", accion: "Aroma mentolado" },
-  { nombre: "Onguard", accion: "Aroma especiado" },
+  { nombre: "Balance", accion: "Enraizamiento" },
+  { nombre: "Lavanda", accion: "Calmante" },
+  { nombre: "Tea Tree", accion: "Purificante" },
+  { nombre: "AromaTouch", accion: "Relajante muscular" },
+  { nombre: "Deep Blue", accion: "Alivio del dolor" },
+  { nombre: "Wild Orange", accion: "Energizante" },
+  { nombre: "Peppermint", accion: "Estimulante" },
+  { nombre: "Onguard", accion: "Inmunológico" },
 ];
 
-// Sin textos de relleno: solo se muestran los beneficios que consten en la ficha del servicio
-const DEFAULT_BENEFITS: string[] = [];
+// Beneficios por defecto cuando no hay datos en BD
+const DEFAULT_BENEFITS = [
+  "Reduce el estrés y la tensión acumulada",
+  "Mejora la circulación y el drenaje linfático",
+  "Equilibra el sistema nervioso",
+  "Potencia el sistema inmunológico",
+];
 
 export default function Masajes() {
   const [bookingOpen, setBookingOpen] = useState(false);
@@ -89,13 +93,13 @@ export default function Masajes() {
           <div className="relative z-10 container pb-12 pt-32">
             <div className="max-w-xl">
               <p className="text-[oklch(0.72_0.08_148)] text-xs tracking-[0.25em] uppercase mb-4 font-body" style={{ fontWeight: 500 }}>
-                Bienestar corporal
+                Terapia corporal
               </p>
               <h1 className="font-display text-white mb-4" style={{ fontWeight: 300, fontSize: "clamp(1.8rem, 4vw, 2.8rem)", lineHeight: 1.15 }}>
                 Masajes Terapéuticos
               </h1>
               <p className="text-white/75 font-body mb-6 leading-relaxed" style={{ fontWeight: 300, fontSize: "0.95rem" }}>
-                Técnica combinada de equilibrio energético y masaje Aromatouch con 8 aceites esenciales.
+                Técnica combinada de equilibrio energético y masaje Aromatouch con 8 aceites esenciales de grado terapéutico.
               </p>
               <div className="flex flex-wrap gap-3">
                 <button
@@ -133,7 +137,7 @@ export default function Masajes() {
                       Equilibrio energético
                     </h3>
                     <p className="text-[oklch(0.42_0.02_55)] text-sm leading-relaxed font-body" style={{ fontWeight: 300 }}>
-                      Una propuesta de equilibrio energético para reconectar cuerpo, mente y espíritu.
+                      Recuperamos el equilibrio del campo electromagnético, reconectando cuerpo, mente y espíritu. La sanación energética restaura el flujo de energía primordial.
                     </p>
                   </div>
                   <div>
@@ -144,7 +148,7 @@ export default function Masajes() {
                       Técnica Aromatouch
                     </h3>
                     <p className="text-[oklch(0.42_0.02_55)] text-sm leading-relaxed font-body" style={{ fontWeight: 300 }}>
-                      Aplicada a través de los meridianos con aceites esenciales, pensada para vivir una experiencia de relajación y bienestar.
+                      Aplicada a través de los meridianos. Contrarresta el estrés, apoya el sistema inmunológico, para la inflamación, el dolor y el desequilibrio de los sistemas del organismo.
                     </p>
                   </div>
                   <div className="flex items-start gap-2 p-3 bg-[oklch(0.52_0.08_148)]/8 border-l-2 border-[oklch(0.52_0.08_148)]">
@@ -173,7 +177,7 @@ export default function Masajes() {
                     ))}
                   </div>
                   <p className="text-[oklch(0.52_0.02_60)] text-xs font-body italic mt-3" style={{ fontWeight: 300 }}>
-                    Aceites esenciales doTERRA certificados.
+                    Todos los aceites son de grado terapéutico certificado.
                   </p>
                 </div>
               </div>
