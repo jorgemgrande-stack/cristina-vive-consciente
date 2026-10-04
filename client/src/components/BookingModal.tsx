@@ -17,6 +17,7 @@ import {
   CANCELLATION_POLICY,
   CENTER_MAPS_URL,
   MASSAGE_LOCATION,
+  directWhatsAppReservationUrl,
   OPENING_HOURS_TEXT,
   PAYMENT_NOTE,
   formatHomeAddress,
@@ -711,6 +712,45 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                   "Enviar solicitud"
                 )}
               </button>
+
+              {/* Alternativa directa: abre WhatsApp con la reserva ya escrita (no cuenta como reserva hasta que Cristina responde) */}
+              {isMassage && step === "review" && selectedService && (
+                <>
+                  <div className="flex items-center gap-3 my-3" aria-hidden="true">
+                    <span className="flex-1 h-px bg-[oklch(0.90_0.012_75)]" />
+                    <span className="text-[0.65rem] uppercase tracking-widest text-[oklch(0.62_0.02_60)] font-body">o</span>
+                    <span className="flex-1 h-px bg-[oklch(0.90_0.012_75)]" />
+                  </div>
+                  <a
+                    href={directWhatsAppReservationUrl({
+                      firstName: form.firstName,
+                      serviceLabel: selectedService.name,
+                      durationLabel: selectedService.durationLabel ?? (selectedService.durationMinutes ? `${selectedService.durationMinutes} min` : null),
+                      date: form.preferredDate,
+                      time: form.preferredTime,
+                      atHome: isHome,
+                    })}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() =>
+                      trackBookingEvent(BOOKING_EVENTS.WHATSAPP_CLICKED, {
+                        service_slug: form.serviceType,
+                        service_group: "masaje",
+                        modality: "presencial",
+                      })
+                    }
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-[#25D366] text-white text-xs tracking-widest uppercase font-body hover:opacity-90 transition-opacity no-underline"
+                    style={{ letterSpacing: "0.1em" }}
+                  >
+                    <MessageCircle size={15} />
+                    Reserva directamente con Cristina ahora
+                  </a>
+                  <p className="text-center text-[oklch(0.62_0.02_60)] text-[0.65rem] mt-2 font-body" style={{ fontWeight: 300 }}>
+                    Se abre WhatsApp con tu reserva ya escrita; la cita queda confirmada cuando Cristina te responda.
+                  </p>
+                </>
+              )}
+
               <p className="text-center text-[oklch(0.72_0.02_60)] text-[0.65rem] mt-3 font-body" style={{ fontWeight: 300 }}>
                 {isMassage
                   ? "Cristina confirmará la cita contigo en 24–48 horas. Hasta entonces, no es una reserva confirmada."

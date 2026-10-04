@@ -189,3 +189,30 @@ export function confirmationWhatsAppText(opts: { firstName: string; serviceLabel
     `Si necesitas cambiarla, respóndeme por aquí. ¡Hasta pronto! 🌿`
   );
 }
+
+// ─── Reserva directa por WhatsApp (desde el paso de revisión del formulario) ──
+
+/** Mensaje que el cliente envía a Cristina para reservar directamente por WhatsApp. */
+export function directWhatsAppReservationText(opts: {
+  firstName: string;
+  serviceLabel: string;
+  durationLabel?: string | null;
+  /** "YYYY-MM-DD" */
+  date: string;
+  /** "HH:MM" */
+  time?: string;
+  atHome?: boolean;
+}): string {
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(opts.date)
+    ? new Date(`${opts.date}T12:00:00Z`).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Madrid" })
+    : opts.date;
+  const service = opts.durationLabel && !opts.serviceLabel.includes(opts.durationLabel) ? `${opts.serviceLabel} (${opts.durationLabel})` : opts.serviceLabel;
+  const when = `${d}${opts.time ? ` a las ${opts.time}` : ""}`;
+  const where = opts.atHome ? "a domicilio" : `en ${MASSAGE_LOCATION}`;
+  const name = opts.firstName.trim().split(/\s+/)[0];
+  return `Hola Cristina, soy ${name || "un cliente"}. Quiero reservar ${service} el ${when}, ${where}. ¿Me confirmas si te viene bien? Gracias 🌿`;
+}
+
+export function directWhatsAppReservationUrl(opts: Parameters<typeof directWhatsAppReservationText>[0]): string {
+  return `https://wa.me/${CRISTINA_WHATSAPP_NUMBER}?text=${encodeURIComponent(directWhatsAppReservationText(opts))}`;
+}

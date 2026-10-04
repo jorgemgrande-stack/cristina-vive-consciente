@@ -11,7 +11,7 @@ describe("analítica de reservas", () => {
     expect(BOOKING_EVENTS.REQUEST_SUBMITTED).toBe("booking_request_submitted");
     expect(BOOKING_EVENTS.CONFIRMED).toBe("booking_confirmed");
     expect(BOOKING_EVENTS.PAID).toBe("booking_paid");
-    expect(new Set(Object.values(BOOKING_EVENTS)).size).toBe(4);
+    expect(new Set(Object.values(BOOKING_EVENTS)).size).toBe(5); // todos distintos (incluye el clic a WhatsApp, señal secundaria)
   });
 
   it("el navegador no puede emitir confirmed/paid (ocurren después, en el admin)", () => {

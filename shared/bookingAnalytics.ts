@@ -18,13 +18,15 @@ export const BOOKING_EVENTS = {
   REQUEST_SUBMITTED: "booking_request_submitted",
   /** Conversión de mayor valor: Cristina confirma la cita (solo servidor/admin; importación offline). */
   CONFIRMED: "booking_confirmed",
+  /** Señal secundaria (NO conversión): pulsó «Reserva directamente con Cristina» (abre WhatsApp). No se sabe si llegó a enviarlo. */
+  WHATSAPP_CLICKED: "booking_whatsapp_clicked",
   /** Solo si en el futuro hay cobro online asociado a la reserva. */
   PAID: "booking_paid",
 } as const;
 export type BookingEventName = (typeof BOOKING_EVENTS)[keyof typeof BOOKING_EVENTS];
 
 /** Eventos que el navegador del cliente sí puede emitir. */
-export const CLIENT_EMITTABLE_EVENTS: BookingEventName[] = [BOOKING_EVENTS.FORM_OPENED, BOOKING_EVENTS.REQUEST_SUBMITTED];
+export const CLIENT_EMITTABLE_EVENTS: BookingEventName[] = [BOOKING_EVENTS.FORM_OPENED, BOOKING_EVENTS.REQUEST_SUBMITTED, BOOKING_EVENTS.WHATSAPP_CLICKED];
 
 const ALLOWED_PARAMS = ["service_slug", "service_group", "modality", "currency"] as const;
 export type BookingEventParams = Partial<Record<(typeof ALLOWED_PARAMS)[number], string>>;
