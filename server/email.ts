@@ -12,6 +12,7 @@
  */
 
 import nodemailer from "nodemailer";
+import { immediateConfirmationWhatsAppUrl } from "../shared/booking";
 
 const SMTP_HOST = process.env.SMTP_HOST ?? "";
 const SMTP_PORT = parseInt(process.env.SMTP_PORT ?? "25", 10);
@@ -213,6 +214,12 @@ export async function sendClientConfirmationEmail(data: BookingEmailData): Promi
   });
 
   const subject = "Hemos recibido tu solicitud de cita — BION";
+  const whatsappUrl = immediateConfirmationWhatsAppUrl({
+    firstName: data.firstName,
+    serviceLabel: data.serviceLabel,
+    date: data.preferredDate,
+    time: data.preferredTime,
+  });
 
   const html = wrapEmail(`
     ${emailHeader()}
@@ -257,6 +264,20 @@ export async function sendClientConfirmationEmail(data: BookingEmailData): Promi
           Tu mensaje: "${data.message}"
         </p>` : ""}
 
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
+          <tr>
+            <td align="center" style="padding:8px 0;">
+              <p style="margin:0 0 12px;font-size:15px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:500;line-height:1.5;">
+                ¿Necesitas confirmación inmediata?
+              </p>
+              <a href="${whatsappUrl}"
+                 style="display:inline-block;background:#25D366;color:#FFFFFF;text-decoration:none;font-family:'DM Sans',Arial,sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:16px 32px;font-weight:600;border-radius:2px;">
+                Contacta con Cristina ahora
+              </a>
+            </td>
+          </tr>
+        </table>
+
         <p style="margin:0 0 8px;font-size:14px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
           Si tienes alguna pregunta antes de la cita, puedes responder a este email o escribirme directamente.
         </p>
@@ -269,7 +290,7 @@ export async function sendClientConfirmationEmail(data: BookingEmailData): Promi
     ${emailFooter()}
   `);
 
-  const text = `Hola ${data.firstName},\n\nHemos recibido tu solicitud de cita.\n\nServicio: ${data.serviceLabel}\nFecha preferida: ${dateFormatted}\n${data.preferredTime ? `Hora preferida: ${data.preferredTime}\n` : ""}Modalidad: ${modalityLabel}\n\nTu cita queda pendiente de confirmación: la fecha y hora indicadas son una preferencia, no una reserva confirmada. Cristina se pondrá en contacto contigo en las próximas 24–48 horas.\n\nCon cariño,\nCristina — BION`;
+  const text = `Hola ${data.firstName},\n\nHemos recibido tu solicitud de cita.\n\nServicio: ${data.serviceLabel}\nFecha preferida: ${dateFormatted}\n${data.preferredTime ? `Hora preferida: ${data.preferredTime}\n` : ""}Modalidad: ${modalityLabel}\n\nTu cita queda pendiente de confirmación: la fecha y hora indicadas son una preferencia, no una reserva confirmada. Cristina se pondrá en contacto contigo en las próximas 24–48 horas.\n\n¿Necesitas confirmación inmediata? Contacta con Cristina ahora: ${whatsappUrl}\n\nCon cariño,\nCristina — BION`;
 
   await sendEmail({ to: data.email, subject, html, text });
 }

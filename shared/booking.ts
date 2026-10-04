@@ -216,3 +216,21 @@ export function directWhatsAppReservationText(opts: {
 export function directWhatsAppReservationUrl(opts: Parameters<typeof directWhatsAppReservationText>[0]): string {
   return `https://wa.me/${CRISTINA_WHATSAPP_NUMBER}?text=${encodeURIComponent(directWhatsAppReservationText(opts))}`;
 }
+
+/** Enlace a WhatsApp de Cristina para pedir confirmación inmediata desde el email de solicitud recibida. */
+export function immediateConfirmationWhatsAppUrl(opts: {
+  firstName: string;
+  serviceLabel: string;
+  /** "YYYY-MM-DD" */
+  date: string;
+  /** "HH:MM" o etiqueta de franja heredada */
+  time?: string;
+}): string {
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(opts.date)
+    ? new Date(`${opts.date}T12:00:00Z`).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Madrid" })
+    : opts.date;
+  const when = `${d}${opts.time ? ` (${opts.time})` : ""}`;
+  const name = opts.firstName.trim().split(/\s+/)[0];
+  const text = `Hola Cristina, soy ${name || "un cliente"}. Acabo de solicitar ${opts.serviceLabel} para el ${when} y necesito confirmación inmediata. ¿Podemos confirmarlo? Gracias 🌿`;
+  return `https://wa.me/${CRISTINA_WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+}
