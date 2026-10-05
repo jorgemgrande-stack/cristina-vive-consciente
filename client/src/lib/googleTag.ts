@@ -6,7 +6,14 @@
  *   VITE_GOOGLE_ADS_ID                 p. ej. AW-123456789   (Google Ads)
  *   VITE_GA4_ID                        p. ej. G-ABCDE12345   (Google Analytics 4, opcional)
  *   VITE_GOOGLE_ADS_BOOKING_LABEL      etiqueta de la conversión "solicitud de reserva"
+ *   VITE_GTM_ID                        contenedor de Google Tag Manager (por defecto GTM-MVV9SN7V)
  * Sin ID no se descarga ningún script de Google. Con ID pero sin consentimiento, tampoco.
+ *
+ * Google Tag Manager se carga AQUÍ, tras el consentimiento, y no con el fragmento pegado en index.html:
+ * así no hay ninguna petición a Google antes de que el visitante acepte. Tampoco se usa el <noscript> del
+ * fragmento (cargaría el contenedor sin consentimiento). El contenedor nace vacío: mientras no tenga etiquetas,
+ * no mide nada. Las conversiones de Google Ads y los eventos de GA4 siguen saliendo por gtag.js; si se crean
+ * en GTM las mismas etiquetas, habría que quitar las de gtag para no contar dos veces.
  *
  * Reglas:
  * - Consent Mode v2: todo en "denied" por defecto; solo pasa a "granted" lo que el usuario acepta
@@ -22,13 +29,18 @@ const ADS_ID = (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim(
 const GA4_ID = (import.meta.env.VITE_GA4_ID as string | undefined)?.trim();
 const BOOKING_LABEL = (import.meta.env.VITE_GOOGLE_ADS_BOOKING_LABEL as string | undefined)?.trim();
 
+const GTM_ID = ((import.meta.env.VITE_GTM_ID as string | undefined)?.trim() || "GTM-MVV9SN7V");
+
 const ID_PATTERN = /^(AW|G)-[A-Z0-9]{6,}$/;
+const GTM_PATTERN = /^GTM-[A-Z0-9]{6,}$/;
+const HAS_GTM = GTM_PATTERN.test(GTM_ID);
 const IDS = [ADS_ID, GA4_ID].filter((id): id is string => !!id && ID_PATTERN.test(id));
 
 type GtagFn = (...args: unknown[]) => void;
 type GoogleWindow = Window & { dataLayer?: unknown[]; gtag?: GtagFn };
 
 let scriptInjected = false;
+let gtmInjected = false;
 
 function ensureGtag(): GtagFn {
   const w = window as GoogleWindow;
@@ -51,9 +63,9 @@ function ensureGtag(): GtagFn {
 
 function applyConsent(): void {
   const consent = getConsent();
-  if (IDS.length === 0 || !consent || (!consent.analytics && !consent.ads)) {
+  if ((IDS.length === 0 && !HAS_GTM) || !consent || (!consent.analytics && !consent.ads)) {
     // Sin ID o sin consentimiento: no se carga nada. Si ya estaba cargado, se retira el permiso.
-    if (scriptInjected) {
+    if (scriptInjected || gtmInjected) {
       ensureGtag()("consent", "update", {
         ad_storage: "denied",
         ad_user_data: "denied",
@@ -72,7 +84,16 @@ function applyConsent(): void {
     analytics_storage: consent.analytics ? "granted" : "denied",
   });
 
-  if (!scriptInjected) {
+  if (HAS_GTM && !gtmInjected) {
+    gtmInjected = true;
+    (window as GoogleWindow).dataLayer!.push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+    const g = document.createElement("script");
+    g.async = true;
+    g.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(GTM_ID)}`;
+    document.head.appendChild(g);
+  }
+
+  if (IDS.length > 0 && !scriptInjected) {
     scriptInjected = true;
     const s = document.createElement("script");
     s.async = true;
@@ -85,7 +106,7 @@ function applyConsent(): void {
 
 /** Se llama una vez al arrancar la web: aplica el consentimiento guardado y escucha cambios. */
 export function initGoogleTag(): void {
-  if (IDS.length === 0) return;
+  if (IDS.length === 0 && !HAS_GTM) return;
   applyConsent();
   window.addEventListener("cvc:consent-changed", applyConsent);
 }
