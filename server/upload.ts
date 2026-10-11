@@ -6,6 +6,10 @@ import zlib from "zlib";
 import { storagePut, getUploadDir } from "./storage";
 import { sdk } from "./_core/sdk";
 
+// Las guías (PDF) pueden pesar mucho (la del agua original ocupa 63 MB): 200 MB. Las imágenes siguen en 20 MB.
+const MAX_PDF_BYTES = 200 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 // Windows/el navegador declaran el tipo de un .pdf según el programa instalado: no siempre es application/pdf.
 const PDF_TYPE_ALIASES = [
@@ -25,7 +29,7 @@ function isPdfUpload(name: string, mimetype: string): boolean {
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+  limits: { fileSize: MAX_PDF_BYTES }, // tope global; las imágenes se limitan aparte (MAX_IMAGE_BYTES)
   fileFilter: (_req, file, cb) => {
     if (ALLOWED_IMAGE_TYPES.includes(file.mimetype) || isPdfUpload(file.originalname, file.mimetype)) {
       cb(null, true);
@@ -40,7 +44,7 @@ function receiveFile(req: any, res: any, next: any) {
   upload.single("file")(req, res, (err: any) => {
     if (!err) return next();
     if (err.code === "LIMIT_FILE_SIZE") {
-      res.status(413).json({ error: "El archivo supera el máximo de 20 MB" });
+      res.status(413).json({ error: "El archivo supera el máximo de 200 MB" });
     } else {
       res.status(400).json({ error: err.message || "Archivo no válido" });
     }
@@ -78,6 +82,10 @@ uploadRouter.post(
       }
 
       const { originalname, buffer } = req.file;
+      if (req.file.mimetype.startsWith("image/") && buffer.length > MAX_IMAGE_BYTES) {
+        res.status(413).json({ error: "La imagen supera el máximo de 20 MB" });
+        return;
+      }
       const mimetype = isPdfUpload(originalname, req.file.mimetype) ? "application/pdf" : req.file.mimetype;
       const ext = originalname.split(".").pop() ?? "bin";
       const folder = mimetype.startsWith("image/") ? "images" : "files";

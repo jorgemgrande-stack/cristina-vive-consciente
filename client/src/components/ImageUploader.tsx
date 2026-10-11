@@ -196,7 +196,7 @@ export function FileUploader(props: Omit<ImageUploaderProps, "accept" | "icon">)
       {...props}
       accept="application/pdf"
       icon="file"
-      hint={props.hint ?? "PDF hasta 20 MB"}
+      hint={props.hint ?? "PDF hasta 200 MB"}
     />
   );
 }

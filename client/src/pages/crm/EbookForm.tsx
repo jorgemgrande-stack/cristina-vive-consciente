@@ -357,7 +357,7 @@ export default function EbookForm() {
               label="Archivo PDF del ebook"
               value={form.pdfUrl}
               onChange={(url) => setForm((f) => ({ ...f, pdfUrl: url }))}
-              hint="PDF hasta 20 MB"
+              hint="PDF hasta 200 MB"
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

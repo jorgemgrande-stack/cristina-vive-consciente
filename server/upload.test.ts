@@ -86,9 +86,15 @@ describe("subida de archivos del CRM", () => {
     expect(r.json?.error).toBeTruthy();
   });
 
-  it("un archivo demasiado grande da JSON 413", async () => {
+  it("un PDF de 60 MB (como la guía original del agua) se acepta", async () => {
+    const big = Buffer.concat([PDF, Buffer.alloc(60 * 1024 * 1024, 1)]);
+    const r = await send("guia-grande.pdf", "application/pdf", big);
+    expect(r.status).toBe(200);
+  });
+
+  it("una imagen de más de 20 MB da JSON 413", async () => {
     const big = Buffer.alloc(21 * 1024 * 1024, 1);
-    const r = await send("grande.pdf", "application/pdf", big);
+    const r = await send("grande.png", "image/png", big);
     expect(r.status).toBe(413);
     expect(r.json?.error).toMatch(/20 MB/);
   });
