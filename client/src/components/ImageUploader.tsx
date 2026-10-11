@@ -49,7 +49,7 @@ export function ImageUploader({
           credentials: "include",
         });
         if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: "Error desconocido" }));
+          const err = await res.json().catch(() => ({ error: `Error ${res.status} al subir el archivo` }));
           throw new Error(err.error ?? "Error al subir");
         }
         const data = await res.json();

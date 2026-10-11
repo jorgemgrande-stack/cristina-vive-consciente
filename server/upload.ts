@@ -6,24 +6,46 @@ import zlib from "zlib";
 import { storagePut, getUploadDir } from "./storage";
 import { sdk } from "./_core/sdk";
 
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+// Windows/el navegador declaran el tipo de un .pdf según el programa instalado: no siempre es application/pdf.
+const PDF_TYPE_ALIASES = [
+  "application/pdf",
+  "application/x-pdf",
+  "application/acrobat",
+  "application/vnd.pdf",
+  "text/pdf",
+  "text/x-pdf",
+  "application/octet-stream",
+  "",
+];
+
+function isPdfUpload(name: string, mimetype: string): boolean {
+  return path.extname(name).toLowerCase() === ".pdf" && PDF_TYPE_ALIASES.includes(mimetype.toLowerCase());
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
   fileFilter: (_req, file, cb) => {
-    const allowed = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-      "application/pdf",
-    ];
-    if (allowed.includes(file.mimetype)) {
+    if (ALLOWED_IMAGE_TYPES.includes(file.mimetype) || isPdfUpload(file.originalname, file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}`));
+      cb(new Error(`Tipo de archivo no permitido: ${file.mimetype || path.extname(file.originalname) || "desconocido"}`));
     }
   },
 });
+
+// Los errores de multer (tipo, tamaño) salen como JSON legible, no como la página HTML de error de Express.
+function receiveFile(req: any, res: any, next: any) {
+  upload.single("file")(req, res, (err: any) => {
+    if (!err) return next();
+    if (err.code === "LIMIT_FILE_SIZE") {
+      res.status(413).json({ error: "El archivo supera el máximo de 20 MB" });
+    } else {
+      res.status(400).json({ error: err.message || "Archivo no válido" });
+    }
+  });
+}
 
 function randomSuffix() {
   return Math.random().toString(36).slice(2, 10);
@@ -47,7 +69,7 @@ uploadRouter.post(
       res.status(401).json({ error: "No autorizado" });
     }
   },
-  upload.single("file"),
+  receiveFile,
   async (req, res) => {
     try {
       if (!req.file) {
@@ -55,7 +77,8 @@ uploadRouter.post(
         return;
       }
 
-      const { originalname, mimetype, buffer } = req.file;
+      const { originalname, buffer } = req.file;
+      const mimetype = isPdfUpload(originalname, req.file.mimetype) ? "application/pdf" : req.file.mimetype;
       const ext = originalname.split(".").pop() ?? "bin";
       const folder = mimetype.startsWith("image/") ? "images" : "files";
       const key = `crm-uploads/${folder}/${Date.now()}-${randomSuffix()}.${ext}`;
