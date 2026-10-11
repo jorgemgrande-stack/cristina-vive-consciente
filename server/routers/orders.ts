@@ -126,6 +126,10 @@ function publicView(o: Order) {
 
 /** Genera el token, marca el pedido como entregable y envía el email con el enlace. */
 async function deliver(order: Order, ebook: OrderableEbook | null): Promise<{ emailSent: boolean; error?: string }> {
+  // Sin PDF subido no se envía ningún enlace (el cliente vería «PDF no disponible» tras pagar).
+  if (!ebook?.pdfUrl) {
+    return { emailSent: false, error: "La guía todavía no tiene PDF subido (CRM → Ebooks). Súbelo y pulsa «Enviar guía»." };
+  }
   const db = await requireDb();
   const hours = ebook?.downloadExpiryHours ?? 72;
   const downloadToken = order.downloadToken ?? nanoid(48);

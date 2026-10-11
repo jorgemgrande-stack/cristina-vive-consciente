@@ -50,14 +50,14 @@ export default function Pedidos() {
       refresh();
       if (r.alreadyPaid) toast.info("Este pedido ya estaba confirmado.");
       else if (r.emailSent) toast.success("Pago confirmado y guía enviada al cliente.");
-      else toast.warning("Pago confirmado, pero el email no se pudo enviar. Usa «Reenviar guía».");
+      else toast.warning(`Pago confirmado, pero la guía NO se envió: ${r.error ?? "error de email"}. Usa «Enviar guía» cuando esté resuelto.`);
     },
     onError: (e) => toast.error(e.message || "No se pudo confirmar el pago."),
   });
   const resend = trpc.orders.resendDelivery.useMutation({
     onSuccess: (r) => {
       refresh();
-      r.emailSent ? toast.success("Guía reenviada.") : toast.error("No se pudo enviar el email.");
+      r.emailSent ? toast.success("Guía enviada.") : toast.error(r.error ?? "No se pudo enviar el email.");
     },
     onError: (e) => toast.error(e.message),
   });
