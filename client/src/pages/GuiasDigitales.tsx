@@ -7,7 +7,7 @@
 
 import { SITE_IMAGES } from "@/lib/siteImages";
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   ArrowRight, Download, FileText, MessageCircle, ChevronLeft, ChevronRight as ChevronRightIcon
 } from "lucide-react";
@@ -15,55 +15,85 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { BIZUM_PHONE_DISPLAY } from "@shared/orders";
 
 const HERO = SITE_IMAGES.heroConsultas;
 
-// ── Botón de compra ──────────────────────────────────────────────────────────
-function BuyButton({ ebookId, label, price }: { ebookId: string; label: string; price: string }) {
-  const [loading, setLoading] = useState(false);
+// ── Botón de compra (pago por Bizum, confirmado por Cristina) ────────────────
+function BuyButton({ ebookId, label, price, title }: { ebookId: string; label: string; price: string; title: string }) {
+  const [open, setOpen] = useState(false);
+  const [, navigate] = useLocation();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
 
-  const createCheckout = trpc.ebooks.createCheckout.useMutation({
-    onSuccess: (data) => {
-      if (data.checkoutUrl) {
-        window.open(data.checkoutUrl, "_blank");
-        toast.success("Redirigiendo a la pasarela de pago seguro...");
-      }
-      setLoading(false);
+  const createOrder = trpc.orders.create.useMutation({
+    onSuccess: (order) => {
+      setOpen(false);
+      navigate(`/pedido/${order.reference}`);
     },
     onError: (err) => {
-      if (err.message.includes("no está configurado") || err.message.includes("PRECONDITION_FAILED")) {
-        toast.info("El sistema de pago estará disponible próximamente. Escíbeme para adquirir la guía.");
-      } else {
-        toast.error("Ha ocurrido un error. Por favor, inténtalo de nuevo.");
-      }
-      setLoading(false);
+      toast.error(err.message || "No se ha podido crear el pedido. Inténtalo de nuevo o escribe a Cristina.");
     },
   });
 
-  const handleBuy = () => {
-    setLoading(true);
-    createCheckout.mutate({ ebookId: ebookId as "agua" | "aceites", origin: window.location.origin });
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createOrder.mutate({
+      productSlug: ebookId,
+      name: name.trim(),
+      email: email.trim(),
+      phone: phone.trim() || undefined,
+    });
   };
 
   return (
-    <button
-      onClick={handleBuy}
-      disabled={loading}
-      className="w-full py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body flex items-center justify-center gap-2 disabled:opacity-60"
-      style={{ borderRadius: 0, letterSpacing: "0.1em" }}
-    >
-      {loading ? (
-        <>
-          <span className="animate-spin inline-block w-3 h-3 border border-white border-t-transparent rounded-full" />
-          Procesando...
-        </>
-      ) : (
-        <>
-          <Download size={13} />
-          {label} — {price}
-        </>
-      )}
-    </button>
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="w-full py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body flex items-center justify-center gap-2"
+        style={{ borderRadius: 0, letterSpacing: "0.1em" }}
+      >
+        <Download size={13} />
+        {label} — {price}
+      </button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display" style={{ fontWeight: 400 }}>{title}</DialogTitle>
+            <DialogDescription>
+              Pagas por Bizum al {BIZUM_PHONE_DISPLAY}. Cuando Cristina lo confirme, te llega la guía por email.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={submit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="order-name">Nombre</Label>
+              <Input id="order-name" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={120} autoComplete="name" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="order-email">Email (aquí recibirás la guía)</Label>
+              <Input id="order-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="order-phone">Teléfono (opcional)</Label>
+              <Input id="order-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" />
+            </div>
+            <button
+              type="submit"
+              disabled={createOrder.isPending}
+              className="w-full py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body flex items-center justify-center gap-2 disabled:opacity-60"
+              style={{ borderRadius: 0, letterSpacing: "0.1em" }}
+            >
+              {createOrder.isPending ? "Creando pedido..." : `Continuar y pagar ${price}`}
+            </button>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -250,6 +280,7 @@ function EbookCard({ ebook }: { ebook: EbookData }) {
               ebookId={ebook.slug}
               label="Obtener guía"
               price={`${parseFloat(ebook.price).toFixed(0)}€`}
+              title={ebook.title}
             />
           </div>
         </div>

@@ -327,6 +327,59 @@ export async function notifyAdminNewPurchase(data: WhatsAppPurchaseData) {
 }
 
 
+// ─── PEDIDOS (guías pagadas por Bizum) ───────────────────────────────────────
+
+const CRM_PEDIDOS_URL = "https://cristinaviveconsciente.es/crm/pedidos";
+
+export interface WhatsAppOrderData {
+  reference: string;
+  productTitle: string;
+  /** Importe ya formateado ("12 €"). */
+  amount: string;
+}
+
+/**
+ * Textos mínimos para CallMeBot (tercero no oficial): sin nombre, email ni teléfono del cliente.
+ * La referencia basta para casar el Bizum (va en su concepto) y confirmarlo en el CRM.
+ */
+export function generateCallMeBotOrderText(data: WhatsAppOrderData, kind: "new" | "claimed" = "new"): string {
+  const head = kind === "claimed" ? "💚 *El cliente dice que ya hizo el Bizum*" : "🛒 *Nuevo pedido de guía (Bizum)*";
+  return [
+    head,
+    `${data.productTitle} · ${data.amount}`,
+    `Referencia: ${data.reference}`,
+    "",
+    kind === "claimed"
+      ? `Comprueba el Bizum en tu banco y confírmalo en: ${CRM_PEDIDOS_URL}`
+      : `Cuando veas el Bizum en tu banco (con esa referencia en el concepto), confírmalo en: ${CRM_PEDIDOS_URL}`,
+  ].join("\n");
+}
+
+/**
+ * Avisa a Cristina de un pedido nuevo (o de que el cliente dice haber pagado).
+ * Con CallMeBot: envío automático (lanza si falla, para que el llamador lo registre). Sin él: deja el aviso
+ * pendiente con enlace wa.me en automation_logs, como el resto de eventos.
+ */
+export async function notifyAdminNewOrder(data: WhatsAppOrderData, kind: "new" | "claimed" = "new") {
+  if (isCallMeBotConfigured() && !(process.env.WHATSAPP_API_TOKEN && process.env.WHATSAPP_PHONE_ID)) {
+    await sendCallMeBotMessage(generateCallMeBotOrderText(data, kind));
+    const db = await getDb();
+    await db
+      ?.insert(automationLogs)
+      .values({
+        event: "whatsapp_purchase",
+        channel: "whatsapp",
+        recipientPhone: WHATSAPP_ADMIN_NUMBER,
+        status: "sent",
+        subject: `Aviso de pedido ${data.reference} (${kind === "claimed" ? "pago declarado" : "nuevo"})`.substring(0, 300),
+        sentAt: Date.now(),
+      })
+      .catch(() => {});
+    return { sent: true, waUrl: "", note: "Enviado con CallMeBot" };
+  }
+  return notifyAdminWhatsApp("purchase", generateCallMeBotOrderText(data, kind), `${data.reference} (${data.productTitle})`);
+}
+
 // ─── AVISO AL CLIENTE: cita confirmada (WhatsApp Business, plantilla aprobada) ──
 /**
  * Un mensaje que inicia la empresa (el cliente no ha escrito en las últimas 24 h) SOLO puede enviarse con una

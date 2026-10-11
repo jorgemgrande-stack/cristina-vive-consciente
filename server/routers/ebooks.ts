@@ -22,6 +22,7 @@ import { notifyOwner } from "../_core/notification";
 import { sendEbookDeliveryEmail } from "../email";
 import { findClientByEmail, updateClientTag } from "../db";
 import { notifyAdminNewPurchase } from "../whatsapp";
+import { findPaidOrderByDownloadToken } from "./orders";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? "";
 
@@ -149,6 +150,17 @@ export const ebooksRouter = router({
 
       const purchase = rows[0];
       if (!purchase) {
+        // Pedidos pagados por Bizum (tabla orders)
+        const paid = await findPaidOrderByDownloadToken(input.token);
+        if (paid?.pdfUrl) {
+          return { pdfUrl: paid.pdfUrl, title: paid.order.productTitle, expiresAt: paid.order.downloadExpiresAt ?? 0 };
+        }
+        if (paid) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "El archivo PDF no está disponible en este momento. Contacta con Cristina.",
+          });
+        }
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Enlace de descarga no válido o expirado. Contacta con Cristina si necesitas ayuda.",

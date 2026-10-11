@@ -30,6 +30,8 @@ import BlogCategorias from "./pages/crm/BlogCategorias";
 import BlogComentarios from "./pages/crm/BlogComentarios";
 import EbookGracias from "./pages/EbookGracias";
 import EbookDescarga from "./pages/EbookDescarga";
+import Pedido from "./pages/Pedido";
+import CRMPedidos from "./pages/crm/Pedidos";
 
 // Water System Pages
 import SistemaAguaDetalle from "./pages/SistemaAguaDetalle";
@@ -102,6 +104,7 @@ function Router() {
       {/* ── Ebooks ── */}
       <Route path="/ebooks/gracias" component={EbookGracias} />
       <Route path="/ebooks/descarga" component={EbookDescarga} />
+      <Route path="/pedido/:reference" component={Pedido} />
 
       {/* ── Admin Login ── */}
       <Route path="/admin/login" component={AdminLogin} />
@@ -144,6 +147,9 @@ function Router() {
       <Route path="/crm/servicios" component={Servicios} />
       <Route path="/crm/servicios/nuevo" component={ServicioForm} />
       <Route path="/crm/servicios/:id/editar" component={ServicioForm} />
+
+      {/* Pedidos (Bizum) CRM */}
+      <Route path="/crm/pedidos" component={CRMPedidos} />
 
       {/* Ebooks CRM */}
       <Route path="/crm/ebooks" component={CRMEbooks} />

@@ -32,6 +32,7 @@ import {
   PenSquare,
   Images,
   List,
+  ShoppingBag,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -45,6 +46,7 @@ const NAV_ITEMS = [
   { href: "/crm/afiliados", label: "Afiliados", icon: Star },
   { href: "/crm/categorias", label: "Categorías", icon: Tag },
   { href: "/crm/servicios", label: "Servicios", icon: Stethoscope },
+  { href: "/crm/pedidos", label: "Pedidos", icon: ShoppingBag },
   { href: "/crm/ebooks", label: "Ebooks", icon: BookOpen },
   { href: "/crm/automatizaciones", label: "Automatizaciones", icon: Zap },
   { href: "/crm/galeria", label: "Galería", icon: Images },
@@ -92,6 +94,10 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
   const [blogExpanded, setBlogExpanded] = useState(isBlogSection);
 
   const { data: user, isLoading } = trpc.auth.me.useQuery();
+  const { data: pendingOrders } = trpc.orders.pendingCount.useQuery(undefined, {
+    enabled: user?.role === "admin",
+    refetchInterval: 60_000,
+  });
 
   async function handleLogout() {
     await fetch("/api/admin/logout", { method: "POST", credentials: "include" });
@@ -169,7 +175,12 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
               >
                 <Icon size={16} className={isActive ? "text-white" : "text-white/50 group-hover:text-white/80"} />
                 {label}
-                {isActive && <ChevronRight size={12} className="ml-auto" />}
+                {href === "/crm/pedidos" && !!pendingOrders?.count && (
+                  <span className="ml-auto bg-amber-500 text-white text-[10px] font-semibold px-1.5 py-0.5 leading-none">
+                    {pendingOrders.count}
+                  </span>
+                )}
+                {isActive && !(href === "/crm/pedidos" && pendingOrders?.count) && <ChevronRight size={12} className="ml-auto" />}
               </Link>
             );
           })}

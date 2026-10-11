@@ -13,6 +13,7 @@
 
 import nodemailer from "nodemailer";
 import { immediateConfirmationWhatsAppUrl } from "../shared/booking";
+import { BIZUM_PHONE_DISPLAY, bizumAmount, formatEuros } from "../shared/orders";
 
 const SMTP_HOST = process.env.SMTP_HOST ?? "";
 const SMTP_PORT = parseInt(process.env.SMTP_PORT ?? "25", 10);
@@ -423,6 +424,96 @@ export async function sendEbookDeliveryEmail(data: EbookDeliveryEmailData): Prom
   const text = `${firstName}, tu ebook está listo!\n\nGracias por comprar "${data.ebookTitle}".\n\nDescarga tu ebook aquí: ${downloadUrl}\n\nEste enlace es válido hasta el ${expiryDate}.\n${data.includesSession ? "\nTu compra incluye una sesión de 30 minutos con Cristina. Responde a este email para coordinarla.\n" : ""}\nCon cariño,\nCristina — BION`;
 
   await sendEmail({ to: data.customerEmail, subject, html, text });
+}
+
+// ─── PEDIDOS (guías pagadas por Bizum) ───────────────────────────────────────
+
+export interface OrderEmailData {
+  reference: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string | null;
+  productTitle: string;
+  amountCents: number;
+}
+
+const escHtml = (v: string) =>
+  v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/** Al cliente: cómo pagar por Bizum (importe, teléfono y referencia en el concepto). */
+export async function sendOrderReceivedEmail(data: OrderEmailData): Promise<void> {
+  const firstName = escHtml(data.customerName.split(" ")[0] || "Hola");
+  const url = `${BASE_URL}/pedido/${data.reference}`;
+  const amount = formatEuros(data.amountCents);
+  const row = (k: string, v: string) =>
+    `<tr><td style="padding:6px 0;font-size:13px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;width:120px;">${k}</td><td style="padding:6px 0;font-size:14px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:500;">${v}</td></tr>`;
+  const html = wrapEmail(`
+    ${emailHeader()}
+    <tr>
+      <td style="padding:40px 40px 32px;">
+        <h1 style="margin:0 0 8px;font-size:24px;font-weight:400;color:#1A1208;font-family:'Georgia',serif;">${firstName}, ya tienes tu pedido reservado 🌿</h1>
+        <p style="margin:0 0 24px;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
+          Para recibir <strong style="color:#1A1208;">${escHtml(data.productTitle)}</strong>, haz un Bizum con estos datos. En cuanto Cristina lo compruebe, te llegará el enlace de descarga a este mismo email.
+        </p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F2EC;border-left:3px solid #8B7355;margin-bottom:24px;">
+          <tr><td style="padding:16px 24px;"><table width="100%" cellpadding="0" cellspacing="0">
+            ${row("Importe", escHtml(amount))}
+            ${row("Bizum al", escHtml(BIZUM_PHONE_DISPLAY) + " (Cristina)")}
+            ${row("Concepto", escHtml(data.reference))}
+          </table></td></tr>
+        </table>
+        <p style="margin:0 0 8px;font-size:13px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
+          Es importante que pongas la referencia <strong>${escHtml(data.reference)}</strong> en el concepto para que Cristina identifique tu pago.
+        </p>
+        ${ctaButton(url, "Ver mi pedido")}
+        <p style="margin:0;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
+          Cualquier duda, responde a este email.<br>Con cariño,<br><strong style="color:#3A5A3A;font-weight:500;">Cristina</strong>
+        </p>
+      </td>
+    </tr>
+    ${emailFooter()}
+  `);
+  const text = `Hola ${data.customerName.split(" ")[0]}, tu pedido está reservado.
+
+Producto: ${data.productTitle}
+Haz un Bizum de ${amount} (${bizumAmount(data.amountCents)}) al ${BIZUM_PHONE_DISPLAY} con el concepto: ${data.reference}
+
+Cuando Cristina lo compruebe recibirás el enlace de descarga en este email.
+Ver pedido: ${url}
+
+Con cariño,
+Cristina — BION`;
+  await sendEmail({ to: data.customerEmail, subject: `Tu pedido ${data.reference} — datos para el Bizum`, html, text });
+}
+
+/** A Cristina: pedido nuevo pendiente de confirmar (con enlace al CRM). */
+export async function sendOrderAdminEmail(data: OrderEmailData): Promise<void> {
+  if (!ADMIN_EMAIL) {
+    console.log("[Email DEV] Order admin notification (no ADMIN_EMAIL configured)");
+    return;
+  }
+  const crmUrl = `${BASE_URL}/crm/pedidos`;
+  const html = wrapEmail(`
+    ${emailHeader()}
+    ${adminBadge("Nuevo pedido — pendiente de Bizum")}
+    <tr>
+      <td style="padding:32px 40px;font-family:'DM Sans',Arial,sans-serif;font-size:14px;color:#1A1208;line-height:1.7;">
+        <p style="margin:0 0 12px;"><strong>${escHtml(data.productTitle)}</strong> · ${escHtml(formatEuros(data.amountCents))}</p>
+        <p style="margin:0 0 4px;">Referencia (concepto del Bizum): <strong>${escHtml(data.reference)}</strong></p>
+        <p style="margin:0 0 4px;">Cliente: ${escHtml(data.customerName)} · <a href="mailto:${escHtml(data.customerEmail)}" style="color:#3A5A3A;">${escHtml(data.customerEmail)}</a>${data.customerPhone ? ` · ${escHtml(data.customerPhone)}` : ""}</p>
+        <p style="margin:16px 0 0;font-size:13px;color:#7A6E5E;">Cuando veas el Bizum en tu banco, confírmalo en el CRM y el cliente recibirá la guía automáticamente.</p>
+        ${ctaButton(crmUrl, "Abrir pedidos")}
+      </td>
+    </tr>
+    ${emailFooter()}
+  `);
+  const text = `Nuevo pedido pendiente de Bizum
+${data.productTitle} · ${formatEuros(data.amountCents)}
+Referencia: ${data.reference}
+Cliente: ${data.customerName} (${data.customerEmail}${data.customerPhone ? `, ${data.customerPhone}` : ""})
+
+Confírmalo en: ${crmUrl}`;
+  await sendEmail({ to: ADMIN_EMAIL, subject: `Nuevo pedido ${data.reference} — ${data.productTitle}`, html, text });
 }
 
 // ─── EMAIL 4: BIENVENIDA A NUEVO LEAD ────────────────────────────────────────

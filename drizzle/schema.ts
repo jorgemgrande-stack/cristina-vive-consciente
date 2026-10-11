@@ -692,3 +692,37 @@ export const heroImages = mysqlTable("hero_images", {
 
 export type HeroImage = typeof heroImages.$inferSelect;
 export type InsertHeroImage = typeof heroImages.$inferInsert;
+
+// ─── PEDIDOS (guías digitales pagadas por Bizum) ──────────────────────────────
+export const orders = mysqlTable("orders", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Referencia corta que el cliente pone en el concepto del Bizum (p. ej. GUIA-K7P3Q9). */
+  reference: varchar("reference", { length: 20 }).notNull().unique(),
+  productType: varchar("productType", { length: 20 }).default("ebook").notNull(),
+  productSlug: varchar("productSlug", { length: 100 }).notNull(),
+  productTitle: varchar("productTitle", { length: 200 }).notNull(),
+  amountCents: int("amountCents").notNull(),
+  currency: varchar("currency", { length: 3 }).default("EUR").notNull(),
+  customerName: varchar("customerName", { length: 200 }).notNull(),
+  customerEmail: varchar("customerEmail", { length: 320 }).notNull(),
+  customerPhone: varchar("customerPhone", { length: 30 }),
+  paymentMethod: varchar("paymentMethod", { length: 20 }).default("bizum").notNull(),
+  status: mysqlEnum("status", ["pending", "paid", "cancelled"]).default("pending").notNull(),
+  /** El cliente ha pulsado «Ya he hecho el Bizum» (no es una confirmación: solo la comprueba Cristina). */
+  customerClaimedAt: bigint("customerClaimedAt", { mode: "number" }),
+  paidAt: bigint("paidAt", { mode: "number" }),
+  paidByUserId: int("paidByUserId"),
+  cancelledAt: bigint("cancelledAt", { mode: "number" }),
+  /** Solo existe una vez confirmado el pago. */
+  downloadToken: varchar("downloadToken", { length: 100 }).unique(),
+  downloadExpiresAt: bigint("downloadExpiresAt", { mode: "number" }),
+  downloadCount: int("downloadCount").default(0).notNull(),
+  deliveryEmailSentAt: bigint("deliveryEmailSentAt", { mode: "number" }),
+  includesSession: int("includesSession").default(0).notNull(),
+  clientId: int("clientId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Order = typeof orders.$inferSelect;
+export type InsertOrder = typeof orders.$inferInsert;
