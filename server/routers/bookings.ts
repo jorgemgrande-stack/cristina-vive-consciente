@@ -45,6 +45,7 @@ import {
   HOME_LABEL_SUFFIX,
   formatHomeAddress,
   getHomePrice,
+  HOME_BOOKING_VIA_FORM,
   isBookableTime,
   slotsForDate,
   validateHomeAddress,
@@ -144,6 +145,12 @@ export const bookingsRouter = router({
 
       // 1b. Servicio a domicilio: solo masajes con tarifa a domicilio configurada y con dirección
       const isHome = input.serviceLocation === "domicilio";
+      if (isHome && !HOME_BOOKING_VIA_FORM) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "El masaje a domicilio se reserva por WhatsApp con Cristina; este formulario solo reserva sesiones en consulta",
+        });
+      }
       const homePrice = isHome ? getHomePrice(service) : null;
       if (isHome) {
         if (!isMassage || homePrice === null) {

@@ -13,6 +13,7 @@ import {
   CENTER_MAPS_URL,
   CRISTINA_WHATSAPP_NUMBER,
   HOME_SERVICE_ON_REQUEST,
+  HOME_SERVICE_VIA_WHATSAPP,
   homeServiceWhatsAppMessage,
   OPENING_HOURS_TEXT,
   PAYMENT_NOTE,
@@ -100,7 +101,7 @@ export default function MasajeDetalle() {
   const priceText = masaje.price ? formatEuros(masaje.price) : null;
   const homeText = homePrice !== null ? formatEuros(homePrice) : null;
   // Sin tarifa a domicilio publicada: se ofrece igualmente, pero se acuerda por WhatsApp (el formulario no lo reserva)
-  const homeOnRequestUrl = `https://wa.me/${CRISTINA_WHATSAPP_NUMBER}?text=${encodeURIComponent(homeServiceWhatsAppMessage(masaje.name))}`;
+  const homeOnRequestUrl = `https://wa.me/${CRISTINA_WHATSAPP_NUMBER}?text=${encodeURIComponent(homeServiceWhatsAppMessage(masaje.name, homePrice))}`;
   const trackHomeRequestClick = () =>
     trackBookingEvent(BOOKING_EVENTS.WHATSAPP_CONTACT_CLICKED, { placement: "home_service", service_slug: masaje.slug });
 
@@ -120,7 +121,7 @@ export default function MasajeDetalle() {
     ...(includes.length > 0 ? [{ q: "¿Qué incluye la sesión?", a: `${includes.join(". ")}.` }] : []),
     {
       q: "¿Cómo reservo y cuándo se confirma?",
-      a: "Envías una solicitud con la fecha y la hora que prefieres. Cristina la revisa y te escribe por email y por teléfono o WhatsApp en las próximas 24–48 horas para confirmar la hora o proponerte otra. Hasta entonces la cita no está confirmada.",
+      a: "Envías una solicitud con la fecha y la hora que prefieres. Cristina la revisa y te escribe por email y por teléfono o WhatsApp en las próximas 24–48 horas para confirmar la hora o proponerte otra. Hasta entonces la cita no está confirmada. El formulario es para sesiones en consulta: si lo quieres a domicilio, la reserva se acuerda con Cristina por WhatsApp.",
     },
     { q: "¿Cuándo atiende Cristina?", a: `${OPENING_HOURS_TEXT}.` },
     { q: "¿Cuándo y cómo se paga?", a: PAYMENT_NOTE },
@@ -229,28 +230,26 @@ export default function MasajeDetalle() {
                     </li>
                   </ul>
 
-                  {!homeText && (
-                    <p className="mb-6 -mt-2 text-[12px] leading-relaxed text-[oklch(0.38_0.02_55)] font-body" style={{ fontWeight: 300 }}>
-                      {HOME_SERVICE_ON_REQUEST}{" "}
-                      <a
-                        href={homeOnRequestUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={trackHomeRequestClick}
-                        className="underline text-[oklch(0.40_0.07_148)]"
-                        style={{ fontWeight: 500 }}
-                      >
-                        Consultar por WhatsApp
-                      </a>
-                    </p>
-                  )}
+                  <p className="mb-6 -mt-2 text-[12px] leading-relaxed text-[oklch(0.38_0.02_55)] font-body" style={{ fontWeight: 300 }}>
+                    {homeText ? HOME_SERVICE_VIA_WHATSAPP : HOME_SERVICE_ON_REQUEST}{" "}
+                    <a
+                      href={homeOnRequestUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={trackHomeRequestClick}
+                      className="underline text-[oklch(0.40_0.07_148)]"
+                      style={{ fontWeight: 500 }}
+                    >
+                      {homeText ? "Reservar a domicilio por WhatsApp" : "Consultar por WhatsApp"}
+                    </a>
+                  </p>
 
                   <button
                     onClick={() => setBookingOpen(true)}
                     className="w-full inline-flex items-center justify-center gap-2 px-5 py-4 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body"
                     style={{ borderRadius: 0, letterSpacing: "0.1em" }}
                   >
-                    Reservar ahora
+                    Reservar en consulta
                     <ArrowRight size={13} />
                   </button>
 
@@ -393,7 +392,7 @@ export default function MasajeDetalle() {
                       <div>
                         <p className="text-[oklch(0.22_0.02_55)] text-sm font-body mb-1" style={{ fontWeight: 500 }}>Dónde y cuándo</p>
                         <p className="text-[oklch(0.42_0.02_55)] text-xs font-body leading-relaxed" style={{ fontWeight: 300 }}>
-                          Navas de Riofrío (Segovia){homeText ? " · también a domicilio" : " · a domicilio, con tarifa a consultar"}
+                          Navas de Riofrío (Segovia){homeText ? ` · a domicilio: ${homeText} (reserva por WhatsApp)` : " · a domicilio, con tarifa a consultar"}
                           <br />
                           {OPENING_HOURS_TEXT}.
                         </p>
@@ -409,7 +408,7 @@ export default function MasajeDetalle() {
                     style={{ borderRadius: 0, letterSpacing: "0.1em" }}
                   >
                     <CalendarCheck size={14} />
-                    Solicitar cita
+                    Solicitar cita en consulta
                   </button>
                   <Link
                     href="/masajes"
@@ -435,7 +434,7 @@ export default function MasajeDetalle() {
             className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium font-body"
             style={{ borderRadius: 0, letterSpacing: "0.1em" }}
           >
-            Reservar
+            Reservar en consulta
             <ArrowRight size={13} />
           </button>
         </div>

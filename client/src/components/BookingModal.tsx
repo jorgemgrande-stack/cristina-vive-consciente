@@ -22,6 +22,10 @@ import {
   PAYMENT_NOTE,
   formatHomeAddress,
   getHomePrice,
+  CRISTINA_WHATSAPP_NUMBER,
+  HOME_BOOKING_VIA_FORM,
+  HOME_SERVICE_VIA_WHATSAPP,
+  homeServiceWhatsAppMessage,
   validateHomeAddress,
   bookableTimes,
   type ServiceLocation,
@@ -132,9 +136,13 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
   const selectedService = dbServices.find((s) => s.slug === form.serviceType);
   const isMassage = selectedService?.type === "masaje" || form.serviceType === "masaje";
   const selectedOption = serviceOptions.find((o) => o.value === form.serviceType);
-  // Servicio a domicilio: solo si el servicio tiene tarifa a domicilio configurada
+  // Tarifa a domicilio (solo informativa): el domicilio se reserva por WhatsApp, no con este formulario
   const homePrice = isMassage ? getHomePrice(selectedService) : null;
-  const isHome = homePrice !== null && form.serviceLocation === "domicilio";
+  const homeInForm = HOME_BOOKING_VIA_FORM && homePrice !== null;
+  const isHome = homeInForm && form.serviceLocation === "domicilio";
+  const homeWhatsAppUrl = `https://wa.me/${CRISTINA_WHATSAPP_NUMBER}?text=${encodeURIComponent(
+    homeServiceWhatsAppMessage(selectedService?.name ?? "masaje", homePrice),
+  )}`;
   const inPlacePrice = selectedService?.price ?? null;
   const shownPrice = isHome ? `${homePrice} €` : formatPrice(inPlacePrice);
   const timeOptions = bookableTimes(form.preferredDate, selectedService?.durationMinutes);
@@ -421,7 +429,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                     ...prev,
                     serviceType: slug,
                     modality: modalityFor(slug, prev.modality),
-                    serviceLocation: getHomePrice(dbServices.find((s) => s.slug === slug)) === null ? "consulta" : prev.serviceLocation,
+                    serviceLocation: !HOME_BOOKING_VIA_FORM || getHomePrice(dbServices.find((s) => s.slug === slug)) === null ? "consulta" : prev.serviceLocation,
                     preferredTime: isMassageSlug(slug) ? "" : prev.preferredTime,
                   }));
                 }}
@@ -442,7 +450,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                     {selectedService.durationLabel ?? `${selectedService.durationMinutes} min`}
                     {" · "}
                     {formatPrice(selectedService.price)} en consulta
-                    {homePrice !== null && <> · {homePrice} € a domicilio</>}
+                    {homePrice !== null && <> · {homePrice} € a domicilio (por WhatsApp)</>}
                   </p>
                   <p className="flex items-center gap-1.5">
                     <MapPin size={11} className="text-[oklch(0.52_0.08_148)]" />
@@ -525,12 +533,12 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                 <div className="grid grid-cols-1 gap-2">
                   {([
                     { v: "consulta" as const, title: `En consulta — ${MASSAGE_LOCATION}`, price: formatPrice(inPlacePrice) },
-                    ...(homePrice !== null ? [{ v: "domicilio" as const, title: "A domicilio", price: `${homePrice} €` }] : []),
+                    ...(homeInForm ? [{ v: "domicilio" as const, title: "A domicilio", price: `${homePrice} €` }] : []),
                   ]).map((o) => (
                     <label
                       key={o.v}
                       className={`flex items-center justify-between gap-3 px-3 py-2.5 border cursor-pointer text-xs font-body text-[oklch(0.38_0.02_55)] ${
-                        form.serviceLocation === o.v || (homePrice === null && o.v === "consulta")
+                        form.serviceLocation === o.v || (!homeInForm && o.v === "consulta")
                           ? "border-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]/5"
                           : "border-[oklch(0.88_0.015_75)] bg-white"
                       }`}
@@ -541,7 +549,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                           type="radio"
                           name="serviceLocation"
                           value={o.v}
-                          checked={form.serviceLocation === o.v || (homePrice === null && o.v === "consulta")}
+                          checked={form.serviceLocation === o.v || (!homeInForm && o.v === "consulta")}
                           onChange={() => setForm((prev) => ({ ...prev, serviceLocation: o.v }))}
                           className="sr-only"
                         />
@@ -552,9 +560,30 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                     </label>
                   ))}
                 </div>
-                {homePrice === null && (
+                {!homeInForm && (
                   <p className="mt-2 text-[0.7rem] font-body text-[oklch(0.52_0.02_60)] leading-relaxed" style={{ fontWeight: 300 }}>
-                    ¿Lo quieres a domicilio? La tarifa y la disponibilidad se consultan con Cristina por WhatsApp: este formulario solo reserva sesiones en consulta.
+                    {homePrice === null ? (
+                      "¿Lo quieres a domicilio? La tarifa y la disponibilidad se consultan con Cristina por WhatsApp: este formulario solo reserva sesiones en consulta."
+                    ) : (
+                      <>
+                        <span style={{ fontWeight: 500 }}>A domicilio: {homePrice} €.</span> {HOME_SERVICE_VIA_WHATSAPP}{" "}
+                        <a
+                          href={homeWhatsAppUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() =>
+                            trackBookingEvent(BOOKING_EVENTS.WHATSAPP_CONTACT_CLICKED, {
+                              placement: "home_service",
+                              service_slug: form.serviceType,
+                            })
+                          }
+                          className="underline text-[oklch(0.40_0.07_148)]"
+                          style={{ fontWeight: 500 }}
+                        >
+                          Reservar a domicilio por WhatsApp
+                        </a>
+                      </>
+                    )}
                   </p>
                 )}
                 {isHome && (

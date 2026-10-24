@@ -10,7 +10,7 @@ const MASSAGE_RELAX = {
   name: "Masaje Relajante",
   type: "masaje",
   price: "70.00",
-  homePrice: "100.00",
+  homePrice: "120.00",
   durationMinutes: 45,
   durationLabel: "45 min",
   modality: "presencial",
@@ -22,7 +22,7 @@ const MASSAGE_THERAPEUTIC = {
   name: "Masaje Terapéutico 60 min",
   type: "masaje",
   price: "80.00",
-  homePrice: "110.00",
+  homePrice: "120.00",
   durationMinutes: 60,
   durationLabel: "60 min",
   modality: "ambos",
@@ -353,58 +353,35 @@ describe("bookings.request — horario de Cristina", () => {
   });
 });
 
-describe("bookings.request — servicio a domicilio", () => {
+describe("bookings.request — servicio a domicilio (se reserva por WhatsApp, no con el formulario)", () => {
   const home = (over: Record<string, unknown> = {}) =>
     baseInput({ serviceLocation: "domicilio", serviceStreet: "Calle Mayor 5, 2ºB", servicePostalCode: "40100", serviceCity: "Segovia", ...over });
 
-  it("Masaje Relajante a domicilio: 100 €, etiqueta y dirección en la cita; modalidad sigue siendo presencial", async () => {
-    await publicCaller().request(home());
-    const created = (db.createAppointment.mock.calls as any[][])[0][0];
-    expect(created.serviceLabel).toBe("Masaje Relajante — 45 min · a domicilio");
-    expect(created.price).toBe("100.00");
-    expect(created.modality).toBe("presencial");
-    expect(created.internalNotes).toContain("Servicio a domicilio (100 €)");
-    expect(created.internalNotes).toContain("Calle Mayor 5, 2ºB, 40100 Segovia");
+  it("rechaza el domicilio por formulario aunque haya tarifa (120 €) y no crea nada", async () => {
+    for (const serviceType of [MASSAGE_RELAX.slug, MASSAGE_THERAPEUTIC.slug]) {
+      await expect(publicCaller().request(home({ serviceType }))).rejects.toThrow(/a domicilio se reserva por WhatsApp/i);
+    }
+    expect(db.createAppointment).not.toHaveBeenCalled();
+    expect(db.createClient).not.toHaveBeenCalled();
   });
 
-  it("Masaje Terapéutico a domicilio: 110 €", async () => {
-    await publicCaller().request(home({ serviceType: MASSAGE_THERAPEUTIC.slug }));
-    const created = (db.createAppointment.mock.calls as any[][])[0][0];
-    expect(created.price).toBe("110.00");
-    expect(created.serviceLabel).toBe("Masaje Terapéutico 60 min · a domicilio");
-  });
-
-  it("en consulta conserva el precio de siempre (70 € / 80 €)", async () => {
-    await publicCaller().request(baseInput());
-    expect((db.createAppointment.mock.calls as any[][])[0][0].price).toBe("70.00");
-  });
-
-  it("exige la dirección postal completa: calle y número, código postal y localidad", async () => {
-    await expect(publicCaller().request(home({ serviceStreet: "" }))).rejects.toThrow(/dirección.*calle/i);
-    await expect(publicCaller().request(home({ serviceStreet: "abc" }))).rejects.toThrow(/dirección.*calle/i);
-    await expect(publicCaller().request(home({ servicePostalCode: "" }))).rejects.toThrow(/código postal/i);
-    await expect(publicCaller().request(home({ servicePostalCode: "4010" }))).rejects.toThrow(/código postal/i);
-    await expect(publicCaller().request(home({ servicePostalCode: "99999" }))).rejects.toThrow(/código postal/i);
-    await expect(publicCaller().request(home({ serviceCity: "" }))).rejects.toThrow(/localidad/i);
-    // un cliente antiguo que solo envía un texto libre no puede saltarse la validación
+  it("tampoco lo acepta en servicios sin tarifa ni con una dirección en texto libre", async () => {
+    await expect(publicCaller().request(home({ serviceType: CONSULTA.slug, modality: "zoom" }))).rejects.toThrow(/WhatsApp/i);
     await expect(
       publicCaller().request(baseInput({ serviceLocation: "domicilio", serviceAddress: "Calle Mayor 5, Segovia" } as any)),
-    ).rejects.toThrow(/dirección/i);
+    ).rejects.toThrow(/WhatsApp/i);
     expect(db.createAppointment).not.toHaveBeenCalled();
   });
 
-  it("no ofrece domicilio en servicios sin tarifa a domicilio (consultas, Terapéutico 90 min)", async () => {
-    db.getServiceBySlug.mockImplementation(async (slug: string) =>
-      slug === "masaje_terapeutico_90_min" ? { ...MASSAGE_THERAPEUTIC, slug, name: "Masaje Terapéutico 90 min", price: "120.00", homePrice: null, durationMinutes: 90, durationLabel: "90 min" } : SERVICES[slug] ?? null);
-    await expect(publicCaller().request(home({ serviceType: "masaje_terapeutico_90_min" }))).rejects.toThrow(/no se ofrece a domicilio/i);
-    await expect(publicCaller().request(home({ serviceType: CONSULTA.slug, modality: "zoom" }))).rejects.toThrow(/no se ofrece a domicilio/i);
-    expect(db.createAppointment).not.toHaveBeenCalled();
-  });
-
-  it("consulta y domicilio del mismo día son solicitudes distintas (no se marcan como duplicado)", async () => {
-    await publicCaller().request(home());
-    const labels = (db.findOpenDuplicateAppointment.mock.calls as any[][]).map((c) => c[1]);
-    expect(labels).toEqual(["Masaje Relajante — 45 min · a domicilio"]);
+  it("en consulta conserva el precio de siempre (70 € / 80 €) y no menciona el domicilio", async () => {
+    await publicCaller().request(baseInput());
+    const relax = (db.createAppointment.mock.calls as any[][])[0][0];
+    expect(relax.price).toBe("70.00");
+    expect(relax.serviceLabel).not.toMatch(/domicilio/);
+    db.createAppointment.mockClear();
+    db.findOpenDuplicateAppointment.mockResolvedValue(undefined);
+    await publicCaller().request(baseInput({ serviceType: MASSAGE_THERAPEUTIC.slug, email: "otra@example.com" }));
+    expect((db.createAppointment.mock.calls as any[][])[0][0].price).toBe("80.00");
   });
 });
 
@@ -495,7 +472,7 @@ describe("bookings.adminLink* — enlace firmado del aviso", () => {
   });
 });
 
-import { validateHomeAddress, formatHomeAddress, isSpanishPostalCode, massagePlaceLabel } from "../shared/booking";
+import { validateHomeAddress, formatHomeAddress, isSpanishPostalCode, massagePlaceLabel, massagePlaceAnswer } from "../shared/booking";
 
 describe("dirección a domicilio y lugar del masaje", () => {
   it("valida calle, código postal (5 dígitos, provincia 01–52) y localidad", () => {
@@ -529,22 +506,11 @@ describe("tarifa a domicilio (services.homePrice)", () => {
   });
 });
 
-describe("bookings.request — el domicilio y su precio salen de la base de datos", () => {
-  const home = (over: Record<string, unknown> = {}) =>
-    baseInput({ serviceLocation: "domicilio", serviceStreet: "Calle Mayor 5", servicePostalCode: "40100", serviceCity: "Segovia", ...over });
-
-  it("si Cristina cambia la tarifa en el CRM, la cita usa el precio nuevo", async () => {
-    db.getServiceBySlug.mockImplementation(async (slug: string) => (slug === MASSAGE_RELAX.slug ? { ...MASSAGE_RELAX, homePrice: "125.00" } : SERVICES[slug] ?? null));
-    await publicCaller().request(home());
-    const created = (db.createAppointment.mock.calls as any[][])[0][0];
-    expect(created.price).toBe("125.00");
-    expect(created.internalNotes).toContain("Servicio a domicilio (125 €)");
-  });
-
-  it("si Cristina quita la tarifa, ya no se puede pedir a domicilio", async () => {
-    db.getServiceBySlug.mockImplementation(async (slug: string) => (slug === MASSAGE_RELAX.slug ? { ...MASSAGE_RELAX, homePrice: null } : SERVICES[slug] ?? null));
-    await expect(publicCaller().request(home())).rejects.toThrow(/no se ofrece a domicilio/i);
-    expect(db.createAppointment).not.toHaveBeenCalled();
+describe("tarifa a domicilio publicada (solo informativa)", () => {
+  it("el precio a domicilio sale de la base de datos y se muestra con su importe", () => {
+    expect(getHomePrice({ homePrice: "120.00" })).toBe(120);
+    expect(massagePlaceAnswer({ homePrice: "120.00" })).toContain("a domicilio por 120 €");
+    expect(massagePlaceAnswer({ homePrice: "120.00" })).toContain("por WhatsApp");
   });
 });
 

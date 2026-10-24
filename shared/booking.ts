@@ -89,8 +89,9 @@ export function isBookableTime(date: string, time: string, durationMinutes?: num
 
 // ─── Servicio a domicilio ────────────────────────────────────────────────────
 /**
- * Servicio a domicilio. La tarifa está en la base de datos (`services.homePrice`, editable en el CRM):
- * un precio > 0 significa que ese servicio se ofrece a domicilio; vacío/NULL, que no.
+ * Servicio a domicilio. La tarifa está en la base de datos (`services.homePrice`, editable en el CRM): es la
+ * ÚNICA fuente del precio. Un precio > 0 se publica en la web; vacío/NULL, la tarifa se consulta.
+ * En ningún caso se reserva con el formulario: ver HOME_BOOKING_VIA_FORM.
  */
 export type HomeServiceInfo = { homePrice?: string | number | null };
 
@@ -101,6 +102,13 @@ export function getHomePrice(service?: HomeServiceInfo | null): number | null {
 
 export type ServiceLocation = "consulta" | "domicilio";
 export const HOME_LABEL_SUFFIX = "a domicilio";
+
+/**
+ * Decisión de Cristina (2026-10-24): el masaje a domicilio se acuerda y se reserva por WhatsApp (dirección y
+ * disponibilidad); el formulario de la web solo reserva sesiones en consulta. Con `false` el formulario no ofrece
+ * el domicilio y el servidor rechaza esas solicitudes. La lógica de dirección se conserva por si se reactiva.
+ */
+export const HOME_BOOKING_VIA_FORM = false;
 
 // ─── Condiciones ─────────────────────────────────────────────────────────────
 export const PAYMENT_NOTE = "Se abona en la cita. No se cobra nada al enviar la solicitud.";
@@ -122,9 +130,13 @@ export function massagePlaceLabel(service?: HomeServiceInfo | null): string {
 export function massagePlaceAnswer(service?: HomeServiceInfo | null): string {
   const home = getHomePrice(service);
   return home !== null
-    ? `En consulta, en Navas de Riofrío (Segovia), o a domicilio por ${home} €. Para el domicilio necesito tu dirección postal completa y Cristina confirmará si puede desplazarse a tu zona.`
+    ? `En consulta, en Navas de Riofrío (Segovia), o a domicilio por ${formatEuros(home)}. ${HOME_SERVICE_VIA_WHATSAPP}`
     : `En consulta, en Navas de Riofrío (Segovia). ${HOME_SERVICE_ON_REQUEST}`;
 }
+
+/** Servicio a domicilio CON tarifa publicada: el precio se muestra, pero la reserva se cierra por WhatsApp. */
+export const HOME_SERVICE_VIA_WHATSAPP =
+  "La reserva a domicilio se acuerda con Cristina por WhatsApp (dirección y disponibilidad); el formulario de la web solo reserva sesiones en consulta.";
 
 /**
  * Servicio a domicilio SIN tarifa publicada: Cristina lo ofrece, pero precio y disponibilidad se acuerdan
@@ -134,8 +146,10 @@ export const HOME_SERVICE_ON_REQUEST =
   "También a domicilio: la tarifa y la disponibilidad se consultan con Cristina por WhatsApp. El formulario de la web solo reserva sesiones en consulta.";
 
 /** Mensaje de WhatsApp para pedir un masaje a domicilio (sin datos personales: la dirección la pide Cristina). */
-export function homeServiceWhatsAppMessage(serviceName: string): string {
-  return `Hola Cristina, me interesa el ${serviceName} a domicilio. ¿Me dices la tarifa y si tienes disponibilidad para mi zona? 🌿`;
+export function homeServiceWhatsAppMessage(serviceName: string, homePrice?: number | null): string {
+  return homePrice
+    ? `Hola Cristina, quiero reservar el ${serviceName} a domicilio (${formatEuros(homePrice)}). ¿Qué disponibilidad tienes para mi zona? 🌿`
+    : `Hola Cristina, me interesa el ${serviceName} a domicilio. ¿Me dices la tarifa y si tienes disponibilidad para mi zona? 🌿`;
 }
 
 export type HomeAddress = { street: string; postalCode: string; city: string };

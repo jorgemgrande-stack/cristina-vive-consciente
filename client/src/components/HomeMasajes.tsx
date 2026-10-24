@@ -150,7 +150,7 @@ export default function HomeMasajes() {
                               className="text-[oklch(0.52_0.02_60)] text-[0.65rem] tracking-[0.15em] uppercase font-body mb-1"
                               style={{ fontWeight: 500 }}
                             >
-                              A domicilio
+                              A domicilio · por WhatsApp
                             </p>
                             <p
                               className="font-display text-[oklch(0.18_0.018_55)] leading-none"

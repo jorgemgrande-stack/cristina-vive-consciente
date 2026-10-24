@@ -317,7 +317,7 @@ export default function Masajes() {
                                 <>
                                   {" · "}
                                   <strong className="text-[oklch(0.32_0.04_148)]" style={{ fontWeight: 600 }}>{formatEuros(getHomePrice(masaje))}</strong>
-                                  {" a domicilio"}
+                                  {" a domicilio (por WhatsApp)"}
                                 </>
                               )}
                             </span>

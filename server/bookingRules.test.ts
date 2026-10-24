@@ -19,6 +19,7 @@ import {
   whatsappContactMessage,
   homeServiceWhatsAppMessage,
   HOME_SERVICE_ON_REQUEST,
+  HOME_BOOKING_VIA_FORM,
   MASSAGE_TIME_SLOTS as SLOTS,
 } from "../shared/booking";
 
@@ -211,10 +212,22 @@ describe("servicio a domicilio sin tarifa publicada", () => {
     expect(a).toContain("solo reserva sesiones en consulta");
   });
 
-  it("con tarifa publicada mantiene el precio y no menciona la consulta por WhatsApp", () => {
-    const a = massagePlaceAnswer({ homePrice: "100.00" });
-    expect(a).toContain("100 €");
+  it("con tarifa publicada (120 €) la muestra y dirige la reserva a WhatsApp, nunca al formulario", () => {
+    const a = massagePlaceAnswer({ homePrice: "120.00" });
+    expect(a).toBe(
+      "En consulta, en Navas de Riofrío (Segovia), o a domicilio por 120 €. La reserva a domicilio se acuerda con Cristina por WhatsApp (dirección y disponibilidad); el formulario de la web solo reserva sesiones en consulta.",
+    );
     expect(a).not.toContain(HOME_SERVICE_ON_REQUEST);
+  });
+
+  it("el formulario no reserva a domicilio", () => {
+    expect(HOME_BOOKING_VIA_FORM).toBe(false);
+  });
+
+  it("con tarifa, el mensaje de WhatsApp pide reservar a domicilio con el precio", () => {
+    expect(homeServiceWhatsAppMessage("Masaje Relajante", 120)).toBe(
+      "Hola Cristina, quiero reservar el Masaje Relajante a domicilio (120 €). ¿Qué disponibilidad tienes para mi zona? 🌿",
+    );
   });
 
   it("el mensaje para pedir domicilio nombra el servicio y no incluye datos personales", () => {
