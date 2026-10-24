@@ -52,7 +52,7 @@ try {
 
   for (const slug of SLUGS) {
     const [rows] = await conn.execute(
-      `SELECT id, price, ${exists ? 'homePrice' : 'NULL AS homePrice'}, longDescription, includes FROM services WHERE slug = ?`,
+      `SELECT id, type, price, ${exists ? "homePrice" : "NULL AS homePrice"}, longDescription, includes FROM services WHERE slug = ?`,
       [slug],
     );
     if (!rows.length) {
@@ -60,6 +60,10 @@ try {
       continue;
     }
     const row = rows[0];
+    if (row.type !== 'masaje') {
+      console.log(`${slug}: type='${row.type}' (no es 'masaje') → NO se toca. Corregir el tipo en el CRM y volver a ejecutar.`);
+      continue;
+    }
     const changes = {};
 
     const current = row.homePrice == null ? null : Number(row.homePrice);
@@ -85,7 +89,7 @@ try {
   }
 
   if (exists) {
-    const [rows] = await conn.query("SELECT id, slug, price, homePrice FROM services WHERE type = 'masaje' ORDER BY id");
+    const [rows] = await conn.query(`SELECT id, slug, type, price, homePrice FROM services WHERE slug IN (${SLUGS.map(() => '?').join(',')}) ORDER BY id`, SLUGS);
     console.table(rows);
   }
 } finally {

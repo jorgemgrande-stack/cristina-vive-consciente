@@ -200,7 +200,8 @@ export default function ServicioForm() {
       homePrice: isMassageForm && form.homePrice.trim() ? form.homePrice.trim().replace(",", ".") : null,
       durationMinutes: form.durationMinutes,
       durationLabel: form.durationLabel.trim() || undefined,
-      type: (["consulta", "masaje", "otro"] as const).includes(form.type) ? form.type : "consulta",
+      // Si el desplegable llegara vacío, un masaje sigue siendo masaje (si no, se perdería su precio a domicilio)
+      type: (["consulta", "masaje", "otro"] as const).includes(form.type) ? form.type : isMassageForm ? "masaje" : "consulta",
       // Un masaje se hace siempre en persona (consulta o domicilio): nunca "online" ni "ambos"
       modality: isMassageForm ? "presencial" : (["online", "presencial", "ambos"] as const).includes(form.modality) ? form.modality : "ambos",
       imageUrl: form.imageUrl.trim() || null,
@@ -400,7 +401,7 @@ export default function ServicioForm() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Tipo</Label>
-                <Select value={form.type} onValueChange={(v) => set("type", v as FormData["type"])}>
+                <Select value={form.type} onValueChange={(v) => v && set("type", v as FormData["type"])}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -423,17 +424,17 @@ export default function ServicioForm() {
                     inputMode="decimal"
                     value={form.homePrice}
                     onChange={(e) => set("homePrice", e.target.value)}
-                    placeholder="Vacío = no se ofrece a domicilio"
+                    placeholder="Vacío = tarifa a consultar"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Si lo rellenas, el cliente podrá pedir el masaje a domicilio y tendrá que indicar su dirección postal completa
-                    (calle y número, código postal y localidad) para que Cristina la valore.
+                    Se muestra en la web como «A domicilio: X €». La reserva a domicilio se acuerda siempre por WhatsApp
+                    (dirección y disponibilidad): el formulario de la web solo reserva sesiones en consulta.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-1.5">
                   <Label>Modalidad</Label>
-                  <Select value={form.modality} onValueChange={(v) => set("modality", v as FormData["modality"])}>
+                  <Select value={form.modality} onValueChange={(v) => v && set("modality", v as FormData["modality"])}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -459,7 +460,7 @@ export default function ServicioForm() {
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <Label>Estado</Label>
-                <Select value={form.status} onValueChange={(v) => set("status", v as FormData["status"])}>
+                <Select value={form.status} onValueChange={(v) => v && set("status", v as FormData["status"])}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
