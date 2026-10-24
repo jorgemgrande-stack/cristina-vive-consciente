@@ -11,7 +11,16 @@ import {
   CANCELLABLE_FROM,
   MASSAGE_TIME_SLOTS,
 } from "./bookingRules";
-import { isWeekend, slotsForDate, massagePageMeta, whatsappContactMessage, MASSAGE_TIME_SLOTS as SLOTS } from "../shared/booking";
+import {
+  isWeekend,
+  slotsForDate,
+  massagePageMeta,
+  massagePlaceAnswer,
+  whatsappContactMessage,
+  homeServiceWhatsAppMessage,
+  HOME_SERVICE_ON_REQUEST,
+  MASSAGE_TIME_SLOTS as SLOTS,
+} from "../shared/booking";
 
 describe("madridLocalToEpoch", () => {
   it("verano (CEST, UTC+2): 10:00 en Madrid = 08:00 UTC", () => {
@@ -191,5 +200,26 @@ describe("mensaje del globo de WhatsApp", () => {
 
   it("fuera de una ficha mantiene el mensaje genérico", () => {
     expect(whatsappContactMessage()).toBe("Hola Cristina, me gustaría obtener más información sobre tus servicios de bienestar. 🌿");
+  });
+});
+
+describe("servicio a domicilio sin tarifa publicada", () => {
+  it("la respuesta deja claro que se consulta por WhatsApp y que el formulario no lo reserva", () => {
+    const a = massagePlaceAnswer({ homePrice: null });
+    expect(a).toContain("En consulta, en Navas de Riofrío (Segovia).");
+    expect(a).toContain("se consultan con Cristina por WhatsApp");
+    expect(a).toContain("solo reserva sesiones en consulta");
+  });
+
+  it("con tarifa publicada mantiene el precio y no menciona la consulta por WhatsApp", () => {
+    const a = massagePlaceAnswer({ homePrice: "100.00" });
+    expect(a).toContain("100 €");
+    expect(a).not.toContain(HOME_SERVICE_ON_REQUEST);
+  });
+
+  it("el mensaje para pedir domicilio nombra el servicio y no incluye datos personales", () => {
+    expect(homeServiceWhatsAppMessage("Masaje Relajante")).toBe(
+      "Hola Cristina, me interesa el Masaje Relajante a domicilio. ¿Me dices la tarifa y si tienes disponibilidad para mi zona? 🌿",
+    );
   });
 });

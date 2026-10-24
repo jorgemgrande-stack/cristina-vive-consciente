@@ -552,6 +552,11 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                     </label>
                   ))}
                 </div>
+                {homePrice === null && (
+                  <p className="mt-2 text-[0.7rem] font-body text-[oklch(0.52_0.02_60)] leading-relaxed" style={{ fontWeight: 300 }}>
+                    ¿Lo quieres a domicilio? La tarifa y la disponibilidad se consultan con Cristina por WhatsApp: este formulario solo reserva sesiones en consulta.
+                  </p>
+                )}
                 {isHome && (
                   <div className="mt-3 space-y-3">
                     <p className="text-xs text-[oklch(0.38_0.02_55)] font-body uppercase tracking-wider" style={{ fontWeight: 500 }}>

@@ -62,6 +62,7 @@ describe("clics a WhatsApp (señal secundaria)", () => {
 
   it("admite `placement` con valores simples y descarta texto libre", () => {
     expect(sanitizeBookingEventParams({ placement: "floating_button" })).toEqual({ placement: "floating_button" });
+    expect(sanitizeBookingEventParams({ placement: "home_service" })).toEqual({ placement: "home_service" });
     expect(sanitizeBookingEventParams({ placement: "globo de la home" })).toEqual({});
   });
 });

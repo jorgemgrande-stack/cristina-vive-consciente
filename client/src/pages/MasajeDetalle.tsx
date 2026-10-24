@@ -11,6 +11,9 @@ import { SITE_IMAGES } from "@/lib/siteImages";
 import {
   CANCELLATION_POLICY,
   CENTER_MAPS_URL,
+  CRISTINA_WHATSAPP_NUMBER,
+  HOME_SERVICE_ON_REQUEST,
+  homeServiceWhatsAppMessage,
   OPENING_HOURS_TEXT,
   PAYMENT_NOTE,
   formatEuros,
@@ -20,6 +23,8 @@ import {
   massagePlaceLabel,
 } from "@shared/booking";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { trackBookingEvent } from "@/lib/analytics";
+import { BOOKING_EVENTS } from "@shared/bookingAnalytics";
 import { defaultGallery } from "@shared/serviceGallery";
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
@@ -94,6 +99,10 @@ export default function MasajeDetalle() {
   const homePrice = getHomePrice(masaje);
   const priceText = masaje.price ? formatEuros(masaje.price) : null;
   const homeText = homePrice !== null ? formatEuros(homePrice) : null;
+  // Sin tarifa a domicilio publicada: se ofrece igualmente, pero se acuerda por WhatsApp (el formulario no lo reserva)
+  const homeOnRequestUrl = `https://wa.me/${CRISTINA_WHATSAPP_NUMBER}?text=${encodeURIComponent(homeServiceWhatsAppMessage(masaje.name))}`;
+  const trackHomeRequestClick = () =>
+    trackBookingEvent(BOOKING_EVENTS.WHATSAPP_CONTACT_CLICKED, { placement: "home_service", service_slug: masaje.slug });
 
   // Preguntas frecuentes: solo con datos confirmados del servicio y de las condiciones del centro
   const faqs: Array<{ q: string; a: string }> = [
@@ -219,6 +228,22 @@ export default function MasajeDetalle() {
                       </span>
                     </li>
                   </ul>
+
+                  {!homeText && (
+                    <p className="mb-6 -mt-2 text-[12px] leading-relaxed text-[oklch(0.38_0.02_55)] font-body" style={{ fontWeight: 300 }}>
+                      {HOME_SERVICE_ON_REQUEST}{" "}
+                      <a
+                        href={homeOnRequestUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={trackHomeRequestClick}
+                        className="underline text-[oklch(0.40_0.07_148)]"
+                        style={{ fontWeight: 500 }}
+                      >
+                        Consultar por WhatsApp
+                      </a>
+                    </p>
+                  )}
 
                   <button
                     onClick={() => setBookingOpen(true)}
@@ -368,7 +393,7 @@ export default function MasajeDetalle() {
                       <div>
                         <p className="text-[oklch(0.22_0.02_55)] text-sm font-body mb-1" style={{ fontWeight: 500 }}>Dónde y cuándo</p>
                         <p className="text-[oklch(0.42_0.02_55)] text-xs font-body leading-relaxed" style={{ fontWeight: 300 }}>
-                          Navas de Riofrío (Segovia){homeText ? " · también a domicilio" : ""}
+                          Navas de Riofrío (Segovia){homeText ? " · también a domicilio" : " · a domicilio, con tarifa a consultar"}
                           <br />
                           {OPENING_HOURS_TEXT}.
                         </p>

@@ -123,7 +123,19 @@ export function massagePlaceAnswer(service?: HomeServiceInfo | null): string {
   const home = getHomePrice(service);
   return home !== null
     ? `En consulta, en Navas de Riofrío (Segovia), o a domicilio por ${home} €. Para el domicilio necesito tu dirección postal completa y Cristina confirmará si puede desplazarse a tu zona.`
-    : "En consulta, en Navas de Riofrío (Segovia). Si te interesa un servicio a domicilio, consúltalo con Cristina.";
+    : `En consulta, en Navas de Riofrío (Segovia). ${HOME_SERVICE_ON_REQUEST}`;
+}
+
+/**
+ * Servicio a domicilio SIN tarifa publicada: Cristina lo ofrece, pero precio y disponibilidad se acuerdan
+ * por WhatsApp y el formulario de la web no lo reserva ni lo confirma.
+ */
+export const HOME_SERVICE_ON_REQUEST =
+  "También a domicilio: la tarifa y la disponibilidad se consultan con Cristina por WhatsApp. El formulario de la web solo reserva sesiones en consulta.";
+
+/** Mensaje de WhatsApp para pedir un masaje a domicilio (sin datos personales: la dirección la pide Cristina). */
+export function homeServiceWhatsAppMessage(serviceName: string): string {
+  return `Hola Cristina, me interesa el ${serviceName} a domicilio. ¿Me dices la tarifa y si tienes disponibilidad para mi zona? 🌿`;
 }
 
 export type HomeAddress = { street: string; postalCode: string; city: string };
