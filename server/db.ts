@@ -122,17 +122,29 @@ export async function getUserByOpenId(openId: string) {
 }
 
 // ─── CLIENTS ────────────────────────────────────────────────────────────────────────────────
+/** Palabras de búsqueda (máx. 5) con los comodines de LIKE escapados. */
+export function clientSearchTerms(search?: string): string[] {
+  return (search ?? "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 5)
+    .map((t) => t.replace(/[\\%_]/g, (c) => `\\${c}`));
+}
+
 export async function getClients(search?: string, status?: string) {
   const db = await getDb();
   if (!db) return [];
   const conditions: any[] = [];
   if (status && status !== "all") conditions.push(eq(clients.status, status as any));
-  if (search) {
+  // Cada palabra debe aparecer en el nombre, los apellidos, el email o el teléfono («ana garcía» → Ana García)
+  for (const term of clientSearchTerms(search)) {
+    const pattern = `%${term}%`;
     conditions.push(or(
-      like(clients.firstName, `%${search}%`),
-      like(clients.lastName, `%${search}%`),
-      like(clients.email, `%${search}%`),
-      like(clients.phone, `%${search}%`)
+      like(clients.firstName, pattern),
+      like(clients.lastName, pattern),
+      like(clients.email, pattern),
+      like(clients.phone, pattern)
     ));
   }
   let query = db.select().from(clients).$dynamic();

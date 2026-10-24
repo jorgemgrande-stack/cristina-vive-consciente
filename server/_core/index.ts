@@ -17,6 +17,7 @@ import { getPendingLeadSequences, updateLeadSequence, createAutomationLog, updat
 import { sendLeadSequenceEmail } from "../email";
 import { generateInvoicePdf } from "../invoicePdf";
 import { sdk } from "./sdk";
+import { adminSessionCookieOptions, clientIp, loginLimiter, safeEqual } from "./adminAuth";
 import { uploadRouter } from "../upload";
 import { createRedirectMiddleware } from "../redirects";
 import { sitemapRouter } from "../sitemap";
@@ -141,28 +142,22 @@ async function startServer() {
     if (!adminEmail || !adminPassword) {
       return res.status(500).json({ error: "Credenciales de admin no configuradas" });
     }
-    if (email !== adminEmail || password !== adminPassword) {
-      return res.status(401).json({
-        error: "Email o contraseña incorrectos",
-        debug: {
-          bodyType: typeof req.body,
-          receivedEmailLen: email.length,
-          receivedPassLen: password.length,
-          emailMatch: email === adminEmail,
-          passMatch: password === adminPassword,
-          envEmailLen: adminEmail.length,
-          envPassLen: adminPassword.length,
-        }
-      });
+    const limiterKey = clientIp(req);
+    if (loginLimiter.isBlocked(limiterKey)) {
+      return res.status(429).json({ error: "Demasiados intentos. Espera unos minutos y vuelve a probar." });
     }
+    // Sin pistas: nunca se indica si falló el email o la contraseña ni sus longitudes
+    if (!safeEqual(email, adminEmail) || !safeEqual(password, adminPassword)) {
+      loginLimiter.fail(limiterKey);
+      return res.status(401).json({ error: "Email o contraseña incorrectos" });
+    }
+    loginLimiter.reset(limiterKey);
 
     try {
       const OPEN_ID = "admin-local";
       const appId = process.env.VITE_APP_ID || "local-dev";
-      console.log(`[Login] signing session appId=${appId}`);
       const token = await sdk.signSession({ openId: OPEN_ID, appId, name: "Admin" });
-      console.log(`[Login] token signed ok`);
-      res.cookie("app_session_id", token, { httpOnly: true, maxAge: 1000 * 60 * 60 * 24 * 365, path: "/" });
+      res.cookie("app_session_id", token, adminSessionCookieOptions());
 
       // DB upsert — non-blocking, errors don't fail the login
       (async () => {
