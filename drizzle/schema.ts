@@ -807,6 +807,8 @@ export const clientConsents = mysqlTable(
     grantedAt: bigint("grantedAt", { mode: "number" }).notNull(),
     withdrawnAt: bigint("withdrawnAt", { mode: "number" }),
     reviewRequired: boolean("reviewRequired").default(false).notNull(),
+    /** Última revisión periódica de la necesidad de conservar los datos del módulo (0025) */
+    reviewedAt: bigint("reviewedAt", { mode: "number" }),
     recordedBy: int("recordedBy"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },

@@ -47,6 +47,18 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
+describe("CRM y administración", () => {
+  it("con todo el consentimiento, desde /crm o /admin no se envía nada a Google", async () => {
+    setConsent({ analytics: true, ads: true });
+    for (const pathname of ["/crm/clientes/9001", "/admin/login"]) {
+      vi.stubGlobal("window", { dataLayer, gtag: (...args: unknown[]) => gtagCalls.push(args), location: { pathname } });
+      const a = await loadAnalytics();
+      a.trackBookingEvent(a.BOOKING_EVENTS.WHATSAPP_CONTACT_CLICKED, { placement: "floating_button" });
+    }
+    expect(gtagCalls).toHaveLength(0);
+  });
+});
+
 describe("clic en el globo de WhatsApp", () => {
   const click = (a: Awaited<ReturnType<typeof loadAnalytics>>) =>
     a.trackBookingEvent(a.BOOKING_EVENTS.WHATSAPP_CONTACT_CLICKED, { placement: "floating_button", service_slug: "masaje_relajante_navas_de_rio_frio_segovia" });

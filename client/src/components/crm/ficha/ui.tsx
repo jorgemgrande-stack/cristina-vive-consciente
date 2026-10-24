@@ -56,5 +56,15 @@ export const dateInputValue = (ts: number) => {
 };
 export const dateInputToMs = (v: string) => new Date(`${v}T12:00:00`).getTime();
 
+/** Descarga un JSON generado en el navegador (no pasa por ningún servicio externo). */
+export function downloadJson(filename: string, data: unknown) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 /** Confirmación antes de descartar cambios sin guardar. */
 export const confirmDiscard = (dirty: boolean) => !dirty || window.confirm("Hay cambios sin guardar. ¿Descartarlos?");
