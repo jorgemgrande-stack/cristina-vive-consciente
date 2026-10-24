@@ -6,19 +6,26 @@
 
 import { useState } from "react";
 import { X, MessageCircle } from "lucide-react";
-import { CRISTINA_WHATSAPP_NUMBER } from "@shared/booking";
+import { CRISTINA_WHATSAPP_NUMBER, whatsappContactMessage } from "@shared/booking";
+import { BOOKING_EVENTS } from "@shared/bookingAnalytics";
+import { trackBookingEvent } from "@/lib/analytics";
 
-const WHATSAPP_NUMBER = CRISTINA_WHATSAPP_NUMBER;
-const WHATSAPP_MESSAGE = encodeURIComponent(
-  "Hola Cristina, me gustaría obtener más información sobre tus servicios de bienestar. 🌿"
-);
-const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MESSAGE}`;
+/** Servicio de la página en la que está el globo (solo en las fichas de servicio). */
+export type WhatsAppContext = { serviceName: string; serviceSlug: string };
 
-export default function WhatsAppButton() {
+export default function WhatsAppButton({ context }: { context?: WhatsAppContext }) {
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
   if (dismissed) return null;
+
+  const whatsappUrl = `https://wa.me/${CRISTINA_WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappContactMessage(context?.serviceName))}`;
+  // Señal secundaria: un clic no es una conversación ni una reserva (y sin consentimiento no se envía)
+  const trackClick = () =>
+    trackBookingEvent(BOOKING_EVENTS.WHATSAPP_CONTACT_CLICKED, {
+      placement: "floating_button",
+      ...(context ? { service_slug: context.serviceSlug } : {}),
+    });
 
   return (
     <div
@@ -66,9 +73,10 @@ export default function WhatsAppButton() {
 
       {/* Botón principal */}
       <a
-        href={WHATSAPP_URL}
+        href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={trackClick}
         onMouseEnter={() => setTooltipVisible(true)}
         onMouseLeave={() => setTooltipVisible(false)}
         onFocus={() => setTooltipVisible(true)}

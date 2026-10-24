@@ -11,13 +11,14 @@
 import {
   BOOKING_EVENTS,
   CLIENT_EMITTABLE_EVENTS,
+  WHATSAPP_CLICK_EVENTS,
   mayEmit,
   sanitizeBookingEventParams,
   type BookingEventName,
   type BookingEventParams,
 } from "@shared/bookingAnalytics";
 import { getConsent } from "./consent";
-import { reportBookingRequestConversion, sendGa4Event } from "./googleTag";
+import { reportBookingRequestConversion, reportWhatsAppClickConversion, sendGa4Event } from "./googleTag";
 
 export { CONSENT_KEY, CONSENT_CHANGED_EVENT, OPEN_COOKIE_SETTINGS_EVENT, getConsent, setConsent } from "./consent";
 
@@ -32,4 +33,5 @@ export function trackBookingEvent(name: BookingEventName, params: Record<string,
   // gtag.js ignora los objetos planos del dataLayer: para que GA4 reciba el evento hay que enviarlo con gtag()
   sendGa4Event(name, clean as Record<string, string>);
   if (name === BOOKING_EVENTS.REQUEST_SUBMITTED) reportBookingRequestConversion();
+  if (WHATSAPP_CLICK_EVENTS.includes(name)) reportWhatsAppClickConversion();
 }

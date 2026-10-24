@@ -89,8 +89,9 @@ export function isBookableTime(date: string, time: string, durationMinutes?: num
 
 // ─── Servicio a domicilio ────────────────────────────────────────────────────
 /**
- * Servicio a domicilio. La tarifa está en la base de datos (`services.homePrice`, editable en el CRM):
- * un precio > 0 significa que ese servicio se ofrece a domicilio; vacío/NULL, que no.
+ * Servicio a domicilio. La tarifa está en la base de datos (`services.homePrice`, editable en el CRM): es la
+ * ÚNICA fuente del precio. Un precio > 0 se publica en la web; vacío/NULL, la tarifa se consulta.
+ * En ningún caso se reserva con el formulario: ver HOME_BOOKING_VIA_FORM.
  */
 export type HomeServiceInfo = { homePrice?: string | number | null };
 
@@ -101,6 +102,13 @@ export function getHomePrice(service?: HomeServiceInfo | null): number | null {
 
 export type ServiceLocation = "consulta" | "domicilio";
 export const HOME_LABEL_SUFFIX = "a domicilio";
+
+/**
+ * Decisión de Cristina (2026-10-24): el masaje a domicilio se acuerda y se reserva por WhatsApp (dirección y
+ * disponibilidad); el formulario de la web solo reserva sesiones en consulta. Con `false` el formulario no ofrece
+ * el domicilio y el servidor rechaza esas solicitudes. La lógica de dirección se conserva por si se reactiva.
+ */
+export const HOME_BOOKING_VIA_FORM = false;
 
 // ─── Condiciones ─────────────────────────────────────────────────────────────
 export const PAYMENT_NOTE = "Se abona en la cita. No se cobra nada al enviar la solicitud.";
@@ -122,8 +130,26 @@ export function massagePlaceLabel(service?: HomeServiceInfo | null): string {
 export function massagePlaceAnswer(service?: HomeServiceInfo | null): string {
   const home = getHomePrice(service);
   return home !== null
-    ? `En consulta, en Navas de Riofrío (Segovia), o a domicilio por ${home} €. Para el domicilio necesito tu dirección postal completa y Cristina confirmará si puede desplazarse a tu zona.`
-    : "En consulta, en Navas de Riofrío (Segovia). Si te interesa un servicio a domicilio, consúltalo con Cristina.";
+    ? `En consulta, en Navas de Riofrío (Segovia), o a domicilio por ${formatEuros(home)}. ${HOME_SERVICE_VIA_WHATSAPP}`
+    : `En consulta, en Navas de Riofrío (Segovia). ${HOME_SERVICE_ON_REQUEST}`;
+}
+
+/** Servicio a domicilio CON tarifa publicada: el precio se muestra, pero la reserva se cierra por WhatsApp. */
+export const HOME_SERVICE_VIA_WHATSAPP =
+  "La reserva a domicilio se acuerda con Cristina por WhatsApp (dirección y disponibilidad); el formulario de la web solo reserva sesiones en consulta.";
+
+/**
+ * Servicio a domicilio SIN tarifa publicada: Cristina lo ofrece, pero precio y disponibilidad se acuerdan
+ * por WhatsApp y el formulario de la web no lo reserva ni lo confirma.
+ */
+export const HOME_SERVICE_ON_REQUEST =
+  "También a domicilio: la tarifa y la disponibilidad se consultan con Cristina por WhatsApp. El formulario de la web solo reserva sesiones en consulta.";
+
+/** Mensaje de WhatsApp para pedir un masaje a domicilio (sin datos personales: la dirección la pide Cristina). */
+export function homeServiceWhatsAppMessage(serviceName: string, homePrice?: number | null): string {
+  return homePrice
+    ? `Hola Cristina, quiero reservar el ${serviceName} a domicilio (${formatEuros(homePrice)}). ¿Qué disponibilidad tienes para mi zona? 🌿`
+    : `Hola Cristina, me interesa el ${serviceName} a domicilio. ¿Me dices la tarifa y si tienes disponibilidad para mi zona? 🌿`;
 }
 
 export type HomeAddress = { street: string; postalCode: string; city: string };
@@ -233,4 +259,34 @@ export function immediateConfirmationWhatsAppUrl(opts: {
   const name = opts.firstName.trim().split(/\s+/)[0];
   const text = `Hola Cristina, soy ${name || "un cliente"}. Acabo de solicitar ${opts.serviceLabel} para el ${when} y necesito confirmación inmediata. ¿Podemos confirmarlo? Gracias 🌿`;
   return `https://wa.me/${CRISTINA_WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+}
+
+// ─── Metadatos de página y mensaje del globo de WhatsApp ─────────────────────
+
+/** Título y descripción propios de la ficha de un masaje (solo datos del servicio, sin afirmaciones añadidas). */
+export function massagePageMeta(service: {
+  name: string;
+  shortDescription?: string | null;
+  price?: string | number | null;
+  durationLabel?: string | null;
+}): { title: string; description: string } {
+  const price = formatEuros(service.price);
+  const facts = [service.durationLabel, price ? `${price} en consulta` : null].filter(Boolean).join(" · ");
+  const title = `${service.name} en ${MASSAGE_LOCATION}${price ? ` · ${price}` : ""} | Cristina Vive Consciente`;
+  const lead = (service.shortDescription ?? "").trim().replace(/\s+/g, " ");
+  const tail = `${facts ? `${facts}. ` : ""}Reserva online y paga el día de tu cita.`;
+  const room = 160 - tail.length - 1;
+  const shortLead = lead.length > room ? `${lead.slice(0, Math.max(0, room - 1)).replace(/\s+\S*$/, "")}…` : lead;
+  return { title, description: shortLead ? `${shortLead} ${tail}` : tail };
+}
+
+/**
+ * Texto con el que se abre WhatsApp desde el globo flotante. Si el visitante está en la ficha de un
+ * servicio, el mensaje lo nombra: así Cristina sabe desde qué página le escriben, sin cookies ni identificadores.
+ */
+export function whatsappContactMessage(serviceName?: string | null): string {
+  const name = serviceName?.trim();
+  return name
+    ? `Hola Cristina, te escribo desde tu web, desde la página de ${name}. Me gustaría más información. 🌿`
+    : "Hola Cristina, me gustaría obtener más información sobre tus servicios de bienestar. 🌿";
 }

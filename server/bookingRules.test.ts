@@ -11,7 +11,17 @@ import {
   CANCELLABLE_FROM,
   MASSAGE_TIME_SLOTS,
 } from "./bookingRules";
-import { isWeekend, slotsForDate, MASSAGE_TIME_SLOTS as SLOTS } from "../shared/booking";
+import {
+  isWeekend,
+  slotsForDate,
+  massagePageMeta,
+  massagePlaceAnswer,
+  whatsappContactMessage,
+  homeServiceWhatsAppMessage,
+  HOME_SERVICE_ON_REQUEST,
+  HOME_BOOKING_VIA_FORM,
+  MASSAGE_TIME_SLOTS as SLOTS,
+} from "../shared/booking";
 
 describe("madridLocalToEpoch", () => {
   it("verano (CEST, UTC+2): 10:00 en Madrid = 08:00 UTC", () => {
@@ -153,5 +163,76 @@ describe("formatEuros — precio de las tarjetas", () => {
     expect(formatEuros(110)).toBe("110 €");
     expect(formatEuros("72.5")).toBe("72,50 €");
     for (const v of [null, undefined, "", "abc"]) expect(formatEuros(v as any)).toBe("");
+  });
+});
+
+describe("metadatos de la ficha de masaje", () => {
+  const relajante = {
+    name: "Masaje Relajante",
+    shortDescription: "Un espacio de calma y desconexión para liberar las tensiones del día a día y disfrutar de una experiencia de bienestar corporal.",
+    price: "70.00",
+    durationLabel: "45 min",
+  };
+
+  it("título con servicio, lugar y precio reales", () => {
+    expect(massagePageMeta(relajante).title).toBe("Masaje Relajante en Navas de Riofrío (Segovia) · 70 € | Cristina Vive Consciente");
+  });
+
+  it("descripción de 160 caracteres como máximo, con duración y precio", () => {
+    const { description } = massagePageMeta(relajante);
+    expect(description.length).toBeLessThanOrEqual(160);
+    expect(description).toContain("45 min · 70 € en consulta.");
+    expect(description.endsWith("Reserva online y paga el día de tu cita.")).toBe(true);
+  });
+
+  it("sin precio ni descripción no inventa datos", () => {
+    const meta = massagePageMeta({ name: "Masaje", price: null });
+    expect(meta.title).toBe("Masaje en Navas de Riofrío (Segovia) | Cristina Vive Consciente");
+    expect(meta.description).toBe("Reserva online y paga el día de tu cita.");
+  });
+});
+
+describe("mensaje del globo de WhatsApp", () => {
+  it("nombra el servicio de la página, sin identificadores", () => {
+    expect(whatsappContactMessage("Masaje Relajante")).toBe(
+      "Hola Cristina, te escribo desde tu web, desde la página de Masaje Relajante. Me gustaría más información. 🌿",
+    );
+  });
+
+  it("fuera de una ficha mantiene el mensaje genérico", () => {
+    expect(whatsappContactMessage()).toBe("Hola Cristina, me gustaría obtener más información sobre tus servicios de bienestar. 🌿");
+  });
+});
+
+describe("servicio a domicilio sin tarifa publicada", () => {
+  it("la respuesta deja claro que se consulta por WhatsApp y que el formulario no lo reserva", () => {
+    const a = massagePlaceAnswer({ homePrice: null });
+    expect(a).toContain("En consulta, en Navas de Riofrío (Segovia).");
+    expect(a).toContain("se consultan con Cristina por WhatsApp");
+    expect(a).toContain("solo reserva sesiones en consulta");
+  });
+
+  it("con tarifa publicada (120 €) la muestra y dirige la reserva a WhatsApp, nunca al formulario", () => {
+    const a = massagePlaceAnswer({ homePrice: "120.00" });
+    expect(a).toBe(
+      "En consulta, en Navas de Riofrío (Segovia), o a domicilio por 120 €. La reserva a domicilio se acuerda con Cristina por WhatsApp (dirección y disponibilidad); el formulario de la web solo reserva sesiones en consulta.",
+    );
+    expect(a).not.toContain(HOME_SERVICE_ON_REQUEST);
+  });
+
+  it("el formulario no reserva a domicilio", () => {
+    expect(HOME_BOOKING_VIA_FORM).toBe(false);
+  });
+
+  it("con tarifa, el mensaje de WhatsApp pide reservar a domicilio con el precio", () => {
+    expect(homeServiceWhatsAppMessage("Masaje Relajante", 120)).toBe(
+      "Hola Cristina, quiero reservar el Masaje Relajante a domicilio (120 €). ¿Qué disponibilidad tienes para mi zona? 🌿",
+    );
+  });
+
+  it("el mensaje para pedir domicilio nombra el servicio y no incluye datos personales", () => {
+    expect(homeServiceWhatsAppMessage("Masaje Relajante")).toBe(
+      "Hola Cristina, me interesa el Masaje Relajante a domicilio. ¿Me dices la tarifa y si tienes disponibilidad para mi zona? 🌿",
+    );
   });
 });

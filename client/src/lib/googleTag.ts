@@ -6,6 +6,7 @@
  *   VITE_GOOGLE_ADS_ID                 p. ej. AW-123456789   (Google Ads)
  *   VITE_GA4_ID                        p. ej. G-ABCDE12345   (Google Analytics 4, opcional)
  *   VITE_GOOGLE_ADS_BOOKING_LABEL      etiqueta de la conversión "solicitud de reserva"
+ *   VITE_GOOGLE_ADS_WHATSAPP_LABEL     etiqueta de la conversión SECUNDARIA "clic en WhatsApp" (opcional)
  *   VITE_GTM_ID                        contenedor de Google Tag Manager (por defecto GTM-MVV9SN7V)
  * Sin ID no se descarga ningún script de Google. Con ID pero sin consentimiento, tampoco.
  *
@@ -28,6 +29,8 @@ import { getConsent } from "./consent";
 const ADS_ID = (import.meta.env.VITE_GOOGLE_ADS_ID as string | undefined)?.trim();
 const GA4_ID = (import.meta.env.VITE_GA4_ID as string | undefined)?.trim();
 const BOOKING_LABEL = (import.meta.env.VITE_GOOGLE_ADS_BOOKING_LABEL as string | undefined)?.trim();
+/** Etiqueta de la conversión SECUNDARIA "clic en WhatsApp" (observación; no es una reserva). Sin ella no se envía nada a Ads. */
+const WHATSAPP_LABEL = (import.meta.env.VITE_GOOGLE_ADS_WHATSAPP_LABEL as string | undefined)?.trim();
 
 const GTM_ID = ((import.meta.env.VITE_GTM_ID as string | undefined)?.trim() || "GTM-MVV9SN7V");
 
@@ -117,6 +120,18 @@ export function reportBookingRequestConversion(): void {
   const w = window as GoogleWindow;
   if (!ADS_ID || !ID_PATTERN.test(ADS_ID) || !BOOKING_LABEL || !consent?.ads || !w.gtag) return;
   w.gtag("event", "conversion", { send_to: `${ADS_ID}/${BOOKING_LABEL}` });
+}
+
+/**
+ * Clic que abre WhatsApp, como conversión de Google Ads (solo con consentimiento de publicidad y etiqueta
+ * configurada). En Ads debe crearse como acción SECUNDARIA: un clic no es una conversación ni una reserva.
+ * `transport_type: "beacon"` para que salga aunque el navegador cambie a WhatsApp.
+ */
+export function reportWhatsAppClickConversion(): void {
+  const consent = getConsent();
+  const w = window as GoogleWindow;
+  if (!ADS_ID || !ID_PATTERN.test(ADS_ID) || !WHATSAPP_LABEL || !consent?.ads || !w.gtag) return;
+  w.gtag("event", "conversion", { send_to: `${ADS_ID}/${WHATSAPP_LABEL}`, transport_type: "beacon" });
 }
 
 /**

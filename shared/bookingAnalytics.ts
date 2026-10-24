@@ -20,15 +20,26 @@ export const BOOKING_EVENTS = {
   CONFIRMED: "booking_confirmed",
   /** Señal secundaria (NO conversión): pulsó «Reserva directamente con Cristina» (abre WhatsApp). No se sabe si llegó a enviarlo. */
   WHATSAPP_CLICKED: "booking_whatsapp_clicked",
+  /** Señal secundaria (NO conversión): pulsó el globo flotante de WhatsApp. Ni conversación ni reserva confirmadas. */
+  WHATSAPP_CONTACT_CLICKED: "whatsapp_contact_clicked",
   /** Solo si en el futuro hay cobro online asociado a la reserva. */
   PAID: "booking_paid",
 } as const;
 export type BookingEventName = (typeof BOOKING_EVENTS)[keyof typeof BOOKING_EVENTS];
 
 /** Eventos que el navegador del cliente sí puede emitir. */
-export const CLIENT_EMITTABLE_EVENTS: BookingEventName[] = [BOOKING_EVENTS.FORM_OPENED, BOOKING_EVENTS.REQUEST_SUBMITTED, BOOKING_EVENTS.WHATSAPP_CLICKED];
+export const CLIENT_EMITTABLE_EVENTS: BookingEventName[] = [
+  BOOKING_EVENTS.FORM_OPENED,
+  BOOKING_EVENTS.REQUEST_SUBMITTED,
+  BOOKING_EVENTS.WHATSAPP_CLICKED,
+  BOOKING_EVENTS.WHATSAPP_CONTACT_CLICKED,
+];
 
-const ALLOWED_PARAMS = ["service_slug", "service_group", "modality", "currency"] as const;
+/** Clics que abren WhatsApp: se miden como señal secundaria, nunca como reserva. */
+export const WHATSAPP_CLICK_EVENTS: BookingEventName[] = [BOOKING_EVENTS.WHATSAPP_CLICKED, BOOKING_EVENTS.WHATSAPP_CONTACT_CLICKED];
+
+/** `placement`: desde dónde se pulsó (p. ej. "floating_button", "booking_modal"). */
+const ALLOWED_PARAMS = ["service_slug", "service_group", "modality", "currency", "placement"] as const;
 export type BookingEventParams = Partial<Record<(typeof ALLOWED_PARAMS)[number], string>>;
 
 const SAFE_VALUE = /^[a-z0-9_.-]{1,80}$/i;
