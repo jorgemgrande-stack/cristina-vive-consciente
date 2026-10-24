@@ -3,6 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { crmRouter } from "./routers/crm";
+import { clientCareRouter } from "./routers/clientCare";
 import { bookingsRouter } from "./routers/bookings";
 import { ebooksRouter } from "./routers/ebooks";
 import { ordersRouter } from "./routers/orders";
@@ -32,6 +33,7 @@ export const appRouter = router({
   }),
 
   crm: crmRouter,
+  care: clientCareRouter,
   bookings: bookingsRouter,
   ebooks: ebooksRouter,
   orders: ordersRouter,

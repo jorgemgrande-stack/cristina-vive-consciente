@@ -67,6 +67,7 @@ import {
   deleteCalendarEvent,
 } from "../db";
 import crypto from "crypto";
+import { deleteConsentsForClient, deleteSensitiveForClient, insertAudit } from "../clientCareDb";
 
 // Admin middleware
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -144,8 +145,12 @@ const clientsRouter = router({
 
   delete: adminProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // Nunca dejar datos de categoría especial ni consentimientos sin titular
+      await deleteSensitiveForClient(input.id);
+      await deleteConsentsForClient(input.id);
       await deleteClient(input.id);
+      await insertAudit({ userId: ctx.user.id, action: "delete", entityType: "client", entityId: input.id, clientId: input.id });
       return { success: true };
     }),
 });

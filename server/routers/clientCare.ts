@@ -1,0 +1,300 @@
+/**
+ * Ficha integral de clientes (router `care`).
+ *
+ * - Todo requiere sesión de administrador (rol admin), comprobado en el servidor en cada operación.
+ * - Datos administrativos y prácticos: perfil del cliente y sesiones.
+ * - Datos de categoría especial (primera visita, acompañamiento emocional): bloqueados en el servidor
+ *   mientras su módulo no esté habilitado (server/sensitive/config.ts). El bloqueo se comprueba ANTES de
+ *   leer la entrada o tocar la base de datos. Se guardan cifrados y exigen consentimiento vigente.
+ * - El registro de auditoría guarda quién, qué acción y qué campos; nunca contenido.
+ * - Ningún error ni log incluye contenido de notas o datos sensibles.
+ */
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+import { protectedProcedure, router } from "../_core/trpc";
+import {
+  changedFields,
+  emotionalPayload,
+  firstVisitPayload,
+  lastVisit,
+  nextAppointment,
+  profileInput,
+  servicesReceived,
+  sessionInput,
+  type SessionInput,
+} from "../../shared/clientCare";
+import * as care from "../clientCareDb";
+import { allModulesReadiness, moduleReadiness, type SensitiveModule } from "../sensitive/config";
+import { decryptPayload, encryptPayload } from "../sensitive/crypto";
+
+const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+  return next({ ctx });
+});
+
+const MODULE_LABEL: Record<SensitiveModule, string> = {
+  first_visit: "Primera visita",
+  emotional: "Acompañamiento emocional",
+};
+
+/** Bloqueo de servidor de un módulo sensible. Se ejecuta antes de validar la entrada o consultar datos. */
+const sensitiveProcedure = (module: SensitiveModule) =>
+  adminProcedure.use(async ({ ctx, next, getRawInput }) => {
+    if (!moduleReadiness(module).enabled) {
+      let clientId: number | null = null;
+      try {
+        const raw = (await getRawInput()) as { clientId?: unknown } | undefined;
+        clientId = typeof raw?.clientId === "number" ? raw.clientId : null;
+      } catch {
+        /* sin entrada legible: se registra sin cliente */
+      }
+      await care.insertAudit({ userId: ctx.user.id, action: "denied_disabled", entityType: module, clientId }).catch(() => undefined);
+      throw new TRPCError({ code: "FORBIDDEN", message: `Módulo «${MODULE_LABEL[module]}» desactivado: no se pueden leer ni guardar datos.` });
+    }
+    return next({ ctx });
+  });
+
+const clientIdInput = z.object({ clientId: z.number().int().positive() });
+
+async function requireClient(clientId: number) {
+  const client = await care.getClientRow(clientId);
+  if (!client) throw new TRPCError({ code: "NOT_FOUND", message: "Cliente no encontrado" });
+  return client;
+}
+
+const keyVersion = () => process.env.SENSITIVE_KEY_VERSION ?? "";
+
+function decryptOrFail<T>(ciphertext: string, clientId: number, module: SensitiveModule): T {
+  try {
+    return decryptPayload<T>(ciphertext, clientId, module);
+  } catch {
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No se pudo descifrar el registro (clave o integridad)." });
+  }
+}
+
+async function requireActiveConsent(clientId: number, module: SensitiveModule) {
+  const consent = await care.activeConsent(clientId, module);
+  if (!consent) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: `Falta el consentimiento explícito vigente del cliente para «${MODULE_LABEL[module]}».`,
+    });
+  }
+  return consent;
+}
+
+async function toSessionWrite(clientId: number, input: SessionInput): Promise<care.SessionWrite> {
+  if (input.serviceId && !(await care.serviceExists(input.serviceId))) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Servicio no válido" });
+  }
+  if (input.appointmentId && !(await care.appointmentBelongsToClient(input.appointmentId, clientId))) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "La cita no pertenece a este cliente" });
+  }
+  const t = (v?: string | null) => (v && v.trim() ? v.trim() : null);
+  return {
+    sessionDate: input.sessionDate,
+    serviceId: input.serviceId ?? null,
+    durationMinutes: input.durationMinutes ?? null,
+    summary: t(input.practicalNotes),
+    clientPreferences: t(input.clientPreferences),
+    nextSteps: t(input.pendingNext),
+    appointmentId: input.appointmentId ?? null,
+  };
+}
+
+// ─── Sensibles: genérico para leer / guardar ─────────────────────────────────
+function sensitiveRouter(module: SensitiveModule, payload: typeof firstVisitPayload | typeof emotionalPayload) {
+  const proc = sensitiveProcedure(module);
+  return router({
+    list: proc.input(clientIdInput).query(async ({ input, ctx }) => {
+      await requireClient(input.clientId);
+      const rows = await care.listSensitive(input.clientId, module);
+      await care.insertAudit({ userId: ctx.user.id, action: "read", entityType: module, clientId: input.clientId });
+      return rows.map((r) => ({
+        id: r.id,
+        recordDate: r.recordDate,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+        data: decryptOrFail<Record<string, unknown>>(r.ciphertext, input.clientId, module),
+      }));
+    }),
+    save: proc
+      .input(clientIdInput.extend({ id: z.number().int().positive().optional(), recordDate: z.number().int().positive(), data: z.record(z.string(), z.unknown()) }))
+      .mutation(async ({ input, ctx }) => {
+        const parsed = payload.safeParse(input.data);
+        // El mensaje de error no incluye el contenido recibido
+        if (!parsed.success) throw new TRPCError({ code: "BAD_REQUEST", message: "Datos no válidos (revisa la longitud de los campos)." });
+        await requireClient(input.clientId);
+        await requireActiveConsent(input.clientId, module);
+        const ciphertext = encryptPayload(parsed.data, input.clientId, module);
+        let id = input.id;
+        if (id) {
+          await care.updateSensitive(id, input.clientId, module, ciphertext, keyVersion(), input.recordDate, ctx.user.id);
+        } else {
+          id = await care.insertSensitive(input.clientId, module, ciphertext, keyVersion(), input.recordDate, ctx.user.id);
+        }
+        // Nombres de los apartados con contenido; jamás el contenido
+        const filled = Object.entries(parsed.data as Record<string, unknown>)
+          .filter(([, v]) => (typeof v === "string" ? v.trim() : v && Object.values(v as object).some((x) => typeof x === "string" && x.trim())))
+          .map(([k]) => k);
+        await care.insertAudit({ userId: ctx.user.id, action: input.id ? "update" : "create", entityType: module, entityId: id, clientId: input.clientId, fields: filled });
+        return { id };
+      }),
+  });
+}
+
+export const clientCareRouter = router({
+  /** Estado de los módulos sensibles (sin valores de configuración). */
+  modules: adminProcedure.query(() => allModulesReadiness().map(({ module, enabled, missing }) => ({ module, enabled, missing }))),
+
+  summary: adminProcedure.input(clientIdInput).query(async ({ input }) => {
+    const client = await requireClient(input.clientId);
+    const [sessions, appts, services] = await Promise.all([care.listSessions(input.clientId), care.listClientAppointments(input.clientId), care.listServicesBasic()]);
+    const latest = sessions[0];
+    return {
+      client: {
+        id: client.id,
+        firstName: client.firstName,
+        lastName: client.lastName,
+        phone: client.phone,
+        email: client.email,
+        status: client.status,
+        occupation: client.occupation,
+        customRate: client.customRate,
+        customRateNote: client.customRateNote,
+        rememberInfo: client.rememberInfo,
+        legacyNotes: client.notes,
+      },
+      lastVisit: lastVisit(sessions),
+      nextAppointment: nextAppointment(appts),
+      servicesReceived: servicesReceived(sessions, services),
+      latestSession: latest ? { id: latest.id, sessionDate: latest.sessionDate, serviceName: latest.serviceName } : null,
+      sessionsCount: sessions.length,
+    };
+  }),
+
+  updateProfile: adminProcedure.input(clientIdInput.merge(profileInput)).mutation(async ({ input, ctx }) => {
+    const client = await requireClient(input.clientId);
+    const norm = (v?: string | null) => (v === undefined ? undefined : v && v.trim() ? v.trim() : null);
+    const data = {
+      occupation: norm(input.occupation),
+      customRate: input.customRate === undefined ? undefined : input.customRate ? input.customRate.replace(",", ".") : null,
+      customRateNote: norm(input.customRateNote),
+      rememberInfo: norm(input.rememberInfo),
+    };
+    const before = { occupation: client.occupation, customRate: client.customRate === null ? null : Number(client.customRate).toFixed(2), customRateNote: client.customRateNote, rememberInfo: client.rememberInfo };
+    const after = { ...data, customRate: data.customRate === undefined ? undefined : data.customRate === null ? null : Number(data.customRate).toFixed(2) };
+    const fields = changedFields(before, after);
+    if (fields.length === 0) return { changed: [] as string[] };
+    await care.updateClientProfile(input.clientId, data);
+    await care.insertAudit({ userId: ctx.user.id, action: "update", entityType: "client_profile", entityId: input.clientId, clientId: input.clientId, fields });
+    return { changed: fields };
+  }),
+
+  sessions: router({
+    list: adminProcedure.input(clientIdInput).query(async ({ input }) => {
+      await requireClient(input.clientId);
+      return care.listSessions(input.clientId);
+    }),
+    create: adminProcedure.input(clientIdInput.merge(sessionInput)).mutation(async ({ input, ctx }) => {
+      await requireClient(input.clientId);
+      const data = await toSessionWrite(input.clientId, input);
+      const id = await care.insertSession(input.clientId, data, ctx.user.id);
+      await care.insertAudit({ userId: ctx.user.id, action: "create", entityType: "session", entityId: id, clientId: input.clientId });
+      return { id };
+    }),
+    update: adminProcedure
+      .input(clientIdInput.merge(sessionInput).extend({ id: z.number().int().positive() }))
+      .mutation(async ({ input, ctx }) => {
+        const current = await care.getSession(input.id, input.clientId);
+        if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "Sesión no encontrada" });
+        const data = await toSessionWrite(input.clientId, input);
+        const fields = changedFields(
+          { sessionDate: current.sessionDate, serviceId: current.serviceId, durationMinutes: current.durationMinutes, summary: current.summary, clientPreferences: current.clientPreferences, nextSteps: current.nextSteps, appointmentId: current.appointmentId },
+          data as unknown as Record<string, unknown>,
+        );
+        if (fields.length === 0) return { changed: [] as string[] };
+        await care.updateSession(input.id, input.clientId, data, ctx.user.id);
+        await care.insertAudit({ userId: ctx.user.id, action: "update", entityType: "session", entityId: input.id, clientId: input.clientId, fields });
+        return { changed: fields };
+      }),
+  }),
+
+  audit: adminProcedure.input(clientIdInput).query(async ({ input }) => {
+    await requireClient(input.clientId);
+    return care.listAudit(input.clientId);
+  }),
+
+  firstVisit: sensitiveRouter("first_visit", firstVisitPayload),
+  emotional: sensitiveRouter("emotional", emotionalPayload),
+
+  consents: router({
+    list: adminProcedure
+      .input(clientIdInput.extend({ module: z.enum(["first_visit", "emotional"]) }))
+      .use(async ({ next, getRawInput }) => {
+        const raw = (await getRawInput()) as { module?: SensitiveModule };
+        if (!raw?.module || !moduleReadiness(raw.module).enabled) throw new TRPCError({ code: "FORBIDDEN", message: "Módulo protegido desactivado." });
+        return next();
+      })
+      .query(async ({ input }) => (await care.listConsents(input.clientId)).filter((c) => c.module === input.module)),
+    grant: adminProcedure
+      .input(clientIdInput.extend({ module: z.enum(["first_visit", "emotional"]), method: z.enum(["papel_firmado", "formulario_electronico"]) }))
+      .mutation(async ({ input, ctx }) => {
+        if (!moduleReadiness(input.module).enabled) throw new TRPCError({ code: "FORBIDDEN", message: "Módulo protegido desactivado." });
+        await requireClient(input.clientId);
+        if (await care.activeConsent(input.clientId, input.module)) throw new TRPCError({ code: "CONFLICT", message: "Ya hay un consentimiento vigente para este módulo." });
+        const id = await care.insertConsent({ clientId: input.clientId, module: input.module, textVersion: process.env.PRIVACY_NOTICE_VERSION ?? "", method: input.method, grantedAt: Date.now(), recordedBy: ctx.user.id });
+        await care.insertAudit({ userId: ctx.user.id, action: "consent_granted", entityType: input.module, entityId: id, clientId: input.clientId });
+        return { id };
+      }),
+    /** Se puede retirar siempre (también con el módulo desactivado): bloquea nuevos tratamientos y marca revisión. */
+    withdraw: adminProcedure
+      .input(clientIdInput.extend({ consentId: z.number().int().positive(), module: z.enum(["first_visit", "emotional"]) }))
+      .mutation(async ({ input, ctx }) => {
+        await care.withdrawConsent(input.consentId, input.clientId, Date.now());
+        await care.insertAudit({ userId: ctx.user.id, action: "consent_withdrawn", entityType: input.module, entityId: input.consentId, clientId: input.clientId });
+        return { reviewRequired: true };
+      }),
+  }),
+
+  rights: router({
+    /** Exportación estructurada (art. 15/20). Los datos sensibles solo se incluyen si su módulo está habilitado. */
+    export: adminProcedure.input(clientIdInput).mutation(async ({ input, ctx }) => {
+      await requireClient(input.clientId);
+      const admin = await care.exportAdministrative(input.clientId);
+      const sensitive: Record<string, unknown> = {};
+      const counts = await care.countSensitive(input.clientId);
+      for (const module of ["first_visit", "emotional"] as const) {
+        if (moduleReadiness(module).enabled) {
+          const rows = await care.listSensitive(input.clientId, module);
+          sensitive[module] = rows.map((r) => ({ recordDate: r.recordDate, data: decryptOrFail(r.ciphertext, input.clientId, module) }));
+        } else {
+          sensitive[module] = { blocked: true, records: counts[module] };
+        }
+      }
+      await care.insertAudit({ userId: ctx.user.id, action: "export", entityType: "client", entityId: input.clientId, clientId: input.clientId });
+      return { exportedAt: new Date().toISOString(), ...admin, sensitive };
+    }),
+    erasePreview: adminProcedure.input(clientIdInput).query(async ({ input }) => {
+      await requireClient(input.clientId);
+      return care.careCounts(input.clientId);
+    }),
+    /** Supresión de la ficha (sesiones, notas, datos sensibles, consentimientos). No toca citas ni facturas. */
+    erase: adminProcedure.input(clientIdInput.extend({ confirmName: z.string() })).mutation(async ({ input, ctx }) => {
+      const client = await requireClient(input.clientId);
+      if (input.confirmName.trim().toLowerCase() !== `${client.firstName} ${client.lastName}`.trim().toLowerCase()) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Escribe el nombre completo del cliente para confirmar." });
+      }
+      await care.eraseCareData(input.clientId);
+      await care.insertAudit({ userId: ctx.user.id, action: "erase", entityType: "client_care", entityId: input.clientId, clientId: input.clientId });
+      return { erased: true };
+    }),
+    /** Borra los datos de UN módulo sensible (p. ej. tras retirar el consentimiento). No necesita leerlos. */
+    eraseModule: adminProcedure.input(clientIdInput.extend({ module: z.enum(["first_visit", "emotional"]) })).mutation(async ({ input, ctx }) => {
+      await requireClient(input.clientId);
+      await care.deleteSensitiveForClient(input.clientId, input.module);
+      await care.insertAudit({ userId: ctx.user.id, action: "erase", entityType: input.module, clientId: input.clientId });
+      return { erased: true };
+    }),
+  }),
+});

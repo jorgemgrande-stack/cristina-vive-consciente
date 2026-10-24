@@ -7,6 +7,9 @@ import {
   varchar,
   decimal,
   bigint,
+  boolean,
+  index,
+  mediumtext,
 } from "drizzle-orm/mysql-core";
 
 /**
@@ -52,6 +55,13 @@ export const clients = mysqlTable("clients", {
   razonSocial: varchar("razonSocial", { length: 200 }),
   notes: text("notes"),
   referredBy: varchar("referredBy", { length: 200 }),
+  // ── Ficha (0024): datos generales y prácticos, opcionales. Nunca datos de salud ni emocionales. ──
+  occupation: varchar("occupation", { length: 150 }),
+  /** Tarifa particular acordada (€), si existe */
+  customRate: decimal("customRate", { precision: 10, scale: 2 }),
+  customRateNote: varchar("customRateNote", { length: 200 }),
+  /** «Información para recordar»: preferencias prácticas (sin diagnósticos, salud, familia ni vida sexual) */
+  rememberInfo: text("rememberInfo"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy"),
@@ -201,6 +211,15 @@ export const sessionHistory = mysqlTable("session_history", {
   recommendedProducts: text("recommendedProducts"),
   supplements: text("supplements"),
   sessionDate: bigint("sessionDate", { mode: "number" }).notNull(),
+  // ── Sesiones (0024). `summary` = observaciones prácticas; `nextSteps` = cuestiones pendientes. ──
+  /** Servicio real del sistema (services.id); null en sesiones antiguas */
+  serviceId: int("serviceId"),
+  durationMinutes: int("durationMinutes"),
+  /** Preferencias o comentarios relevantes del cliente (prácticos, no de salud) */
+  clientPreferences: text("clientPreferences"),
+  /** Trazabilidad mínima de la última edición (el detalle, sin contenido, va a crm_audit_log) */
+  editedAt: timestamp("editedAt"),
+  editedBy: int("editedBy"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy"),
@@ -726,3 +745,71 @@ export const orders = mysqlTable("orders", {
 
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = typeof orders.$inferInsert;
+
+// ─── Ficha de clientes (0024) ─────────────────────────────────────────────────
+
+/**
+ * Registro de accesos y cambios de la ficha. NUNCA guarda contenido de notas ni datos sensibles:
+ * solo quién, qué acción, sobre qué registro y los NOMBRES de los campos modificados.
+ */
+export const crmAuditLog = mysqlTable(
+  "crm_audit_log",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId"),
+    action: varchar("action", { length: 40 }).notNull(),
+    entityType: varchar("entityType", { length: 40 }).notNull(),
+    entityId: int("entityId"),
+    clientId: int("clientId"),
+    fields: varchar("fields", { length: 500 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("crm_audit_log_clientId_idx").on(t.clientId)],
+);
+export type CrmAuditLog = typeof crmAuditLog.$inferSelect;
+
+/**
+ * Datos de categoría especial (ficha de primera visita y acompañamiento emocional), separados de los
+ * administrativos y CIFRADOS en la aplicación (AES-256-GCM): la columna solo contiene texto cifrado.
+ * Acceso bloqueado en el servidor mientras el módulo no esté habilitado (server/sensitive/config.ts).
+ */
+export const clientSensitiveRecords = mysqlTable(
+  "client_sensitive_records",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    clientId: int("clientId").notNull(),
+    module: mysqlEnum("module", ["first_visit", "emotional"]).notNull(),
+    ciphertext: mediumtext("ciphertext").notNull(),
+    keyVersion: varchar("keyVersion", { length: 20 }).notNull(),
+    /** Fecha de la anotación (acompañamiento) o de la ficha */
+    recordDate: bigint("recordDate", { mode: "number" }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    createdBy: int("createdBy"),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    updatedBy: int("updatedBy"),
+  },
+  (t) => [index("client_sensitive_records_client_module_idx").on(t.clientId, t.module)],
+);
+export type ClientSensitiveRecord = typeof clientSensitiveRecords.$inferSelect;
+
+/**
+ * Consentimientos explícitos por módulo: fecha, versión del texto informado, forma de obtención y retirada.
+ * Retirar uno bloquea nuevos tratamientos de ese módulo y marca los datos existentes para revisión.
+ */
+export const clientConsents = mysqlTable(
+  "client_consents",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    clientId: int("clientId").notNull(),
+    module: mysqlEnum("module", ["first_visit", "emotional"]).notNull(),
+    textVersion: varchar("textVersion", { length: 40 }).notNull(),
+    method: varchar("method", { length: 40 }).notNull(),
+    grantedAt: bigint("grantedAt", { mode: "number" }).notNull(),
+    withdrawnAt: bigint("withdrawnAt", { mode: "number" }),
+    reviewRequired: boolean("reviewRequired").default(false).notNull(),
+    recordedBy: int("recordedBy"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("client_consents_client_module_idx").on(t.clientId, t.module)],
+);
+export type ClientConsent = typeof clientConsents.$inferSelect;

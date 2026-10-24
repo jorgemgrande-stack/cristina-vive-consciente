@@ -1,9 +1,9 @@
 /**
- * CRM ClienteDetalle — Ficha completa del cliente
- * Historial de sesiones, notas, citas y acciones rápidas
+ * CRM ClienteDetalle — Ficha integral del cliente (pensada primero para móvil)
+ * Pestañas: Resumen · Sesiones · Citas · Notas · Primera visita (protegida) · Acompañamiento (protegido, oculto si no se usa)
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
 import {
   ArrowLeft, Edit, MessageCircle, Mail, Phone, Plus,
@@ -14,6 +14,20 @@ import {
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import CRMLayout from "@/components/CRMLayout";
+import ResumenTab from "@/components/crm/ficha/ResumenTab";
+import SesionesTab from "@/components/crm/ficha/SesionesTab";
+import PrimeraVisitaTab from "@/components/crm/ficha/PrimeraVisitaTab";
+import AcompanamientoTab from "@/components/crm/ficha/AcompanamientoTab";
+
+type Tab = "resumen" | "sesiones" | "citas" | "notas" | "primera" | "acompanamiento";
+const SHOW_EMOTIONAL_KEY = "cvc_show_emotional_tab";
+const readShowEmotional = () => {
+  try {
+    return localStorage.getItem(SHOW_EMOTIONAL_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
 
 const NOTE_TYPES: Record<string, { label: string; color: string }> = {
   general: { label: "General", color: "bg-gray-100 text-gray-600" },
@@ -53,7 +67,9 @@ function formatDate(ts: number) {
 export default function ClienteDetalle() {
   const params = useParams<{ id: string }>();
   const clientId = parseInt(params.id);
-  const [activeTab, setActiveTab] = useState<"citas" | "notas" | "historial">("citas");
+  const [activeTab, setActiveTab] = useState<Tab>("resumen");
+  const [openNewSession, setOpenNewSession] = useState(false);
+  const [showEmotional, setShowEmotional] = useState(readShowEmotional);
   const [newNote, setNewNote] = useState("");
   const [noteType, setNoteType] = useState<"general" | "sesion" | "seguimiento" | "observacion" | "alerta">("general");
   const [showNoteForm, setShowNoteForm] = useState(false);
@@ -69,7 +85,22 @@ export default function ClienteDetalle() {
   const { data: client, isLoading } = trpc.crm.clients.get.useQuery({ id: clientId });
   const { data: appointments, refetch: refetchAppts } = trpc.crm.appointments.list.useQuery({ clientId });
   const { data: notes, refetch: refetchNotes } = trpc.crm.notes.list.useQuery({ clientId });
-  const { data: sessions } = trpc.crm.sessions.list.useQuery({ clientId });
+  const { data: sessions } = trpc.care.sessions.list.useQuery({ clientId });
+  const { data: modules } = trpc.care.modules.useQuery();
+  const emotionalEnabled = !!modules?.find((m) => m.module === "emotional")?.enabled;
+  const toggleEmotional = () => {
+    const next = !showEmotional;
+    setShowEmotional(next);
+    try {
+      localStorage.setItem(SHOW_EMOTIONAL_KEY, next ? "1" : "0");
+    } catch {
+      /* sin almacenamiento */
+    }
+    if (!next && activeTab === "acompanamiento") setActiveTab("resumen");
+  };
+  useEffect(() => {
+    if (activeTab === "acompanamiento" && !(emotionalEnabled && showEmotional)) setActiveTab("resumen");
+  }, [activeTab, emotionalEnabled, showEmotional]);
 
   const acceptAppt = trpc.crm.appointments.accept.useMutation({
     onSuccess: () => { refetchAppts(); toast.success("Cita confirmada y email enviado"); },
@@ -167,8 +198,8 @@ export default function ClienteDetalle() {
             </span>
           </div>
 
-          {/* Contacto */}
-          <div className="bg-white border border-[oklch(0.92_0.01_80)] p-5 space-y-3">
+          {/* Contacto (en móvil ya está en Resumen) */}
+          <div className="hidden lg:block bg-white border border-[oklch(0.92_0.01_80)] p-5 space-y-3">
             <p className="text-[0.65rem] text-[oklch(0.52_0.02_60)] font-body uppercase tracking-widest mb-3" style={{ fontWeight: 500 }}>
               Contacto
             </p>
@@ -218,20 +249,8 @@ export default function ClienteDetalle() {
             )}
           </div>
 
-          {/* Notas internas */}
-          {client.notes && (
-            <div className="bg-amber-50 border border-amber-200 p-4">
-              <p className="text-[0.65rem] text-amber-700 font-body uppercase tracking-widest mb-2" style={{ fontWeight: 500 }}>
-                Nota interna
-              </p>
-              <p className="text-xs text-amber-800 font-body leading-relaxed" style={{ fontWeight: 300 }}>
-                {client.notes}
-              </p>
-            </div>
-          )}
-
-          {/* Quick actions */}
-          <div className="bg-white border border-[oklch(0.92_0.01_80)] p-4 space-y-2">
+          {/* Quick actions (escritorio) */}
+          <div className="hidden lg:block bg-white border border-[oklch(0.92_0.01_80)] p-4 space-y-2">
             <p className="text-[0.65rem] text-[oklch(0.52_0.02_60)] font-body uppercase tracking-widest mb-3" style={{ fontWeight: 500 }}>
               Acciones rápidas
             </p>
@@ -250,7 +269,20 @@ export default function ClienteDetalle() {
               <FileText size={13} /> Crear factura
             </Link>
             <button
-              onClick={() => setShowNoteForm(true)}
+              onClick={() => {
+                setActiveTab("sesiones");
+                setOpenNewSession(true);
+              }}
+              className="flex items-center gap-2 w-full px-3 py-2 text-xs text-[oklch(0.38_0.02_55)] border border-[oklch(0.92_0.01_80)] hover:border-[oklch(0.52_0.08_148)] hover:text-[oklch(0.52_0.08_148)] transition-colors font-body"
+              style={{ fontWeight: 400 }}
+            >
+              <Plus size={13} /> Añadir sesión
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("notas");
+                setShowNoteForm(true);
+              }}
               className="flex items-center gap-2 w-full px-3 py-2 text-xs text-[oklch(0.38_0.02_55)] border border-[oklch(0.92_0.01_80)] hover:border-[oklch(0.52_0.08_148)] hover:text-[oklch(0.52_0.08_148)] transition-colors font-body"
               style={{ fontWeight: 400 }}
             >
@@ -262,24 +294,56 @@ export default function ClienteDetalle() {
         {/* ── MAIN CONTENT ── */}
         <div>
           {/* Tabs */}
-          <div className="flex border-b border-[oklch(0.92_0.01_80)] mb-5">
-            {(["citas", "notas", "historial"] as const).map((tab) => (
+          <div className="flex border-b border-[oklch(0.92_0.01_80)] mb-5 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0" role="tablist">
+            {(
+              [
+                ["resumen", "Resumen"],
+                ["sesiones", `Sesiones (${sessions?.length ?? 0})`],
+                ["citas", `Citas (${appointments?.length ?? 0})`],
+                ["notas", `Notas (${notes?.length ?? 0})`],
+                ["primera", "Primera visita"],
+                ...(emotionalEnabled && showEmotional ? [["acompanamiento", "Acompañamiento"]] : []),
+              ] as Array<[Tab, string]>
+            ).map(([tab, tabLabel]) => (
               <button
                 key={tab}
+                role="tab"
+                aria-selected={activeTab === tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2.5 text-xs font-body uppercase tracking-wider transition-colors ${
+                className={`flex-shrink-0 whitespace-nowrap px-3 sm:px-4 py-3 text-xs font-body uppercase tracking-wider transition-colors ${
                   activeTab === tab
                     ? "border-b-2 border-[oklch(0.52_0.08_148)] text-[oklch(0.52_0.08_148)]"
                     : "text-[oklch(0.52_0.02_60)] hover:text-[oklch(0.38_0.02_55)]"
                 }`}
                 style={{ fontWeight: activeTab === tab ? 500 : 400, letterSpacing: "0.08em" }}
               >
-                {tab === "citas" ? `Citas (${appointments?.length ?? 0})` :
-                 tab === "notas" ? `Notas (${notes?.length ?? 0})` :
-                 `Historial (${sessions?.length ?? 0})`}
+                {tabLabel}
               </button>
             ))}
           </div>
+          {emotionalEnabled && (
+            <div className="flex justify-end -mt-3 mb-3">
+              <button onClick={toggleEmotional} className="text-[0.7rem] font-body text-[oklch(0.52_0.02_60)] hover:text-[oklch(0.52_0.08_148)]">
+                {showEmotional ? "Ocultar acompañamiento en este dispositivo" : "Mostrar acompañamiento"}
+              </button>
+            </div>
+          )}
+
+          {activeTab === "resumen" && (
+            <ResumenTab
+              clientId={clientId}
+              onAddSession={() => {
+                setActiveTab("sesiones");
+                setOpenNewSession(true);
+              }}
+              onOpenSessions={() => setActiveTab("sesiones")}
+            />
+          )}
+          {activeTab === "sesiones" && (
+            <SesionesTab clientId={clientId} openNew={openNewSession} onNewHandled={() => setOpenNewSession(false)} />
+          )}
+          {activeTab === "primera" && <PrimeraVisitaTab clientId={clientId} />}
+          {activeTab === "acompanamiento" && emotionalEnabled && showEmotional && <AcompanamientoTab clientId={clientId} />}
 
           {/* CITAS */}
           {activeTab === "citas" && (
@@ -474,49 +538,6 @@ export default function ClienteDetalle() {
             </div>
           )}
 
-          {/* HISTORIAL */}
-          {activeTab === "historial" && (
-            <div className="space-y-3">
-              {!sessions || sessions.length === 0 ? (
-                <div className="bg-white border border-[oklch(0.92_0.01_80)] p-10 text-center">
-                  <Clock size={28} className="mx-auto text-[oklch(0.88_0.015_75)] mb-2" />
-                  <p className="text-sm text-[oklch(0.52_0.02_60)] font-body" style={{ fontWeight: 300 }}>Sin historial de sesiones</p>
-                </div>
-              ) : (
-                sessions.map((session) => (
-                  <div key={session.id} className="bg-white border border-[oklch(0.92_0.01_80)] p-4">
-                    <p className="text-[0.65rem] text-[oklch(0.52_0.08_148)] font-body uppercase tracking-wider mb-2">
-                      {formatDate(session.sessionDate)}
-                    </p>
-                    {session.summary && (
-                      <div className="mb-3">
-                        <p className="text-[0.65rem] text-[oklch(0.52_0.02_60)] font-body uppercase tracking-wider mb-1" style={{ fontWeight: 500 }}>Resumen</p>
-                        <p className="text-sm text-[oklch(0.28_0.025_55)] font-body leading-relaxed" style={{ fontWeight: 300 }}>{session.summary}</p>
-                      </div>
-                    )}
-                    {session.protocols && (
-                      <div className="mb-3">
-                        <p className="text-[0.65rem] text-[oklch(0.52_0.02_60)] font-body uppercase tracking-wider mb-1" style={{ fontWeight: 500 }}>Protocolos</p>
-                        <p className="text-sm text-[oklch(0.28_0.025_55)] font-body leading-relaxed" style={{ fontWeight: 300 }}>{session.protocols}</p>
-                      </div>
-                    )}
-                    {session.nextSteps && (
-                      <div className="mb-3">
-                        <p className="text-[0.65rem] text-[oklch(0.52_0.02_60)] font-body uppercase tracking-wider mb-1" style={{ fontWeight: 500 }}>Próximos pasos</p>
-                        <p className="text-sm text-[oklch(0.28_0.025_55)] font-body leading-relaxed" style={{ fontWeight: 300 }}>{session.nextSteps}</p>
-                      </div>
-                    )}
-                    {session.supplements && (
-                      <div>
-                        <p className="text-[0.65rem] text-[oklch(0.52_0.02_60)] font-body uppercase tracking-wider mb-1" style={{ fontWeight: 500 }}>Suplementos</p>
-                        <p className="text-sm text-[oklch(0.28_0.025_55)] font-body leading-relaxed" style={{ fontWeight: 300 }}>{session.supplements}</p>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          )}
         </div>
       </div>
 
