@@ -49,7 +49,7 @@ const emptyEntry = (): Entry => Object.fromEntries(GROUPS.map((g) => [g.key, Obj
 export default function AcompanamientoTab({ clientId }: { clientId: number }) {
   const { status, isLoading } = useModule("emotional");
   if (isLoading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin" size={18} /></div>;
-  if (!status?.enabled) return <ModuloBloqueado title="Acompañamiento emocional" missing={status?.missing ?? []} />;
+  if (!status?.enabled) return <ModuloBloqueado title="Acompañamiento emocional" />;
   return <Anotaciones clientId={clientId} />;
 }
 
