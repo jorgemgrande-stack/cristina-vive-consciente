@@ -119,20 +119,20 @@ export default function CRMClientes() {
                   key={client.id}
                   className="grid grid-cols-1 md:grid-cols-[2fr_1.5fr_1fr_1fr_auto] gap-2 md:gap-4 px-5 py-4 hover:bg-[oklch(0.98_0.004_80)] transition-colors items-center"
                 >
-                  {/* Name */}
-                  <div className="flex items-center gap-3">
+                  {/* Name: toda la zona abre la ficha */}
+                  <Link href={`/crm/clientes/${client.id}`} className="flex items-center gap-3 min-h-[44px] no-underline group">
                     <div className="w-8 h-8 rounded-full bg-[oklch(0.52_0.08_148)]/10 flex items-center justify-center text-[oklch(0.52_0.08_148)] text-xs font-body font-medium flex-shrink-0">
                       {client.firstName[0]}{client.lastName[0]}
                     </div>
-                    <div>
-                      <p className="text-sm text-[oklch(0.18_0.018_55)] font-body" style={{ fontWeight: 500 }}>
+                    <div className="min-w-0">
+                      <p className="text-sm text-[oklch(0.18_0.018_55)] font-body group-hover:text-[oklch(0.52_0.08_148)] group-hover:underline" style={{ fontWeight: 500 }}>
                         {client.firstName} {client.lastName}
                       </p>
-                      <p className="text-xs text-[oklch(0.52_0.02_60)] font-body md:hidden" style={{ fontWeight: 300 }}>
-                        {client.email}
+                      <p className="text-xs text-[oklch(0.52_0.02_60)] font-body md:hidden truncate" style={{ fontWeight: 300 }}>
+                        {client.phone || client.email}
                       </p>
                     </div>
-                  </div>
+                  </Link>
 
                   {/* Contact */}
                   <div className="hidden md:block">
@@ -168,7 +168,7 @@ export default function CRMClientes() {
                         href={`https://wa.me/${client.phone.replace(/\D/g, "")}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-7 h-7 flex items-center justify-center bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
+                        className="w-10 h-10 md:w-7 md:h-7 flex items-center justify-center bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
                         title="WhatsApp"
                       >
                         <MessageCircle size={13} />
@@ -177,7 +177,7 @@ export default function CRMClientes() {
                     {client.email && (
                       <a
                         href={`mailto:${client.email}`}
-                        className="w-7 h-7 flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                        className="w-10 h-10 md:w-7 md:h-7 flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                         title="Email"
                       >
                         <Mail size={13} />
@@ -185,7 +185,7 @@ export default function CRMClientes() {
                     )}
                     <Link
                       href={`/crm/clientes/${client.id}`}
-                      className="w-7 h-7 flex items-center justify-center bg-[oklch(0.52_0.08_148)]/10 text-[oklch(0.52_0.08_148)] hover:bg-[oklch(0.52_0.08_148)]/20 transition-colors no-underline"
+                      className="w-10 h-10 md:w-7 md:h-7 flex items-center justify-center bg-[oklch(0.52_0.08_148)]/10 text-[oklch(0.52_0.08_148)] hover:bg-[oklch(0.52_0.08_148)]/20 transition-colors no-underline"
                       title="Ver ficha"
                     >
                       <ArrowRight size={13} />

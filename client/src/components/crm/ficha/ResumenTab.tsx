@@ -2,15 +2,18 @@
  * Ficha · Resumen: datos generales, «Información para recordar», última visita, próxima cita y servicios recibidos.
  */
 import { useState } from "react";
-import { CalendarClock, History, Loader2, Pencil, Phone, MessageCircle, Plus, Sparkles } from "lucide-react";
+import { CalendarClock, CalendarPlus, FileText, History, Loader2, Mail, Pencil, Phone, MessageCircle, Plus, Sparkles, StickyNote } from "lucide-react";
+import { Link } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { LIMITS, REMEMBER_INFO_HELP } from "@shared/clientCare";
 import { btnGhost, btnPrimary, card, confirmDiscard, Field, formatDay, formatDayTime, input, SectionTitle } from "./ui";
 
-type Props = { clientId: number; onAddSession: () => void; onOpenSessions: () => void };
+type Props = { clientId: number; onAddSession: () => void; onOpenSessions: () => void; onAddNote: () => void };
 
-export default function ResumenTab({ clientId, onAddSession, onOpenSessions }: Props) {
+const quickAction = "flex flex-col items-center justify-center gap-1 min-h-[64px] px-2 py-2 bg-white border border-[oklch(0.92_0.01_80)] text-[0.7rem] text-[oklch(0.38_0.02_55)] font-body text-center hover:border-[oklch(0.52_0.08_148)] hover:text-[oklch(0.52_0.08_148)] no-underline";
+
+export default function ResumenTab({ clientId, onAddSession, onOpenSessions, onAddNote }: Props) {
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.care.summary.useQuery({ clientId });
   const [editing, setEditing] = useState(false);
@@ -37,6 +40,13 @@ export default function ResumenTab({ clientId, onAddSession, onOpenSessions }: P
 
   return (
     <div className="space-y-4">
+      <nav aria-label="Acciones rápidas" className="grid grid-cols-4 gap-2 lg:hidden">
+        <Link href={`/crm/citas/nueva?clientId=${clientId}`} className={quickAction}><CalendarPlus size={16} /> Nueva cita</Link>
+        <button type="button" onClick={onAddSession} className={quickAction}><Plus size={16} /> Sesión</button>
+        <button type="button" onClick={onAddNote} className={quickAction}><StickyNote size={16} /> Nota</button>
+        <Link href={`/crm/facturas/nueva?clientId=${clientId}`} className={quickAction}><FileText size={16} /> Factura</Link>
+      </nav>
+
       {/* Información para recordar: lo primero que ve Cristina */}
       <div className="border border-amber-200 bg-amber-50 p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
@@ -95,10 +105,17 @@ export default function ResumenTab({ clientId, onAddSession, onOpenSessions }: P
                 {c.phone || "—"}
                 {c.phone && (
                   <>
-                    <a href={`tel:${c.phone}`} className="p-1.5 bg-blue-50 text-blue-600" aria-label="Llamar"><Phone size={12} /></a>
-                    <a href={`https://wa.me/${c.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-green-50 text-green-600" aria-label="WhatsApp"><MessageCircle size={12} /></a>
+                    <a href={`tel:${c.phone}`} className="p-2.5 sm:p-1.5 bg-blue-50 text-blue-600" aria-label="Llamar"><Phone size={12} /></a>
+                    <a href={`https://wa.me/${c.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="p-2.5 sm:p-1.5 bg-green-50 text-green-600" aria-label="WhatsApp"><MessageCircle size={12} /></a>
                   </>
                 )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[0.65rem] uppercase tracking-wider text-[oklch(0.52_0.02_60)]">Correo</dt>
+              <dd className="text-[oklch(0.18_0.018_55)] flex items-center gap-2 mt-0.5 min-w-0">
+                <span className="truncate">{c.email || "—"}</span>
+                {c.email && <a href={`mailto:${c.email}`} className="p-2.5 sm:p-1.5 bg-blue-50 text-blue-600 flex-shrink-0" aria-label="Enviar correo"><Mail size={12} /></a>}
               </dd>
             </div>
             <div>
@@ -122,7 +139,7 @@ export default function ResumenTab({ clientId, onAddSession, onOpenSessions }: P
           </p>
           {data.latestSession && (
             <button onClick={onOpenSessions} className="mt-2 inline-flex items-center gap-1 text-xs text-[oklch(0.52_0.08_148)] font-body hover:underline">
-              <History size={12} /> Ver la sesión ({data.latestSession.serviceName ?? "sin servicio"}) y el historial
+              <History size={12} /> Ver la última sesión{data.latestSession.serviceName ? ` (${data.latestSession.serviceName})` : ""} y el historial
             </button>
           )}
         </div>
@@ -145,16 +162,28 @@ export default function ResumenTab({ clientId, onAddSession, onOpenSessions }: P
       </div>
 
       <div className={card}>
-        <SectionTitle action={<button onClick={onAddSession} className={`${btnPrimary} min-h-[36px]`}><Plus size={12} /> Nueva sesión</button>}>
-          Servicios recibidos ({data.sessionsCount} {data.sessionsCount === 1 ? "sesión" : "sesiones"})
+        <SectionTitle>
+          Servicios recibidos · {data.sessionsCount} {data.sessionsCount === 1 ? "sesión" : "sesiones"}
         </SectionTitle>
         {data.servicesReceived.length === 0 ? (
-          <p className="text-sm text-[oklch(0.52_0.02_60)] font-body">Aún no hay sesiones con servicio asociado.</p>
+          <p className="text-sm text-[oklch(0.52_0.02_60)] font-body">
+            {data.sessionsCount === 0 ? (
+              <>Todavía no hay sesiones. <button type="button" onClick={onAddSession} className="text-[oklch(0.52_0.08_148)] hover:underline">Registrar la primera</button></>
+            ) : (
+              "Las sesiones registradas no indican servicio. Al añadir o editar una sesión puedes elegirlo."
+            )}
+          </p>
         ) : (
           <ul className="flex flex-wrap gap-2">
             {data.servicesReceived.map((s) => (
-              <li key={s.serviceId} className="text-xs font-body px-2.5 py-1 bg-[oklch(0.52_0.08_148)]/10 text-[oklch(0.32_0.06_148)]">
-                {s.name} · {s.count}
+              <li key={s.serviceId}>
+                <Link
+                  href={`/crm/servicios/${s.serviceId}/editar`}
+                  className="inline-block text-xs font-body px-2.5 py-1.5 bg-[oklch(0.52_0.08_148)]/10 text-[oklch(0.32_0.06_148)] hover:bg-[oklch(0.52_0.08_148)]/20 no-underline"
+                  title="Ver el servicio"
+                >
+                  {s.name} · {s.count} {s.count === 1 ? "sesión" : "sesiones"}
+                </Link>
               </li>
             ))}
           </ul>

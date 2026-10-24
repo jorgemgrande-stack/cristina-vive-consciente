@@ -173,29 +173,39 @@ export default function ClienteDetalle() {
         {/* ── SIDEBAR INFO ── */}
         <div className="space-y-4">
           {/* Card principal */}
-          <div className="bg-white border border-[oklch(0.92_0.01_80)] p-5">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 rounded-full bg-[oklch(0.52_0.08_148)]/10 flex items-center justify-center text-[oklch(0.52_0.08_148)] font-display text-lg" style={{ fontWeight: 500 }}>
+          {/* En móvil, compacta en una fila; en escritorio, tarjeta */}
+          <div className="bg-white border border-[oklch(0.92_0.01_80)] p-4 lg:p-5 flex items-center gap-3 lg:block">
+            <div className="flex items-start justify-between lg:mb-4">
+              <div className="w-11 h-11 lg:w-12 lg:h-12 rounded-full bg-[oklch(0.52_0.08_148)]/10 flex items-center justify-center text-[oklch(0.52_0.08_148)] font-display text-lg flex-shrink-0" style={{ fontWeight: 500 }}>
                 {client.firstName[0]}{client.lastName[0]}
               </div>
               <Link
                 href={`/crm/clientes/${clientId}/editar`}
-                className="w-7 h-7 flex items-center justify-center border border-[oklch(0.92_0.01_80)] text-[oklch(0.52_0.02_60)] hover:border-[oklch(0.52_0.08_148)] hover:text-[oklch(0.52_0.08_148)] transition-colors no-underline"
-                title="Editar"
+                className="hidden lg:flex w-7 h-7 items-center justify-center border border-[oklch(0.92_0.01_80)] text-[oklch(0.52_0.02_60)] hover:border-[oklch(0.52_0.08_148)] hover:text-[oklch(0.52_0.08_148)] transition-colors no-underline"
+                title="Editar cliente"
               >
                 <Edit size={13} />
               </Link>
             </div>
-            <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-0.5" style={{ fontWeight: 500, fontSize: "1.1rem" }}>
-              {client.firstName} {client.lastName}
-            </h2>
-            <span className={`text-[0.6rem] px-2 py-0.5 font-body uppercase tracking-wider ${
-              client.status === "active" ? "bg-green-50 text-green-700" :
-              client.status === "lead" ? "bg-amber-50 text-amber-700" :
-              "bg-gray-100 text-gray-600"
-            }`}>
-              {client.status === "active" ? "Activo" : client.status === "lead" ? "Lead" : "Inactivo"}
-            </span>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-0.5 truncate" style={{ fontWeight: 500, fontSize: "1.1rem" }}>
+                {client.firstName} {client.lastName}
+              </h2>
+              <span className={`text-[0.6rem] px-2 py-0.5 font-body uppercase tracking-wider ${
+                client.status === "active" ? "bg-green-50 text-green-700" :
+                client.status === "lead" ? "bg-amber-50 text-amber-700" :
+                "bg-gray-100 text-gray-600"
+              }`}>
+                {client.status === "active" ? "Activo" : client.status === "lead" ? "Lead" : "Inactivo"}
+              </span>
+            </div>
+            <Link
+              href={`/crm/clientes/${clientId}/editar`}
+              className="lg:hidden w-10 h-10 flex items-center justify-center border border-[oklch(0.92_0.01_80)] text-[oklch(0.52_0.02_60)] no-underline flex-shrink-0"
+              aria-label="Editar cliente"
+            >
+              <Edit size={15} />
+            </Link>
           </div>
 
           {/* Contacto (en móvil ya está en Resumen) */}
@@ -294,7 +304,8 @@ export default function ClienteDetalle() {
         {/* ── MAIN CONTENT ── */}
         <div>
           {/* Tabs */}
-          <div className="flex border-b border-[oklch(0.92_0.01_80)] mb-5 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0" role="tablist">
+          {/* En móvil, cuadrícula: todas las pestañas visibles sin desplazamiento lateral */}
+          <div className="grid grid-cols-3 gap-1 sm:flex sm:gap-0 sm:border-b border-[oklch(0.92_0.01_80)] mb-5" role="tablist" aria-label="Secciones de la ficha">
             {(
               [
                 ["resumen", "Resumen"],
@@ -310,10 +321,10 @@ export default function ClienteDetalle() {
                 role="tab"
                 aria-selected={activeTab === tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-shrink-0 whitespace-nowrap px-3 sm:px-4 py-3 text-xs font-body uppercase tracking-wider transition-colors ${
+                className={`min-h-[44px] px-2 sm:px-4 py-2.5 sm:py-3 text-[0.68rem] sm:text-xs font-body uppercase tracking-wider text-center leading-tight transition-colors border sm:border-0 sm:border-b-2 ${
                   activeTab === tab
-                    ? "border-b-2 border-[oklch(0.52_0.08_148)] text-[oklch(0.52_0.08_148)]"
-                    : "text-[oklch(0.52_0.02_60)] hover:text-[oklch(0.38_0.02_55)]"
+                    ? "border-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]/10 sm:bg-transparent text-[oklch(0.38_0.07_148)]"
+                    : "border-[oklch(0.92_0.01_80)] sm:border-transparent bg-white sm:bg-transparent text-[oklch(0.45_0.02_60)] hover:text-[oklch(0.30_0.02_55)]"
                 }`}
                 style={{ fontWeight: activeTab === tab ? 500 : 400, letterSpacing: "0.08em" }}
               >
@@ -337,6 +348,10 @@ export default function ClienteDetalle() {
                 setOpenNewSession(true);
               }}
               onOpenSessions={() => setActiveTab("sesiones")}
+              onAddNote={() => {
+                setActiveTab("notas");
+                setShowNoteForm(true);
+              }}
             />
           )}
           {activeTab === "sesiones" && (
@@ -447,7 +462,7 @@ export default function ClienteDetalle() {
               {/* Add note form */}
               {showNoteForm && (
                 <div className="bg-white border border-[oklch(0.52_0.08_148)]/30 p-4 space-y-3">
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {(Object.keys(NOTE_TYPES) as Array<keyof typeof NOTE_TYPES>).map((t) => (
                       <button
                         key={t}
@@ -460,6 +475,9 @@ export default function ClienteDetalle() {
                       </button>
                     ))}
                   </div>
+                  <p className="text-[0.7rem] text-[oklch(0.52_0.02_60)] font-body leading-relaxed" style={{ fontWeight: 300 }}>
+                    Para gestión y detalles prácticos (avisos, pagos, preferencias, seguimiento). No anotes aquí datos de salud ni emocionales.
+                  </p>
                   <textarea
                     value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}

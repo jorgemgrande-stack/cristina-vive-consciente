@@ -123,7 +123,7 @@ export default function SesionesTab({ clientId, openNew, onNewHandled }: Props) 
       <Field id="s-pending" title="Pendiente para la próxima sesión">
         <textarea id="s-pending" rows={2} maxLength={LIMITS.longText} value={form.pendingNext} onChange={set("pendingNext")} className={`${input} resize-y`} />
       </Field>
-      <div className="flex gap-2 sticky bottom-0 bg-white pt-1">
+      <div className="flex gap-2 pt-1">
         <button type="submit" disabled={create.isPending || update.isPending || (editingId !== "new" && !dirty)} className={`${btnPrimary} flex-1`}>
           {(create.isPending || update.isPending) && <Loader2 size={12} className="animate-spin" />} Guardar sesión
         </button>

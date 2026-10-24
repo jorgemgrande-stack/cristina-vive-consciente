@@ -207,7 +207,7 @@ export default function AfiliadoForm() {
             </div>
             <Select
               value={form.category}
-              onValueChange={(v) => setForm({ ...form, category: v })}
+              onValueChange={(v) => v && setForm({ ...form, category: v })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecciona una categoría" />
@@ -261,7 +261,7 @@ export default function AfiliadoForm() {
               <Label>Estado</Label>
               <Select
                 value={form.status}
-                onValueChange={(v) => setForm({ ...form, status: v as "active" | "inactive" })}
+                onValueChange={(v) => v && setForm({ ...form, status: v as "active" | "inactive" })}
               >
                 <SelectTrigger>
                   <SelectValue />

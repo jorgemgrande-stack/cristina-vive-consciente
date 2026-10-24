@@ -11,43 +11,23 @@ import { btnGhost, btnPrimary, card, formatDay, input } from "./ui";
 
 export type ModuleKey = "first_visit" | "emotional";
 
-const REQUIREMENT_LABEL: Record<string, string> = {
-  SENSITIVE_FIRST_VISIT_ENABLED: "Activación explícita del módulo «Primera visita»",
-  SENSITIVE_EMOTIONAL_ENABLED: "Activación explícita del módulo «Acompañamiento emocional»",
-  SENSITIVE_DATA_KEY: "Clave de cifrado configurada en el servidor",
-  SENSITIVE_KEY_VERSION: "Versión de la clave de cifrado",
-  PRIVACY_REVIEW_REF: "Revisión de privacidad / evaluación de riesgos completada",
-  PRIVACY_LEGAL_BASIS: "Base jurídica decidida (consentimiento explícito)",
-  PRIVACY_NOTICE_VERSION: "Texto informativo y de consentimiento revisado por Cristina",
-};
-
 export function useModule(module: ModuleKey) {
   const { data, isLoading } = trpc.care.modules.useQuery();
   return { status: data?.find((m) => m.module === module), isLoading };
 }
 
-export function ModuloBloqueado({ title, missing }: { title: string; missing: string[] }) {
+/** Aviso breve para el uso diario. El detalle técnico de la activación está en docs/PRIVACIDAD_FICHAS.md. */
+export function ModuloBloqueado({ title }: { title: string }) {
   return (
     <div className={`${card} border-dashed`}>
       <div className="flex items-start gap-3">
         <Lock size={18} className="text-[oklch(0.52_0.02_60)] mt-0.5 flex-shrink-0" />
         <div>
-          <p className="text-sm font-body text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 500 }}>{title}: sección protegida y desactivada</p>
+          <p className="text-sm font-body text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 500 }}>{title}: pendiente de activar</p>
           <p className="text-xs font-body text-[oklch(0.52_0.02_60)] mt-1 leading-relaxed">
-            Puede contener datos de salud o emocionales. Hasta completar la revisión de privacidad, el servidor no permite ni leer
-            ni guardar nada aquí. Mientras tanto, no anotes estos datos en otras secciones de la ficha.
+            Esta sección se activará cuando estén resueltos los requisitos de privacidad. Hasta entonces, no anotes datos de salud
+            ni emocionales en la ficha. Lo práctico (preferencias, sesiones, citas y notas) funciona con normalidad.
           </p>
-          {missing.length > 0 && (
-            <>
-              <p className="text-[0.65rem] uppercase tracking-wider font-body text-[oklch(0.52_0.02_60)] mt-3" style={{ fontWeight: 500 }}>Pendiente para habilitarla</p>
-              <ul className="mt-1 space-y-0.5">
-                {missing.map((m) => (
-                  <li key={m} className="text-xs font-body text-[oklch(0.38_0.02_55)]">· {REQUIREMENT_LABEL[m] ?? m}</li>
-                ))}
-              </ul>
-            </>
-          )}
-          <p className="text-[0.7rem] font-body text-[oklch(0.52_0.02_60)] mt-3">Procedimiento: docs/PRIVACIDAD_FICHAS.md</p>
         </div>
       </div>
     </div>

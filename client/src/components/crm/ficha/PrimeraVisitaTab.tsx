@@ -24,7 +24,7 @@ const emptyForm = () => Object.fromEntries(FIELDS.map(([k]) => [k, ""])) as Reco
 export default function PrimeraVisitaTab({ clientId }: { clientId: number }) {
   const { status, isLoading } = useModule("first_visit");
   if (isLoading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin" size={18} /></div>;
-  if (!status?.enabled) return <ModuloBloqueado title="Primera visita" missing={status?.missing ?? []} />;
+  if (!status?.enabled) return <ModuloBloqueado title="Primera visita" />;
   return <PrimeraVisitaForm clientId={clientId} />;
 }
 
