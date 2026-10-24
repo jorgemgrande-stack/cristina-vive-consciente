@@ -123,20 +123,6 @@ async function startServer() {
   app.use("/api/upload", uploadRouter);
 
   // ─── Admin Login / Logout ────────────────────────────────────────────────────
-  // Diagnóstico temporal (eliminar tras confirmar login funciona)
-  app.get("/api/admin/diag", (_: any, res: any) => {
-    const e = process.env.ADMIN_EMAIL ?? "";
-    const p = process.env.ADMIN_PASSWORD ?? "";
-    res.json({
-      emailSet: e.length > 0,
-      emailLen: e.length,
-      emailStart: e.slice(0, 3),
-      passwordSet: p.length > 0,
-      passwordLen: p.length,
-      passwordStart: p.slice(0, 2),
-    });
-  });
-
   app.post("/api/admin/login", express.json(), async (req: any, res: any) => {
     // Parse body — supports JSON and urlencoded
     let body: any = req.body;
@@ -151,10 +137,6 @@ async function startServer() {
     const password = (body?.password ?? "").toString().trim();
     const adminEmail = (process.env.ADMIN_EMAIL ?? "").trim();
     const adminPassword = (process.env.ADMIN_PASSWORD ?? "").trim();
-
-    console.log(`[Login] bodyType=${typeof req.body} email="${email}" emailLen=${email.length} passLen=${password.length}`);
-    console.log(`[Login] envEmailLen=${adminEmail.length} envPassLen=${adminPassword.length} envEmailStart=${adminEmail.slice(0,3)}`);
-    console.log(`[Login] emailMatch=${email === adminEmail} passMatch=${password === adminPassword}`);
 
     if (!adminEmail || !adminPassword) {
       return res.status(500).json({ error: "Credenciales de admin no configuradas" });

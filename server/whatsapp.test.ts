@@ -35,9 +35,9 @@ describe("WhatsApp helper", () => {
   });
 
   it("genera texto de mensaje correcto para reserva", async () => {
-    const { generateBookingWhatsAppText } = await import("./whatsapp");
+    const { generateAdminBookingNotification } = await import("./whatsapp");
 
-    const text = generateBookingWhatsAppText({
+    const text = generateAdminBookingNotification({
       firstName: "Ana",
       lastName: "García",
       serviceLabel: "Masaje Terapéutico",
