@@ -11,7 +11,8 @@ export default defineRailway(() => {
     source: github("jorgemgrande-stack/cristina-vive-consciente", { branch: "main", checkSuites: false }),
     build: "pnpm install && pnpm build",
     start: "pnpm start",
-    deploy: { restartPolicyType: "ON_FAILURE", restartPolicyMaxRetries: 3 },
+    // Railway guarda ON_FAILURE (su valor por defecto) como null: no declararlo evita un diff perpetuo
+    deploy: { restartPolicyMaxRetries: 3 },
     replicas: { "us-west2": 1 },
     domains: ["cristinaviveconsciente.es", "www.cristinaviveconsciente.es"],
     volumeMounts: { "/app/uploads": uploads },
