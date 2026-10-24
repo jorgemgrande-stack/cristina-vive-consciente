@@ -6,14 +6,16 @@
 import { ReactNode } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
-import WhatsAppButton from "./WhatsAppButton";
+import WhatsAppButton, { type WhatsAppContext } from "./WhatsAppButton";
 import CookieBanner from "./CookieBanner";
 
 interface LayoutProps {
   children: ReactNode;
+  /** Servicio de la página: el globo de WhatsApp lo nombra en el mensaje y en la medición. */
+  whatsappContext?: WhatsAppContext;
 }
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children, whatsappContext }: LayoutProps) {
   return (
     <div className="min-h-screen flex flex-col bg-[oklch(0.985_0.006_85)]">
       <Header />
@@ -21,7 +23,7 @@ export default function Layout({ children }: LayoutProps) {
         {children}
       </main>
       <Footer />
-      <WhatsAppButton />
+      <WhatsAppButton context={whatsappContext} />
       <CookieBanner />
     </div>
   );

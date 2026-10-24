@@ -234,3 +234,33 @@ export function immediateConfirmationWhatsAppUrl(opts: {
   const text = `Hola Cristina, soy ${name || "un cliente"}. Acabo de solicitar ${opts.serviceLabel} para el ${when} y necesito confirmación inmediata. ¿Podemos confirmarlo? Gracias 🌿`;
   return `https://wa.me/${CRISTINA_WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
 }
+
+// ─── Metadatos de página y mensaje del globo de WhatsApp ─────────────────────
+
+/** Título y descripción propios de la ficha de un masaje (solo datos del servicio, sin afirmaciones añadidas). */
+export function massagePageMeta(service: {
+  name: string;
+  shortDescription?: string | null;
+  price?: string | number | null;
+  durationLabel?: string | null;
+}): { title: string; description: string } {
+  const price = formatEuros(service.price);
+  const facts = [service.durationLabel, price ? `${price} en consulta` : null].filter(Boolean).join(" · ");
+  const title = `${service.name} en ${MASSAGE_LOCATION}${price ? ` · ${price}` : ""} | Cristina Vive Consciente`;
+  const lead = (service.shortDescription ?? "").trim().replace(/\s+/g, " ");
+  const tail = `${facts ? `${facts}. ` : ""}Reserva online y paga el día de tu cita.`;
+  const room = 160 - tail.length - 1;
+  const shortLead = lead.length > room ? `${lead.slice(0, Math.max(0, room - 1)).replace(/\s+\S*$/, "")}…` : lead;
+  return { title, description: shortLead ? `${shortLead} ${tail}` : tail };
+}
+
+/**
+ * Texto con el que se abre WhatsApp desde el globo flotante. Si el visitante está en la ficha de un
+ * servicio, el mensaje lo nombra: así Cristina sabe desde qué página le escriben, sin cookies ni identificadores.
+ */
+export function whatsappContactMessage(serviceName?: string | null): string {
+  const name = serviceName?.trim();
+  return name
+    ? `Hola Cristina, te escribo desde tu web, desde la página de ${name}. Me gustaría más información. 🌿`
+    : "Hola Cristina, me gustaría obtener más información sobre tus servicios de bienestar. 🌿";
+}

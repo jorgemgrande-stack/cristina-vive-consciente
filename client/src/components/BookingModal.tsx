@@ -737,6 +737,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                         service_slug: form.serviceType,
                         service_group: "masaje",
                         modality: "presencial",
+                        placement: "booking_modal",
                       })
                     }
                     className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-[#25D366] text-white text-xs tracking-widest uppercase font-body hover:opacity-90 transition-opacity no-underline"

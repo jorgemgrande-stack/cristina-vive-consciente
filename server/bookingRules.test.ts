@@ -11,7 +11,7 @@ import {
   CANCELLABLE_FROM,
   MASSAGE_TIME_SLOTS,
 } from "./bookingRules";
-import { isWeekend, slotsForDate, MASSAGE_TIME_SLOTS as SLOTS } from "../shared/booking";
+import { isWeekend, slotsForDate, massagePageMeta, whatsappContactMessage, MASSAGE_TIME_SLOTS as SLOTS } from "../shared/booking";
 
 describe("madridLocalToEpoch", () => {
   it("verano (CEST, UTC+2): 10:00 en Madrid = 08:00 UTC", () => {
@@ -153,5 +153,43 @@ describe("formatEuros — precio de las tarjetas", () => {
     expect(formatEuros(110)).toBe("110 €");
     expect(formatEuros("72.5")).toBe("72,50 €");
     for (const v of [null, undefined, "", "abc"]) expect(formatEuros(v as any)).toBe("");
+  });
+});
+
+describe("metadatos de la ficha de masaje", () => {
+  const relajante = {
+    name: "Masaje Relajante",
+    shortDescription: "Un espacio de calma y desconexión para liberar las tensiones del día a día y disfrutar de una experiencia de bienestar corporal.",
+    price: "70.00",
+    durationLabel: "45 min",
+  };
+
+  it("título con servicio, lugar y precio reales", () => {
+    expect(massagePageMeta(relajante).title).toBe("Masaje Relajante en Navas de Riofrío (Segovia) · 70 € | Cristina Vive Consciente");
+  });
+
+  it("descripción de 160 caracteres como máximo, con duración y precio", () => {
+    const { description } = massagePageMeta(relajante);
+    expect(description.length).toBeLessThanOrEqual(160);
+    expect(description).toContain("45 min · 70 € en consulta.");
+    expect(description.endsWith("Reserva online y paga el día de tu cita.")).toBe(true);
+  });
+
+  it("sin precio ni descripción no inventa datos", () => {
+    const meta = massagePageMeta({ name: "Masaje", price: null });
+    expect(meta.title).toBe("Masaje en Navas de Riofrío (Segovia) | Cristina Vive Consciente");
+    expect(meta.description).toBe("Reserva online y paga el día de tu cita.");
+  });
+});
+
+describe("mensaje del globo de WhatsApp", () => {
+  it("nombra el servicio de la página, sin identificadores", () => {
+    expect(whatsappContactMessage("Masaje Relajante")).toBe(
+      "Hola Cristina, te escribo desde tu web, desde la página de Masaje Relajante. Me gustaría más información. 🌿",
+    );
+  });
+
+  it("fuera de una ficha mantiene el mensaje genérico", () => {
+    expect(whatsappContactMessage()).toBe("Hola Cristina, me gustaría obtener más información sobre tus servicios de bienestar. 🌿");
   });
 });

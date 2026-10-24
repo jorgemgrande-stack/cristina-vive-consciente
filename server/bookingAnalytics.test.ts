@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   BOOKING_EVENTS,
   CLIENT_EMITTABLE_EVENTS,
+  WHATSAPP_CLICK_EVENTS,
   mayEmit,
   sanitizeBookingEventParams,
 } from "../shared/bookingAnalytics";
@@ -11,7 +12,7 @@ describe("analítica de reservas", () => {
     expect(BOOKING_EVENTS.REQUEST_SUBMITTED).toBe("booking_request_submitted");
     expect(BOOKING_EVENTS.CONFIRMED).toBe("booking_confirmed");
     expect(BOOKING_EVENTS.PAID).toBe("booking_paid");
-    expect(new Set(Object.values(BOOKING_EVENTS)).size).toBe(5); // todos distintos (incluye el clic a WhatsApp, señal secundaria)
+    expect(new Set(Object.values(BOOKING_EVENTS)).size).toBe(6); // todos distintos (incluye los clics a WhatsApp, señales secundarias)
   });
 
   it("el navegador no puede emitir confirmed/paid (ocurren después, en el admin)", () => {
@@ -49,5 +50,18 @@ describe("analítica de reservas", () => {
     expect(mayEmit({ analytics: false, ads: false })).toBe(false);
     expect(mayEmit({ analytics: true, ads: false })).toBe(true);
     expect(mayEmit({ analytics: false, ads: true })).toBe(true);
+  });
+});
+
+describe("clics a WhatsApp (señal secundaria)", () => {
+  it("el globo y el botón del formulario son eventos de WhatsApp, nunca la solicitud de reserva", () => {
+    expect(WHATSAPP_CLICK_EVENTS).toEqual([BOOKING_EVENTS.WHATSAPP_CLICKED, BOOKING_EVENTS.WHATSAPP_CONTACT_CLICKED]);
+    expect(WHATSAPP_CLICK_EVENTS).not.toContain(BOOKING_EVENTS.REQUEST_SUBMITTED);
+    expect(CLIENT_EMITTABLE_EVENTS).toContain(BOOKING_EVENTS.WHATSAPP_CONTACT_CLICKED);
+  });
+
+  it("admite `placement` con valores simples y descarta texto libre", () => {
+    expect(sanitizeBookingEventParams({ placement: "floating_button" })).toEqual({ placement: "floating_button" });
+    expect(sanitizeBookingEventParams({ placement: "globo de la home" })).toEqual({});
   });
 });

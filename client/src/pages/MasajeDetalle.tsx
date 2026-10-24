@@ -15,9 +15,11 @@ import {
   PAYMENT_NOTE,
   formatEuros,
   getHomePrice,
+  massagePageMeta,
   massagePlaceAnswer,
   massagePlaceLabel,
 } from "@shared/booking";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { defaultGallery } from "@shared/serviceGallery";
 import { useState } from "react";
 import { useRoute, Link } from "wouter";
@@ -55,6 +57,7 @@ export default function MasajeDetalle() {
     { enabled: !!slug }
   );
   const { data: galleryData } = trpc.services.gallery.useQuery({ slug }, { enabled: !!slug, retry: false });
+  usePageMeta(masaje ? massagePageMeta(masaje) : null);
 
   if (isLoading) {
     return (
@@ -128,7 +131,7 @@ export default function MasajeDetalle() {
         onClose={() => setBookingOpen(false)}
         preselectedService={masaje.slug}
       />
-      <Layout>
+      <Layout whatsappContext={{ serviceName: masaje.name, serviceSlug: masaje.slug }}>
 
         {/* ── Cabecera: título, galería y bloque de reserva ── */}
         <section className="bg-[oklch(0.985_0.006_85)] pt-28 pb-12 sm:pb-16 lg:pt-36 border-b border-[oklch(0.92_0.01_75)]">
