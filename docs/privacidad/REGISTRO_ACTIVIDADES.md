@@ -23,7 +23,6 @@
 | Brevo (`smtp-relay.brevo.com`) | Envío de los emails de la web | Email, nombre y contenido de cada aviso (citas, pedidos, contacto, secuencia de seguimiento) | _[pendiente]_ | Activo (`SMTP_HOST`). _[Pendiente: entidad y DPA]_ |
 | CallMeBot | Aviso por WhatsApp **al número de Cristina** | Citas: servicio, día y hora. Pedidos: referencia, producto e importe. **Sin nombre, teléfono, email ni mensaje.** | _[pendiente]_ | Activo (`CALLMEBOT_APIKEY`). Es un puente no oficial de uso personal. _[Valorar si es aceptable]_ |
 | Google (Analytics, Ads, Tag Manager) | Medición | Eventos sin datos personales (servicio, modalidad) y conversiones. Solo con consentimiento de cookies. **Nunca en `/crm` ni en `/admin`.** | EE. UU. | Activo (`VITE_GA4_ID`, `VITE_GOOGLE_ADS_ID`) |
-| Google Fonts | Tipografías | IP del navegador, en todas las páginas y **antes del consentimiento** | EE. UU. | Activo (`client/index.html`). _[Valorar servir las fuentes desde la propia web]_ |
 
 **Inactivos en producción** (sin variables configuradas, comprobado el 25 de octubre de 2026):
 - Meta WhatsApp Cloud API;
@@ -93,8 +92,8 @@ Igual que la actividad 2, con estas diferencias:
 
 ### 6. «Mi consulta» de aceites (`/mi-consulta`)
 - **Finalidad:** responder a la consulta.
-- **Base jurídica:** consentimiento. **Puede incluir datos de salud** en «objetivos». _[Ver observación 3]_
-- **Datos:** nombre, apellidos, email, teléfono, provincia, objetivos, experiencia y productos.
+- **Base jurídica:** consentimiento, comprobado también en el servidor.
+- **Datos:** nombre, apellidos, email, teléfono, provincia, usos y experiencia (opciones cerradas, sin texto libre) y productos. No se piden datos de salud.
 - **Destinatarios:** ninguno externo.
 - **Conservación:** _[pendiente]_.
 
@@ -121,7 +120,7 @@ Ver `/politica-de-cookies`:
 
 ## Observaciones detectadas al preparar este registro (decisión de Cristina)
 
-1. **Suscripción a la comunidad** (`/contacto`, bloque inferior):
+1. **Suscripción a la comunidad** (propuesta en [PROPUESTA_MARKETING.md](PROPUESTA_MARKETING.md)) (`/contacto`, bloque inferior):
    - no tiene casilla;
    - el código envía `acceptPrivacy: true` sin que el interesado marque nada;
    - activa la misma secuencia de emails de los días 3 y 7.
@@ -130,17 +129,13 @@ Ver `/politica-de-cookies`:
    - se envían a **cualquiera** que escriba, aunque solo haya hecho una pregunta;
    - la baja solo funciona respondiendo «Baja», y no se procesa automáticamente.
    - **Decidir:** casilla separada para los emails comerciales, o no enviarlos sin ella; y una baja que funcione sola.
-3. **«Mi consulta»:**
-   - el campo «objetivos» sugiere salud («mejorar el sueño, dolor muscular…»);
-   - la casilla de privacidad solo se comprueba en el navegador y no se guarda.
-4. **Formulario de cita:**
-   - el mensaje para consultas («¿Qué te gustaría trabajar…?») puede llevar a escribir datos de salud que acaban en las notas de la cita, sin cifrar;
-   - se ha añadido una línea informativa con enlace a la política de privacidad.
+3. **«Mi consulta»:** **corregido.** Opciones cerradas en lugar de texto libre, y consentimiento exigido también en el servidor. Las consultas anteriores conservan su texto: Cristina puede revisarlas en el CRM.
+4. **Formulario de cita:** **corregido.** El mensaje es solo de información práctica (máximo 300 caracteres) y avisa de no incluir datos de salud. Las citas anteriores conservan su texto.
 5. **El contenido de los formularios se copia en otros sitios:**
    - en `automation_logs` se guarda un enlace `wa.me` con nombre, teléfono, email y mensaje (lo que se haría por WhatsApp si no está activo Meta);
    - el mensaje del formulario de contacto se copia en `clients.notes`.
    - Revisar si hace falta conservar estas copias.
-6. **Google Fonts** se carga antes del consentimiento y transmite la IP a Google.
+6. **Google Fonts:** **corregido.** Las tipografías se sirven desde la propia web.
 7. **Transferencia a EE. UU.:**
    - Railway aloja todo en *US West*;
    - **decidir:** mantenerlo con las garantías documentadas o pasar los servicios a la región de la UE de Railway.

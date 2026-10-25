@@ -27,7 +27,7 @@ function H2({ children }: { children: ReactNode }) {
 const TREATMENTS: Array<{ title: string; data: string; purpose: string; basis: ReactNode }> = [
   {
     title: "Solicitudes de cita",
-    data: "Nombre, apellidos, email, teléfono, servicio, fecha y hora preferidas, modalidad y el mensaje que quieras añadir.",
+    data: "Nombre, apellidos, email, teléfono, servicio, fecha y hora preferidas, modalidad y, si quieres, un mensaje breve con información práctica (no se piden datos de salud).",
     purpose: "Gestionar tu solicitud, confirmarla, cancelarla o proponerte otras fechas.",
     basis: "Aplicación de medidas precontractuales y ejecución del servicio que solicitas (art. 6.1.b RGPD).",
   },
@@ -46,10 +46,9 @@ const TREATMENTS: Array<{ title: string; data: string; purpose: string; basis: R
   },
   {
     title: "«Mi consulta» de aceites esenciales",
-    data: "Nombre, apellidos, email, teléfono y provincia (opcionales), objetivos, experiencia previa y productos seleccionados.",
-    purpose:
-      "Preparar la respuesta a tu consulta. Si en los objetivos mencionas aspectos de salud, solo se usan para responder a esa consulta.",
-    basis: "Tu consentimiento (art. 6.1.a RGPD y, para datos de salud que decidas incluir, art. 9.2.a RGPD).",
+    data: "Nombre, apellidos, email, teléfono y provincia (estos dos, opcionales), los usos que te interesan y tu experiencia con aceites (opciones cerradas) y los productos seleccionados. No se piden datos de salud.",
+    purpose: "Preparar la respuesta a tu consulta.",
+    basis: "Tu consentimiento (art. 6.1.a RGPD).",
   },
   {
     title: "Pedidos de guías digitales",
@@ -167,8 +166,7 @@ export default function Privacidad() {
               <li>
                 <span style={{ fontWeight: 500 }}>Google</span>: Google Analytics y Google Ads solo si aceptas esas cookies (ver la{" "}
                 <Link href="/politica-de-cookies" className="text-[oklch(0.52_0.08_148)] underline">política de cookies</Link>); nunca
-                se les envía tu nombre, email, teléfono ni lo que escribes. Las tipografías de la web se cargan desde Google Fonts,
-                que recibe la dirección IP de tu navegador.
+                se les envía tu nombre, email, teléfono ni lo que escribes. Las tipografías se sirven desde la propia web.
               </li>
               <li>Pagos por Bizum: se hacen desde tu banco, fuera de esta web.</li>
               <li>Administraciones públicas, cuando exista una obligación legal (por ejemplo, fiscal).</li>

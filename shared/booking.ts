@@ -290,3 +290,14 @@ export function whatsappContactMessage(serviceName?: string | null): string {
     ? `Hola Cristina, te escribo desde tu web, desde la página de ${name}. Me gustaría más información. 🌿`
     : "Hola Cristina, me gustaría obtener más información sobre tus servicios de bienestar. 🌿";
 }
+
+/**
+ * Mensaje opcional de la solicitud de cita: SOLO información práctica de la reserva. Se guarda en las notas de
+ * la cita y va en el aviso por email a Cristina, sin cifrar; por eso es breve y no invita a contar datos de
+ * salud (esos se recogen, con consentimiento y cifrados, en la ficha: Primera visita / Acompañamiento).
+ */
+export const BOOKING_MESSAGE_MAX = 300;
+export const BOOKING_MESSAGE_LABEL = "Información práctica (opcional)";
+export const BOOKING_MESSAGE_PLACEHOLDER = "Dudas sobre horario, cómo llegar o alguna preferencia práctica…";
+export const BOOKING_MESSAGE_HELP =
+  "No incluyas datos de salud ni personales: si son necesarios, Cristina te los preguntará en la sesión, con tu consentimiento.";

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ShoppingBag, Leaf, ArrowRight, Trash2, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
+import { OIL_EXPERIENCE, OIL_USES, type OilConsultationInput } from "@shared/oilConsultation";
 
 const TIPO_LABELS: Record<string, string> = {
   aceite: "Aceite esencial",
@@ -30,19 +31,9 @@ interface FormState {
   email: string;
   telefono: string;
   provincia: string;
-  objetivos: string;
-  experienciaPrevia: string;
+  usos: OilConsultationInput["usos"];
+  experiencia: OilConsultationInput["experiencia"] | "";
   consentimiento: boolean;
-}
-
-// Helpers para construir el mensaje y productsList para el router
-function buildMensaje(form: FormState): string {
-  const parts: string[] = [];
-  if (form.apellidos) parts.push(`Apellidos: ${form.apellidos}`);
-  if (form.provincia) parts.push(`Provincia: ${form.provincia}`);
-  if (form.objetivos) parts.push(`Objetivos: ${form.objetivos}`);
-  if (form.experienciaPrevia) parts.push(`Experiencia previa: ${form.experienciaPrevia}`);
-  return parts.join(" | ");
 }
 
 const EMPTY_FORM: FormState = {
@@ -51,8 +42,8 @@ const EMPTY_FORM: FormState = {
   email: "",
   telefono: "",
   provincia: "",
-  objetivos: "",
-  experienciaPrevia: "",
+  usos: [],
+  experiencia: "",
   consentimiento: false,
 };
 
@@ -89,12 +80,20 @@ export default function MiConsulta() {
       toast.error("Añade al menos un aceite a tu consulta antes de enviarla.");
       return;
     }
+    if (form.usos.length === 0 || !form.experiencia) {
+      toast.error("Indica cómo te gustaría usarlos y tu experiencia previa.");
+      return;
+    }
     submitConsulta.mutate({
-      nombre: `${form.nombre} ${form.apellidos}`.trim(),
+      nombre: form.nombre,
+      apellidos: form.apellidos || undefined,
       email: form.email,
       telefono: form.telefono || undefined,
-      mensaje: buildMensaje(form) || undefined,
+      provincia: form.provincia || undefined,
+      usos: form.usos,
+      experiencia: form.experiencia,
       productsList: JSON.stringify(items.map((i) => ({ id: i.id, name: i.name, slug: i.slug }))),
+      acceptPrivacy: true,
     });
   }
 
@@ -185,7 +184,7 @@ export default function MiConsulta() {
               </Link>
               <h1 className="font-display text-3xl text-[oklch(0.18_0.018_55)]">Mi Consulta Personalizada</h1>
               <p className="font-body text-[oklch(0.42_0.02_55)] mt-2 leading-relaxed">
-                Cuéntanos un poco sobre ti y tus objetivos. Cristina revisará tu selección y te contactará para orientarte personalmente.
+                Cuéntanos cómo te gustaría usarlos. Cristina revisará tu selección y te contactará para orientarte personalmente.
               </p>
             </div>
 
@@ -260,36 +259,52 @@ export default function MiConsulta() {
                 </div>
               </div>
 
-              {/* Objetivos */}
+              {/* Uso y experiencia: opciones cerradas, sin texto libre (no se piden datos de salud) */}
               <div className="space-y-4">
                 <h2 className="text-xs font-body uppercase tracking-wider text-[oklch(0.52_0.04_80)] border-b border-[oklch(0.92_0.01_80)] pb-2">
-                  Cuéntame sobre ti
+                  Cómo te gustaría usarlos
                 </h2>
-                <div className="space-y-1">
-                  <label className="text-xs font-body uppercase tracking-wider text-[oklch(0.42_0.02_55)]">¿Qué objetivos tienes con los aceites esenciales? *</label>
-                  <textarea
-                    name="objetivos"
-                    value={form.objetivos}
-                    onChange={handleChange}
-                    required
-                    rows={4}
-                    placeholder="Ej: Mejorar el sueño, reducir el estrés, apoyo inmune, dolor muscular..."
-                    className="w-full font-body text-sm border border-[oklch(0.88_0.01_80)] px-3 py-2 resize-none focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors"
-                    style={{ borderRadius: 0 }}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-body uppercase tracking-wider text-[oklch(0.42_0.02_55)]">¿Tienes experiencia previa con aceites esenciales?</label>
-                  <textarea
-                    name="experienciaPrevia"
-                    value={form.experienciaPrevia}
-                    onChange={handleChange}
-                    rows={3}
-                    placeholder="Cuéntame qué has usado antes, qué te ha funcionado o no..."
-                    className="w-full font-body text-sm border border-[oklch(0.88_0.01_80)] px-3 py-2 resize-none focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors"
-                    style={{ borderRadius: 0 }}
-                  />
-                </div>
+                <fieldset className="space-y-2">
+                  <legend className="text-xs font-body uppercase tracking-wider text-[oklch(0.42_0.02_55)] mb-2">¿Para qué te interesan? *</legend>
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {OIL_USES.map(([key, text]) => (
+                      <label key={key} className="flex items-center gap-2 min-h-[40px] px-3 border border-[oklch(0.88_0.01_80)] text-sm font-body text-[oklch(0.35_0.02_55)] cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="usos"
+                          value={key}
+                          checked={form.usos.includes(key)}
+                          onChange={(e) =>
+                            setForm((prev) => ({ ...prev, usos: e.target.checked ? [...prev.usos, key] : prev.usos.filter((u) => u !== key) }))
+                          }
+                          className="accent-[oklch(0.52_0.08_148)]"
+                        />
+                        {text}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <fieldset className="space-y-2">
+                  <legend className="text-xs font-body uppercase tracking-wider text-[oklch(0.42_0.02_55)] mb-2">¿Tienes experiencia con aceites esenciales? *</legend>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    {OIL_EXPERIENCE.map(([key, text]) => (
+                      <label key={key} className="flex items-center gap-2 min-h-[40px] px-3 border border-[oklch(0.88_0.01_80)] text-sm font-body text-[oklch(0.35_0.02_55)] cursor-pointer">
+                        <input
+                          type="radio"
+                          name="experiencia"
+                          value={key}
+                          checked={form.experiencia === key}
+                          onChange={() => setForm((prev) => ({ ...prev, experiencia: key }))}
+                          className="accent-[oklch(0.52_0.08_148)]"
+                        />
+                        {text}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <p className="text-xs font-body text-[oklch(0.52_0.02_60)] leading-relaxed">
+                  Para esta consulta no necesitamos datos de salud. Si hiciera falta hablar de ello, Cristina te lo planteará en persona.
+                </p>
               </div>
 
               {/* Consentimiento */}
