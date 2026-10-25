@@ -714,6 +714,10 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                 <p className="text-[0.7rem] text-[oklch(0.52_0.02_60)] leading-relaxed">
                   <span style={{ fontWeight: 500 }}>Cancelaciones:</span> {CANCELLATION_POLICY}
                 </p>
+                <p className="text-[0.7rem] text-[oklch(0.52_0.02_60)] leading-relaxed">
+                  Tus datos se usan para gestionar esta cita. Más información en la{" "}
+                  <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="underline">política de privacidad</a>.
+                </p>
               </div>
             )}
 

@@ -76,9 +76,8 @@
 
 ### 6.1 Decisiones que debe confirmar Cristina
 
-- [ ] **Textos de consentimiento** (`CONSENT_TEXTS` en `shared/clientCare.ts`, versiones `pv-2026-10-v1` y `ae-2026-10-v1`): validar la redacción.
-  - Si se cambia un texto, hay que subir su versión.
-  - Confirmar el email de contacto, `info@cristinaviveconsciente.es`, y el nombre del responsable que aparece.
+- [x] **Textos de consentimiento** `pv-2026-10-v1` y `ae-2026-10-v1`: **aprobados por Cristina** el 25 de octubre de 2026. Se comprobó que los publicados coinciden literalmente con los aprobados. Si se cambia un texto, hay que subir su versión.
+- [ ] **Email de contacto:** confirmar que `info@cristinaviveconsciente.es` funciona y unificarlo en la web, que usa también `hola@…es` y `hola@…com`.
 - [ ] **Plazo de revisión:** 12 meses por defecto. Se cambia en `RETENTION_REVIEW_MONTHS`.
 - [ ] **Campos:** confirmar que todos son necesarios para la finalidad. Quitar uno es sencillo.
 - [ ] **Primera visita y reservas:** decidir si se puede dar una sesión sin consentimiento a Primera visita. Hoy la aplicación no lo impide, y el texto dice que es voluntario.
@@ -88,21 +87,18 @@
 
 Ninguno impide usar los módulos con las salvaguardas de §3, pero quedan **pendientes**:
 
-1. **Información al cliente (art. 13 RGPD):**
-   - la web **no tiene política de privacidad**, solo de cookies;
-   - hace falta una, con capas (art. 11 LOPDGDD), que identifique al responsable, la finalidad, la base jurídica, los encargados y las transferencias, los plazos y los derechos, incluido el de reclamar ante la AEPD;
-   - el texto de consentimiento remite a ella de forma implícita, y debería enlazarla.
+1. **Información al cliente (art. 13 RGPD):** publicada en `/privacidad` (`client/src/pages/Privacidad.tsx`) con los datos verificados. Lo que falta (NIF, domicilio, entidades y garantías de los proveedores, plazos) aparece marcado como **pendiente** en la propia página.
 2. **Base jurídica:**
    - la aplicación implementa el consentimiento explícito (art. 9.2.a) como control;
    - conviene que un asesor confirme que es la adecuada y que no aplican el art. 9.2.h ni el 9.3.
-3. **Registro de actividades de tratamiento (art. 30):** no consta que esté hecho. Previsiblemente es obligatorio, porque hay datos de salud.
-4. **Análisis de riesgos y decisión sobre la evaluación de impacto (EIPD, art. 35):** se cumple al menos el criterio de datos de categoría especial de la lista de la AEPD. Debe documentarse la decisión.
-5. **Railway como encargado del tratamiento (art. 28) y transferencia a EE. UU.:**
+3. **Registro de actividades (art. 30):** borrador en [privacidad/REGISTRO_ACTIVIDADES.md](privacidad/REGISTRO_ACTIVIDADES.md), pendiente de completar y revisar. Incluye observaciones sobre la web (suscripción sin casilla, emails de seguimiento, «Mi consulta») que requieren decisión de Cristina.
+4. **Análisis de riesgos y decisión sobre la EIPD (art. 35):** borrador en [privacidad/ANALISIS_RIESGOS.md](privacidad/ANALISIS_RIESGOS.md). Queda pendiente decidir y documentar si hace falta una EIPD formal.
+5. **Railway como encargado del tratamiento (art. 28) y transferencia a EE. UU.** (comprobado: web y MySQL en la región *US West*):
    - aceptar o revisar su contrato de encargado (DPA) y sus subencargados;
    - comprobar su adhesión al Marco de Privacidad de Datos UE-EE. UU. u otras garantías del art. 46.
    - **No verificado.**
 6. **Plazos legales de conservación** que pudieran aplicar a este sector, y posible regulación autonómica de las actividades.
-7. **Procedimiento ante brechas de seguridad** (arts. 33 y 34): notificación en 72 horas cuando proceda.
+7. **Conservación, derechos y brechas:** procedimiento en [privacidad/PROCEDIMIENTOS.md](privacidad/PROCEDIMIENTOS.md), con los plazos y lugares marcados «a decidir».
 8. **Delegado de protección de datos:** previsiblemente no es obligatorio. Conviene documentar la decisión.
 
 ### 6.3 Mejoras técnicas recomendadas (no bloquean el uso)

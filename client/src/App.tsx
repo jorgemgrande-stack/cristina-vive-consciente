@@ -22,6 +22,7 @@ import GuiasDigitales from "./pages/GuiasDigitales";
 import Recomendados from "./pages/Recomendados";
 import Contacto from "./pages/Contacto";
 import PoliticaCookies from "./pages/PoliticaCookies";
+import Privacidad from "./pages/Privacidad";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import BlogArticulos from "./pages/crm/BlogArticulos";
@@ -125,6 +126,7 @@ function Router() {
       <Route path="/crm/calendario" component={Calendario} />
 
       <Route path="/politica-de-cookies" component={PoliticaCookies} />
+      <Route path="/privacidad" component={Privacidad} />
 
       {/* Public — Selección de slot de reprogramación */}
       <Route path="/cita/seleccionar/:token" component={SeleccionarSlot} />

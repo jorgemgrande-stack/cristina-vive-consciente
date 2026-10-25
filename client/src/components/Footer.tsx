@@ -161,13 +161,13 @@ export default function Footer() {
               © {new Date().getFullYear()} BION — Cristina Vive Consciente. Todos los derechos reservados.
             </p>
             <div className="flex items-center gap-5">
-              <button
-                onClick={() => toast.info("Próximamente: política de privacidad")}
-                className="text-[oklch(0.52_0.02_60)] text-xs hover:text-[oklch(0.72_0.06_148)] transition-colors duration-200 font-body"
+              <Link
+                href="/privacidad"
+                className="text-[oklch(0.52_0.02_60)] text-xs hover:text-[oklch(0.72_0.06_148)] transition-colors duration-200 font-body no-underline"
                 style={{ fontWeight: 300 }}
               >
                 Privacidad
-              </button>
+              </Link>
               <Link
                 href="/politica-de-cookies"
                 className="text-[oklch(0.52_0.02_60)] text-xs hover:text-[oklch(0.72_0.06_148)] transition-colors duration-200 font-body no-underline"
