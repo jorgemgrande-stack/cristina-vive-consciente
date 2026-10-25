@@ -6,12 +6,14 @@ import { useEffect, useMemo, useState } from "react";
 import { ClipboardList, Loader2, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { LIMITS, SESSION_NOTES_HELP } from "@shared/clientCare";
-import { btnGhost, btnPrimary, card, confirmDiscard, dateInputToMs, dateInputValue, EmptyState, Field, formatDay, input } from "./ui";
+import { LIMITS, SESSION_NOTES_HELP, sessionTimeOptions } from "@shared/clientCare";
+import { btnGhost, btnPrimary, card, confirmDiscard, dateInputToMs, dateInputValue, EmptyState, Field, formatSessionWhen, input } from "./ui";
 
-type FormState = { date: string; serviceId: string; durationMinutes: string; practicalNotes: string; clientPreferences: string; pendingNext: string };
+/** `time`: hora pactada «HH:MM» (24 h) o "" si no se indica */
+type FormState = { date: string; time: string; serviceId: string; durationMinutes: string; practicalNotes: string; clientPreferences: string; pendingNext: string };
 const empty = (serviceId = "", duration = ""): FormState => ({
   date: dateInputValue(Date.now()),
+  time: "",
   serviceId,
   durationMinutes: duration,
   practicalNotes: "",
@@ -83,6 +85,7 @@ export default function SesionesTab({ clientId, openNew, onNewHandled }: Props) 
     const payload = {
       clientId,
       sessionDate: dateInputToMs(form.date),
+      sessionTime: form.time || null,
       serviceId: form.serviceId ? Number(form.serviceId) : null,
       durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : null,
       practicalNotes: form.practicalNotes,
@@ -98,9 +101,18 @@ export default function SesionesTab({ clientId, openNew, onNewHandled }: Props) 
       <p className="text-sm font-body text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 500 }}>
         {editingId === "new" ? "Nueva sesión" : "Editar sesión"}
       </p>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <Field id="s-date" title="Fecha">
           <input id="s-date" type="date" required value={form.date} onChange={set("date")} className={input} />
+        </Field>
+        <Field id="s-time" title="Hora de la sesión">
+          {/* Selector nativo (cómodo en móvil) con horas en formato 24 h; opcional */}
+          <select id="s-time" value={form.time} onChange={set("time")} className={input}>
+            <option value="">Sin hora</option>
+            {sessionTimeOptions(form.time).map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
         </Field>
         <Field id="s-duration" title="Duración (min)">
           <input id="s-duration" type="number" inputMode="numeric" min={5} max={600} value={form.durationMinutes} onChange={set("durationMinutes")} className={input} />
@@ -154,7 +166,7 @@ export default function SesionesTab({ clientId, openNew, onNewHandled }: Props) 
               <li key={s.id} className={card}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[0.7rem] text-[oklch(0.52_0.08_148)] font-body uppercase tracking-wider">{formatDay(s.sessionDate)}</p>
+                    <p className="text-[0.7rem] text-[oklch(0.52_0.08_148)] font-body uppercase tracking-wider">{formatSessionWhen(s.sessionDate, s.sessionTime)}</p>
                     <p className="text-sm text-[oklch(0.18_0.018_55)] font-body" style={{ fontWeight: 500 }}>
                       {s.serviceName ?? "Sesión"}{s.durationMinutes ? ` · ${s.durationMinutes} min` : ""}
                     </p>
@@ -163,6 +175,7 @@ export default function SesionesTab({ clientId, openNew, onNewHandled }: Props) 
                     onClick={() => {
                       const f: FormState = {
                         date: dateInputValue(s.sessionDate),
+                        time: s.sessionTime ?? "",
                         serviceId: s.serviceId ? String(s.serviceId) : "",
                         durationMinutes: s.durationMinutes ? String(s.durationMinutes) : "",
                         practicalNotes: s.practicalNotes ?? "",
