@@ -422,6 +422,8 @@ export const services = mysqlTable("services", {
   /** Mostrar como destacado / más popular */
   featured: int("featured").default(0).notNull(),
   status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),
+  /** 1 = publicado en la web; 0 = no publicado (solo CRM: sin listado, ficha, sitemap ni reserva web). Migración 0026 */
+  visibleEnPublico: int("visibleEnPublico").default(1).notNull(),
   sortOrder: int("sortOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

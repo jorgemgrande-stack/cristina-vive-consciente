@@ -24,6 +24,7 @@ import {
   removeServiceImage,
 } from "../db";
 import { MAX_SERVICE_IMAGES, buildServiceGallery, defaultGallery, imageKey, isAllowedImageUrl } from "../../shared/serviceGallery";
+import { isPublicService } from "../../shared/serviceVisibility";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
@@ -72,16 +73,18 @@ const serviceInput = z.object({
   contraindications: z.string().optional().nullable(),
   featured: z.boolean().default(false),
   status: z.enum(["active", "inactive"]).default("active"),
+  /** Publicado en la web. Opcional: al editar, si no llega, se conserva el valor actual */
+  visibleEnPublico: z.boolean().optional(),
   sortOrder: z.number().int().min(0).default(0),
 });
 
 // ── Router ────────────────────────────────────────────────────────────────────
 export const servicesRouter = router({
-  // ── Público: listado de servicios activos ──────────────────────────────────
+  // ── Público: listado de servicios activos y publicados ─────────────────────
   list: publicProcedure
     .input(z.object({ type: z.enum(["consulta", "masaje", "otro"]).optional() }).optional())
     .query(async ({ input }) => {
-      const all = await listServices(true); // solo activos
+      const all = (await listServices(true)).filter(isPublicService); // activos y publicados en la web
       if (input?.type) {
         return all.filter((s) => s.type === input.type);
       }
@@ -93,7 +96,7 @@ export const servicesRouter = router({
     .input(z.object({ slug: z.string() }))
     .query(async ({ input }) => {
       const service = await getServiceBySlug(input.slug);
-      if (!service || service.status !== "active") {
+      if (!isPublicService(service)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Servicio no encontrado" });
       }
       return service;
@@ -104,7 +107,7 @@ export const servicesRouter = router({
     .input(z.object({ slug: z.string() }))
     .query(async ({ input }) => {
       const service = await getServiceBySlug(input.slug);
-      if (!service || service.status !== "active") {
+      if (!service || !isPublicService(service)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Servicio no encontrado" });
       }
       const { rows } = await getServiceImages(service.id);
@@ -251,6 +254,7 @@ export const servicesRouter = router({
         contraindications: input.contraindications ?? null,
         featured: input.featured ? 1 : 0,
         status: input.status,
+        visibleEnPublico: input.visibleEnPublico === false ? 0 : 1,
         sortOrder: input.sortOrder,
         createdBy: ctx.user.id,
       });
@@ -282,6 +286,7 @@ export const servicesRouter = router({
         contraindications: input.data.contraindications ?? null,
         featured: input.data.featured ? 1 : 0,
         status: input.data.status,
+        ...(input.data.visibleEnPublico === undefined ? {} : { visibleEnPublico: input.data.visibleEnPublico ? 1 : 0 }),
         sortOrder: input.data.sortOrder,
       });
       return { success: true };

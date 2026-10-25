@@ -39,7 +39,9 @@ const CONSULTA = {
   modality: "ambos",
   status: "active",
 };
+const MASSAGE_UNLISTED = { ...MASSAGE_THERAPEUTIC, id: 30, slug: "masaje_no_publicado_ficticio", name: "Masaje No Publicado", price: "120.00", homePrice: null, visibleEnPublico: 0 };
 const SERVICES: Record<string, any> = {
+  [MASSAGE_UNLISTED.slug]: MASSAGE_UNLISTED,
   [MASSAGE_RELAX.slug]: MASSAGE_RELAX,
   [MASSAGE_THERAPEUTIC.slug]: MASSAGE_THERAPEUTIC,
   [CONSULTA.slug]: CONSULTA,
@@ -235,6 +237,17 @@ describe("bookings.request — consultas (sin cambios de comportamiento)", () =>
     expect(created.serviceType).toBe("consulta_naturopata");
     expect(created.modality).toBe("zoom");
     expect(created.status).toBe("pending");
+  });
+});
+
+describe("bookings.request — servicios no publicados en la web", () => {
+  it("no se pueden reservar desde el formulario público (solo desde el CRM)", async () => {
+    const err = await publicCaller().request(baseInput({ serviceType: MASSAGE_UNLISTED.slug })).catch((e) => e);
+    expect(err.code).toBe("BAD_REQUEST");
+    expect(db.createAppointment).not.toHaveBeenCalled();
+  });
+  it("los servicios publicados se siguen reservando igual", async () => {
+    await expect(publicCaller().request(baseInput())).resolves.toMatchObject({ status: "pending" });
   });
 });
 
