@@ -39,6 +39,7 @@ import {
 } from "../bookingActions";
 import { buildAdminActionUrl, verifyAdminActionToken } from "../adminActionLink";
 import { isValidPhone, normalizePhone } from "../../shared/phone";
+import { isPublicService } from "../../shared/serviceVisibility";
 import { ENV } from "../_core/env";
 import {
   BOOKING_MESSAGE_MAX,
@@ -129,7 +130,8 @@ export const bookingsRouter = router({
     .mutation(async ({ input }) => {
       // 1. Resolver el servicio desde la BD (fuente de verdad de nombre, duración y precio)
       const service = input.serviceType === "otro" ? null : await getServiceBySlug(input.serviceType);
-      if (service && service.status !== "active") {
+      // Inactivos o no publicados en la web: no se reservan desde el formulario público (sí desde el CRM)
+      if (service && !isPublicService(service)) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Este servicio no está disponible actualmente" });
       }
       const isLegacy = (APPOINTMENT_SERVICE_TYPES as readonly string[]).includes(input.serviceType);

@@ -7,7 +7,7 @@
  */
 
 import { Router } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { services, waterProducts, oilProducts, blogPosts } from "../drizzle/schema";
 
@@ -58,7 +58,7 @@ async function getDynamicEntries(): Promise<SitemapEntry[]> {
     db
       .select({ slug: services.slug, type: services.type, updatedAt: services.updatedAt })
       .from(services)
-      .where(eq(services.status, "active")),
+      .where(and(eq(services.status, "active"), eq(services.visibleEnPublico, 1))),
     db
       .select({ slug: waterProducts.slug, updatedAt: waterProducts.updatedAt })
       .from(waterProducts)

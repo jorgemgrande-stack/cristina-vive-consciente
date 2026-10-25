@@ -188,6 +188,11 @@ export default function Servicios() {
                       >
                         {service.status === "active" ? "Activo" : "Inactivo"}
                       </Badge>
+                      {service.visibleEnPublico === 0 && (
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-stone-100 text-stone-600 border border-stone-200" title="No aparece en la web; solo en el CRM">
+                          No publicado en la web
+                        </span>
+                      )}
                     </div>
 
                     {service.shortDescription && (

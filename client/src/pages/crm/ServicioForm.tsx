@@ -44,6 +44,8 @@ type FormData = {
   contraindications: string;
   featured: boolean;
   status: "active" | "inactive";
+  /** Publicado en la web (false = solo CRM) */
+  visibleEnPublico: boolean;
   sortOrder: number;
 };
 
@@ -66,6 +68,7 @@ const EMPTY: FormData = {
   contraindications: "",
   featured: false,
   status: "active",
+  visibleEnPublico: true,
   sortOrder: 0,
 };
 
@@ -136,6 +139,7 @@ export default function ServicioForm() {
         contraindications: (existing as any).contraindications ?? "",
         featured: existing.featured === 1,
         status: existing.status as FormData["status"],
+        visibleEnPublico: existing.visibleEnPublico !== 0,
         sortOrder: existing.sortOrder,
       });
     }
@@ -212,6 +216,7 @@ export default function ServicioForm() {
       contraindications: form.contraindications.trim() || null,
       featured: form.featured,
       status: form.status,
+      visibleEnPublico: form.visibleEnPublico,
       sortOrder: form.sortOrder,
     };
 
@@ -492,6 +497,22 @@ export default function ServicioForm() {
                   />
                   <label htmlFor="featured" className="text-sm text-stone-600 cursor-pointer">
                     Mostrar como popular
+                  </label>
+                </div>
+              </div>
+              <div className="space-y-1.5 col-span-full">
+                <Label>Visible en la web</Label>
+                <div className="flex items-start gap-2 min-h-10 pt-2">
+                  <input
+                    type="checkbox"
+                    id="visibleEnPublico"
+                    checked={form.visibleEnPublico}
+                    onChange={(e) => set("visibleEnPublico", e.target.checked)}
+                    className="w-4 h-4 mt-0.5 accent-[oklch(0.45_0.1_140)]"
+                  />
+                  <label htmlFor="visibleEnPublico" className="text-sm text-stone-600 cursor-pointer">
+                    Publicar en la web. Si lo desmarcas, el servicio no aparece en la web, no tiene página propia ni se puede
+                    reservar online; sigue disponible en el CRM (sesiones, citas y facturas).
                   </label>
                 </div>
               </div>
