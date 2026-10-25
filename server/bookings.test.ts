@@ -238,6 +238,26 @@ describe("bookings.request — consultas (sin cambios de comportamiento)", () =>
   });
 });
 
+describe("bookings.request — mensaje: solo información práctica", () => {
+  it("un mensaje práctico y breve se guarda en las notas como siempre", async () => {
+    await publicCaller().request(baseInput({ message: "Llegaré 5 minutos antes" }));
+    const created = (db.createAppointment.mock.calls as any[][])[0][0];
+    expect(created.internalNotes).toContain("Mensaje del solicitante: Llegaré 5 minutos antes");
+  });
+  it("rechaza mensajes de más de BOOKING_MESSAGE_MAX caracteres sin crear la cita ni notificar", async () => {
+    const err = await publicCaller().request(baseInput({ message: "x".repeat(BOOKING_MESSAGE_MAX + 1) })).catch((e) => e);
+    expect(err.code).toBe("BAD_REQUEST");
+    expect(db.createAppointment).not.toHaveBeenCalled();
+    expect(mail.sendClientConfirmationEmail).not.toHaveBeenCalled();
+    expect(mail.sendAdminNotificationEmail).not.toHaveBeenCalled();
+  });
+  it("sin mensaje, la reserva ordinaria no cambia", async () => {
+    const res = await publicCaller().request(baseInput());
+    expect(res.status).toBe("pending");
+    expect((db.createAppointment.mock.calls as any[][])[0][0].internalNotes).not.toContain("Mensaje del solicitante");
+  });
+});
+
 describe("crm.appointments — acciones del admin", () => {
   const row = (status: string) => ({
     appointment: { id: 5, status, serviceType: "masaje", serviceLabel: "Masaje Relajante — 45 min", scheduledAt: Date.now() + 86400000, modality: "presencial" },
@@ -495,6 +515,7 @@ describe("dirección a domicilio y lugar del masaje", () => {
 });
 
 import { getHomePrice } from "../shared/booking";
+import { BOOKING_MESSAGE_MAX } from "../shared/booking";
 
 describe("tarifa a domicilio (services.homePrice)", () => {
   it("un precio > 0 activa el domicilio; vacío, NULL, 0 o basura lo desactivan", () => {

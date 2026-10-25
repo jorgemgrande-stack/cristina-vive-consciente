@@ -35,6 +35,7 @@ import {
 } from "../oilsDb";
 import { notifyOwner } from "../_core/notification";
 import { notifyAdminNewLead } from "../whatsapp";
+import { buildOilConsultationMessage, oilConsultationInput } from "../../shared/oilConsultation";
 
 // ─── SCHEMAS ──────────────────────────────────────────────────────────────────
 
@@ -73,14 +74,6 @@ const productSchema = z.object({
   status: z.enum(["active", "inactive"]).default("active"),
 });
 
-const consultationSchema = z.object({
-  nombre: z.string().min(1, "El nombre es obligatorio"),
-  email: z.string().email("Email no válido"),
-  telefono: z.string().optional(),
-  mensaje: z.string().optional(),
-  /** JSON array de {id, name, slug} */
-  productsList: z.string().optional(),
-});
 
 // ─── ROUTER ───────────────────────────────────────────────────────────────────
 
@@ -118,14 +111,20 @@ export const oilsRouter = router({
       return product;
     }),
 
+  /**
+   * Consulta de aceites: exige el consentimiento de privacidad también aquí (`acceptPrivacy: true`) y solo
+   * acepta opciones cerradas de uso y experiencia (sin texto libre que invite a escribir datos de salud).
+   */
   submitConsultation: publicProcedure
-    .input(consultationSchema)
+    .input(oilConsultationInput)
     .mutation(async ({ input }) => {
+      const nombre = [input.nombre, input.apellidos].filter(Boolean).join(" ").trim();
+      const mensaje = buildOilConsultationMessage(input);
       const consultationId = await createOilConsultation({
-        nombre: input.nombre.trim(),
-        email: input.email.trim().toLowerCase(),
-        telefono: input.telefono?.trim() ?? null,
-        mensaje: input.mensaje?.trim() ?? null,
+        nombre,
+        email: input.email.toLowerCase(),
+        telefono: input.telefono || null,
+        mensaje,
         productsList: input.productsList ?? "[]",
         status: "new",
       });
@@ -143,18 +142,18 @@ export const oilsRouter = router({
 
       // Notificación Manus al propietario
       notifyOwner({
-        title: `Nueva consulta de aceites esenciales — ${input.nombre.trim()}`,
-        content: `${input.nombre.trim()} (${input.email}${input.telefono ? ` · ${input.telefono}` : ""}) ha solicitado una consulta personalizada sobre aceites esenciales.${productsText}${input.mensaje ? `\n\nMensaje: "${input.mensaje}"` : ""}`,
+        title: `Nueva consulta de aceites esenciales — ${nombre}`,
+        content: `${nombre} (${input.email}${input.telefono ? ` · ${input.telefono}` : ""}) ha solicitado una consulta personalizada sobre aceites esenciales.${productsText}\n\n${mensaje}`,
       }).catch(console.error);
 
       // Notificación WhatsApp al admin
       notifyAdminNewLead({
-        firstName: input.nombre.trim().split(" ")[0] ?? input.nombre.trim(),
-        lastName: input.nombre.trim().split(" ").slice(1).join(" ") ?? "",
-        phone: input.telefono?.trim() ?? "",
-        email: input.email.trim().toLowerCase(),
+        firstName: input.nombre,
+        lastName: input.apellidos ?? "",
+        phone: input.telefono ?? "",
+        email: input.email.toLowerCase(),
         interest: `Consulta aceites esenciales${productsText ? ` (${JSON.parse(input.productsList ?? "[]").length} productos)` : ""}`,
-        message: input.mensaje?.trim(),
+        message: mensaje,
       }).catch(console.error);
 
       return {

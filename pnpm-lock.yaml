@@ -22,6 +22,12 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.693.0
         version: 3.1023.0
+      '@fontsource/dm-sans':
+        specifier: 5.2.8
+        version: 5.2.8
+      '@fontsource/playfair-display':
+        specifier: 5.2.8
+        version: 5.2.8
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.64.0(react@19.2.1))
@@ -1204,6 +1210,12 @@ packages:
 
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
+
+  '@fontsource/dm-sans@5.2.8':
+    resolution: {integrity: sha512-tlovG42m9ESG28WiHpLq3F5umAlm64rv0RkqTbYowRn70e9OlRr5a3yTJhrhrY+k5lftR/OFJjPzOLQzk8EfCA==}
+
+  '@fontsource/playfair-display@5.2.8':
+    resolution: {integrity: sha512-fUEhib70SszNhQVsGbUMSsWJhr7Je0rdeuZdtGpDNu0GKF1xJM8QhpI/y0pckU25GcChXm9TLOmeZupkvvZo2g==}
 
   '@graphql-typed-document-node/core@3.2.0':
     resolution: {integrity: sha512-mB9oAsNCm9aM3/SOv4YtBMqZbYj10R7dkq8byBqxGY/ncFwhf2oQzMV+LCRlWoDSEBJ3COiR1yeDvMtsoOsuFQ==}
@@ -5596,6 +5608,10 @@ snapshots:
       react-dom: 19.2.1(react@19.2.1)
 
   '@floating-ui/utils@0.2.10': {}
+
+  '@fontsource/dm-sans@5.2.8': {}
+
+  '@fontsource/playfair-display@5.2.8': {}
 
   '@graphql-typed-document-node/core@3.2.0(graphql@16.14.2)':
     dependencies:

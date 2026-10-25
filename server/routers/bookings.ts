@@ -41,6 +41,7 @@ import { buildAdminActionUrl, verifyAdminActionToken } from "../adminActionLink"
 import { isValidPhone, normalizePhone } from "../../shared/phone";
 import { ENV } from "../_core/env";
 import {
+  BOOKING_MESSAGE_MAX,
   CRISTINA_WHATSAPP_NUMBER,
   HOME_LABEL_SUFFIX,
   formatHomeAddress,
@@ -121,7 +122,8 @@ export const bookingsRouter = router({
         servicePostalCode: z.string().trim().max(10).optional(),
         serviceCity: z.string().trim().max(80).optional(),
         modality: z.enum(["presencial", "telefono", "zoom", "whatsapp"]).default("zoom"),
-        message: z.string().trim().max(1000).optional(),
+        // Solo información práctica (ver BOOKING_MESSAGE_MAX en shared/booking.ts)
+        message: z.string().trim().max(BOOKING_MESSAGE_MAX, "El mensaje es demasiado largo: solo información práctica de la reserva").optional(),
       })
     )
     .mutation(async ({ input }) => {

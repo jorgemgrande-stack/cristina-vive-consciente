@@ -28,6 +28,10 @@ import {
   homeServiceWhatsAppMessage,
   validateHomeAddress,
   bookableTimes,
+  BOOKING_MESSAGE_HELP,
+  BOOKING_MESSAGE_LABEL,
+  BOOKING_MESSAGE_MAX,
+  BOOKING_MESSAGE_PLACEHOLDER,
   type ServiceLocation,
 } from "@shared/booking";
 import { BOOKING_EVENTS } from "@shared/bookingAnalytics";
@@ -676,17 +680,23 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
 
             {/* Mensaje */}
             <div>
-              <label className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
-                Cuéntame algo (opcional)
+              <label htmlFor="booking-message" className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1.5 uppercase tracking-wider" style={{ fontWeight: 500 }}>
+                {BOOKING_MESSAGE_LABEL}
               </label>
               <textarea
+                id="booking-message"
                 value={form.message}
                 onChange={set("message")}
-                rows={3}
-                placeholder={isMassage ? "Preferencias (aromas, presión…) o alguna pregunta. Por favor, no incluyas datos de salud." : "¿Qué te gustaría trabajar en la consulta? ¿Tienes alguna pregunta?"}
+                rows={2}
+                maxLength={BOOKING_MESSAGE_MAX}
+                placeholder={BOOKING_MESSAGE_PLACEHOLDER}
+                aria-describedby="booking-message-help"
                 className="w-full px-3 py-2.5 bg-white border border-[oklch(0.88_0.015_75)] text-sm font-body text-[oklch(0.18_0.018_55)] placeholder:text-[oklch(0.72_0.02_60)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors resize-none"
                 style={{ borderRadius: 0, fontWeight: 300 }}
               />
+              <p id="booking-message-help" className="text-[0.7rem] text-[oklch(0.52_0.02_60)] font-body mt-1 leading-relaxed" style={{ fontWeight: 300 }}>
+                {BOOKING_MESSAGE_HELP}
+              </p>
             </div>
 
             </div>

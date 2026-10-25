@@ -6,6 +6,17 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { getLoginUrl } from "./const";
+// Tipografías servidas desde la propia web (antes Google Fonts: transmitía la IP del visitante a Google sin consentimiento)
+import "@fontsource/playfair-display/400.css";
+import "@fontsource/playfair-display/500.css";
+import "@fontsource/playfair-display/600.css";
+import "@fontsource/playfair-display/700.css";
+import "@fontsource/playfair-display/400-italic.css";
+import "@fontsource/playfair-display/500-italic.css";
+import "@fontsource/dm-sans/300.css";
+import "@fontsource/dm-sans/400.css";
+import "@fontsource/dm-sans/500.css";
+import "@fontsource/dm-sans/600.css";
 import "./index.css";
 import { initGoogleTag } from "@/lib/googleTag";
 
