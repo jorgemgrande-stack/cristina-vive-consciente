@@ -69,6 +69,22 @@ node scripts/apply-0025-consent-review.mjs
 
 **Reversión:** `drizzle/0025_consent_review.down.sql` (solo quita esa columna). **Se aplica antes de desplegar.**
 
+## Migración 0027 (aditiva): hora de la sesión
+
+`drizzle/0027_session_time.sql` añade `session_history.sessionTime` (`varchar(5)`, admite vacío): la hora pactada de la sesión en formato «HH:MM», 24 h.
+- Las sesiones existentes quedan sin hora y conservan su fecha.
+- No es la hora de creación ni la de edición: esas siguen en `createdAt` y `editedAt`.
+- El historial ordena por día (hora de Madrid), después por hora (las que no tienen hora van al final del día) y, a igualdad, muestra primero la registrada más tarde.
+
+```bash
+node scripts/apply-0027-session-time.mjs --dry-run
+node scripts/apply-0027-session-time.mjs
+```
+
+**Reversión:** `drizzle/0027_session_time.down.sql`.
+
+**Se aplica antes de desplegar.** El código lee la columna, así que sin ella fallaría la lista de sesiones.
+
 ## Pruebas
 
 ```bash

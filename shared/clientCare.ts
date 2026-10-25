@@ -41,8 +41,13 @@ export const profileInput = z.object({
 });
 export type ProfileInput = z.infer<typeof profileInput>;
 
+/** Hora pactada «HH:MM» (24 h) */
+export const SESSION_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 export const sessionInput = z.object({
   sessionDate: z.number().int().positive(),
+  /** Hora pactada de la sesión (opcional). Vacío o null = sin hora */
+  sessionTime: z.union([z.literal(""), z.string().regex(SESSION_TIME_RE, "Hora no válida (usa HH:MM, 24 h)")]).optional().nullable(),
   serviceId: z.number().int().positive().optional().nullable(),
   durationMinutes: z.number().int().min(5).max(600).optional().nullable(),
   /** Observaciones prácticas (columna summary) */
@@ -175,9 +180,32 @@ export function servicesReceived(sessions: SessionLike[], services: ServiceLike[
   return Array.from(acc.values()).sort((a, b) => b.last - a.last);
 }
 
-/** Sesiones de más reciente a más antigua (desempate por id, también descendente). */
-export function sortSessions<T extends { sessionDate: number; id: number }>(sessions: T[]): T[] {
-  return [...sessions].sort((a, b) => b.sessionDate - a.sessionDate || b.id - a.id);
+/** Día de la sesión «YYYY-MM-DD» en hora de Madrid (la fecha se guarda como un instante del día). */
+export function sessionDay(sessionDate: number): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(sessionDate);
+}
+
+/**
+ * Sesiones de más reciente a más antigua: por día; dentro del día, por hora pactada (las que no tienen hora,
+ * después de las que sí); y, a igualdad, la registrada más tarde primero (id descendente).
+ */
+export function sortSessions<T extends { sessionDate: number; id: number; sessionTime?: string | null }>(sessions: T[]): T[] {
+  return [...sessions].sort((a, b) => {
+    const day = sessionDay(b.sessionDate).localeCompare(sessionDay(a.sessionDate));
+    if (day) return day;
+    const ta = a.sessionTime || "";
+    const tb = b.sessionTime || "";
+    if (ta !== tb) return tb.localeCompare(ta); // "" (sin hora) queda al final del día
+    return b.id - a.id;
+  });
+}
+
+/** Opciones del selector de hora: cada 15 minutos de 07:00 a 22:45, en 24 h (más la hora guardada si no encaja). */
+export function sessionTimeOptions(current?: string | null): string[] {
+  const opts: string[] = [];
+  for (let m = 7 * 60; m < 23 * 60; m += 15) opts.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
+  if (current && SESSION_TIME_RE.test(current) && !opts.includes(current)) opts.push(current), opts.sort();
+  return opts;
 }
 
 /** Nombres de los campos que cambian (para el registro de auditoría: nunca los valores). */

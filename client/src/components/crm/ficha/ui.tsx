@@ -46,6 +46,8 @@ export function Field({ id, title, hint, children }: { id: string; title: string
 }
 
 export const formatDay = (ts: number) => new Date(ts).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
+/** Fecha de la sesión y, si se pactó, su hora (24 h): «26 de octubre de 2026 · 18:30». */
+export const formatSessionWhen = (ts: number, time?: string | null) => (time ? `${formatDay(ts)} · ${time}` : formatDay(ts));
 export const formatDayTime = (ts: number) =>
   new Date(ts).toLocaleString("es-ES", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 

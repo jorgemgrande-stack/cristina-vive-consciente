@@ -211,6 +211,9 @@ export const sessionHistory = mysqlTable("session_history", {
   recommendedProducts: text("recommendedProducts"),
   supplements: text("supplements"),
   sessionDate: bigint("sessionDate", { mode: "number" }).notNull(),
+  /** Hora pactada de la sesión, «HH:MM» en 24 h (0027). Opcional: las sesiones antiguas no la tienen.
+   *  No es la hora de creación ni de edición de la nota. */
+  sessionTime: varchar("sessionTime", { length: 5 }),
   // ── Sesiones (0024). `summary` = observaciones prácticas; `nextSteps` = cuestiones pendientes. ──
   /** Servicio real del sistema (services.id); null en sesiones antiguas */
   serviceId: int("serviceId"),

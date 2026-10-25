@@ -16,6 +16,7 @@ import {
   sessionHistory,
 } from "../drizzle/schema";
 import { getDb } from "./db";
+import { sortSessions } from "../shared/clientCare";
 
 async function db() {
   const d = await getDb();
@@ -64,13 +65,15 @@ export async function appointmentBelongsToClient(appointmentId: number, clientId
   return rows.length > 0;
 }
 
+/** Historial de sesiones: más recientes primero por fecha y hora pactada (ver sortSessions). */
 export async function listSessions(clientId: number) {
-  return (await db())
+  const rows = await (await db())
     .select({
       id: sessionHistory.id,
       clientId: sessionHistory.clientId,
       appointmentId: sessionHistory.appointmentId,
       sessionDate: sessionHistory.sessionDate,
+      sessionTime: sessionHistory.sessionTime,
       serviceId: sessionHistory.serviceId,
       serviceName: services.name,
       durationMinutes: sessionHistory.durationMinutes,
@@ -87,8 +90,8 @@ export async function listSessions(clientId: number) {
     })
     .from(sessionHistory)
     .leftJoin(services, eq(services.id, sessionHistory.serviceId))
-    .where(eq(sessionHistory.clientId, clientId))
-    .orderBy(desc(sessionHistory.sessionDate), desc(sessionHistory.id));
+    .where(eq(sessionHistory.clientId, clientId));
+  return sortSessions(rows);
 }
 
 export async function getSession(sessionId: number, clientId: number) {
@@ -102,6 +105,8 @@ export async function getSession(sessionId: number, clientId: number) {
 
 export type SessionWrite = {
   sessionDate: number;
+  /** Hora pactada «HH:MM» o null */
+  sessionTime: string | null;
   serviceId: number | null;
   durationMinutes: number | null;
   summary: string | null;

@@ -100,6 +100,7 @@ async function toSessionWrite(clientId: number, input: SessionInput): Promise<ca
   const t = (v?: string | null) => (v && v.trim() ? v.trim() : null);
   return {
     sessionDate: input.sessionDate,
+    sessionTime: input.sessionTime ? input.sessionTime : null,
     serviceId: input.serviceId ?? null,
     durationMinutes: input.durationMinutes ?? null,
     summary: t(input.practicalNotes),
@@ -175,7 +176,7 @@ export const clientCareRouter = router({
       lastVisit: lastVisit(sessions),
       nextAppointment: nextAppointment(appts),
       servicesReceived: servicesReceived(sessions, services),
-      latestSession: latest ? { id: latest.id, sessionDate: latest.sessionDate, serviceName: latest.serviceName } : null,
+      latestSession: latest ? { id: latest.id, sessionDate: latest.sessionDate, sessionTime: latest.sessionTime, serviceName: latest.serviceName } : null,
       sessionsCount: sessions.length,
     };
   }),
@@ -217,7 +218,7 @@ export const clientCareRouter = router({
         if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "Sesión no encontrada" });
         const data = await toSessionWrite(input.clientId, input);
         const fields = changedFields(
-          { sessionDate: current.sessionDate, serviceId: current.serviceId, durationMinutes: current.durationMinutes, summary: current.summary, clientPreferences: current.clientPreferences, nextSteps: current.nextSteps, appointmentId: current.appointmentId },
+          { sessionDate: current.sessionDate, sessionTime: current.sessionTime, serviceId: current.serviceId, durationMinutes: current.durationMinutes, summary: current.summary, clientPreferences: current.clientPreferences, nextSteps: current.nextSteps, appointmentId: current.appointmentId },
           data as unknown as Record<string, unknown>,
         );
         if (fields.length === 0) return { changed: [] as string[] };

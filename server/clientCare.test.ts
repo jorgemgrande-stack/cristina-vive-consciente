@@ -28,12 +28,14 @@ const db = vi.hoisted(() => {
     serviceExists: vi.fn(async (id: number) => s().services.some((x) => x.id === id)),
     listClientAppointments: vi.fn(async (clientId: number) => s().appointments.filter((a) => a.clientId === clientId)),
     appointmentBelongsToClient: vi.fn(async (id: number, clientId: number) => s().appointments.some((a) => a.id === id && a.clientId === clientId)),
-    listSessions: vi.fn(async (clientId: number) =>
-      s()
-        .sessions.filter((x) => x.clientId === clientId)
-        .map((x) => ({ ...x, serviceName: s().services.find((sv) => sv.id === x.serviceId)?.name ?? null, practicalNotes: x.summary, pendingNext: x.nextSteps }))
-        .sort((a, b) => b.sessionDate - a.sessionDate || b.id - a.id),
-    ),
+    listSessions: vi.fn(async (clientId: number) => {
+      const { sortSessions } = await import("../shared/clientCare");
+      return sortSessions(
+        s()
+          .sessions.filter((x) => x.clientId === clientId)
+          .map((x) => ({ ...x, sessionTime: x.sessionTime ?? null, serviceName: s().services.find((sv) => sv.id === x.serviceId)?.name ?? null, practicalNotes: x.summary, pendingNext: x.nextSteps })),
+      );
+    }),
     getSession: vi.fn(async (id: number, clientId: number) => s().sessions.find((x) => x.id === id && x.clientId === clientId)),
     insertSession: vi.fn(async (clientId: number, data: Row, userId: number) => {
       const id = ++s().seq;
@@ -105,7 +107,7 @@ vi.mock("./whatsapp", () => ({ notifyAdminWhatsApp: notifications.notifyAdminWha
 import { clientCareRouter } from "./routers/clientCare";
 import { decryptPayload, encryptPayload } from "./sensitive/crypto";
 import { moduleReadiness } from "./sensitive/config";
-import { CONSENT_TEXTS, changedFields, lastVisit, nextAppointment, retentionReview, servicesReceived, sortSessions } from "../shared/clientCare";
+import { CONSENT_TEXTS, changedFields, lastVisit, nextAppointment, retentionReview, servicesReceived, sessionDay, sessionTimeOptions, sortSessions } from "../shared/clientCare";
 import { clientSearchTerms } from "./db";
 import { adminSessionCookieOptions, createLoginLimiter, safeEqual } from "./_core/adminAuth";
 
@@ -254,6 +256,73 @@ describe("sesiones", () => {
   it("no se puede editar la sesión de otro cliente cambiando el id", async () => {
     await expect(admin().sessions.update({ clientId: 1, id: 12, sessionDate: NOW })).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(db.updateSession).not.toHaveBeenCalled();
+  });
+});
+
+describe("sesiones: hora pactada", () => {
+  it("se guarda con la sesión; sin hora (vacío o ausente) queda null", async () => {
+    const a = await admin().sessions.create({ clientId: 1, sessionDate: NOW, sessionTime: "18:30", serviceId: 11 });
+    const b = await admin().sessions.create({ clientId: 1, sessionDate: NOW, sessionTime: "" });
+    const c = await admin().sessions.create({ clientId: 1, sessionDate: NOW });
+    expect(store.sessions.find((x) => x.id === a.id)!.sessionTime).toBe("18:30");
+    expect(store.sessions.find((x) => x.id === b.id)!.sessionTime).toBeNull();
+    expect(store.sessions.find((x) => x.id === c.id)!.sessionTime).toBeNull();
+  });
+
+  it.each(["25:00", "9:30", "18:3", "18h30", "18:60"])("hora no válida «%s» → BAD_REQUEST sin guardar", async (t) => {
+    await expect(admin().sessions.create({ clientId: 1, sessionDate: NOW, sessionTime: t })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(db.insertSession).not.toHaveBeenCalled();
+  });
+
+  it("editar solo la hora: se guarda, queda la traza de edición y la auditoría registra «sessionTime»", async () => {
+    const r = await admin().sessions.update({ clientId: 1, id: 10, sessionDate: NOW - 30 * DAY, sessionTime: "10:15", serviceId: 11, durationMinutes: 45, practicalNotes: "antigua" });
+    expect(r.changed).toEqual(["sessionTime"]);
+    expect(store.sessions.find((x) => x.id === 10)).toMatchObject({ sessionTime: "10:15", sessionDate: NOW - 30 * DAY, editedBy: 1 });
+    expect(store.audit.at(-1)).toMatchObject({ action: "update", entityType: "session", fields: ["sessionTime"] });
+    // y quitarla
+    const r2 = await admin().sessions.update({ clientId: 1, id: 10, sessionDate: NOW - 30 * DAY, sessionTime: null, serviceId: 11, durationMinutes: 45, practicalNotes: "antigua" });
+    expect(r2.changed).toEqual(["sessionTime"]);
+    expect(store.sessions.find((x) => x.id === 10)!.sessionTime).toBeNull();
+  });
+
+  it("una sesión antigua sin hora conserva su fecha al editar otros campos", async () => {
+    await admin().sessions.update({ clientId: 1, id: 11, sessionDate: NOW - 5 * DAY, serviceId: 7, durationMinutes: 60, practicalNotes: "reciente editada" });
+    expect(store.sessions.find((x) => x.id === 11)).toMatchObject({ sessionDate: NOW - 5 * DAY, sessionTime: null });
+  });
+
+  it("el historial y el resumen ordenan por fecha y hora (más recientes primero)", async () => {
+    const dayA = NOW - 2 * DAY;
+    const t1 = await admin().sessions.create({ clientId: 1, sessionDate: dayA, sessionTime: "10:00" });
+    const sinHora = await admin().sessions.create({ clientId: 1, sessionDate: dayA });
+    const t2 = await admin().sessions.create({ clientId: 1, sessionDate: dayA, sessionTime: "18:30" });
+    const list = await admin().sessions.list({ clientId: 1 });
+    expect(list.map((x) => x.id)).toEqual([t2.id, t1.id, sinHora.id, 11, 10]);
+    const sum = await admin().summary({ clientId: 1 });
+    expect(sum.latestSession).toMatchObject({ id: t2.id, sessionTime: "18:30" });
+  });
+});
+
+describe("orden de sesiones (función pura)", () => {
+  const at = (iso: string) => new Date(iso).getTime();
+  it("mismo día en Madrid aunque el instante guardado difiera; sin hora al final del día; desempate por id", () => {
+    const rows = [
+      { id: 1, sessionDate: at("2026-10-26T11:00:00Z"), sessionTime: null }, // 26 oct (mediodía Madrid)
+      { id: 2, sessionDate: at("2026-10-25T23:30:00Z"), sessionTime: "09:00" }, // 26 oct 00:30 en Madrid
+      { id: 3, sessionDate: at("2026-10-26T11:00:00Z"), sessionTime: "20:00" },
+      { id: 4, sessionDate: at("2026-10-27T11:00:00Z"), sessionTime: null },
+      { id: 5, sessionDate: at("2026-10-26T11:00:00Z"), sessionTime: null },
+      { id: 6, sessionDate: at("2026-10-20T11:00:00Z"), sessionTime: "23:45" },
+    ];
+    expect(sessionDay(rows[1].sessionDate)).toBe("2026-10-26");
+    expect(sortSessions(rows).map((r) => r.id)).toEqual([4, 3, 2, 5, 1, 6]);
+  });
+  it("selector: cada 15 min de 07:00 a 22:45 en 24 h; incluye una hora guardada que no encaje", () => {
+    const o = sessionTimeOptions();
+    expect(o[0]).toBe("07:00");
+    expect(o.at(-1)).toBe("22:45");
+    expect(o).toContain("18:30");
+    expect(o.length).toBe(64);
+    expect(sessionTimeOptions("10:10")).toContain("10:10");
   });
 });
 
