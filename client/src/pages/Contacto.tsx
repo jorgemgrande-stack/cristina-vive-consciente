@@ -8,6 +8,7 @@ import { SITE_IMAGES } from "@/lib/siteImages";
 import { useState } from "react";
 import { Mail, Phone, Clock, MapPin, Instagram, Send, Users, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "wouter";
 import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
 import { trpc } from "@/lib/trpc";
@@ -269,7 +270,7 @@ export default function Contacto() {
                       style={{ borderRadius: 0 }}
                     />
                     <label htmlFor="privacy" className="text-[oklch(0.52_0.02_60)] text-xs font-body" style={{ fontWeight: 300 }}>
-                      He leído y acepto la política de privacidad. Mis datos serán tratados con total confidencialidad.
+                      He leído y acepto la <Link href="/privacidad" className="underline">política de privacidad</Link>. Mis datos serán tratados con total confidencialidad.
                     </label>
                   </div>
 
