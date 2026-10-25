@@ -3,9 +3,10 @@
  *
  * - Todo requiere sesión de administrador (rol admin), comprobado en el servidor en cada operación.
  * - Datos administrativos y prácticos: perfil del cliente y sesiones.
- * - Datos de categoría especial (primera visita, acompañamiento emocional): bloqueados en el servidor
- *   mientras su módulo no esté habilitado (server/sensitive/config.ts). El bloqueo se comprueba ANTES de
- *   leer la entrada o tocar la base de datos. Se guardan cifrados y exigen consentimiento vigente.
+ * - Datos de salud o emocionales (Primera visita, Acompañamiento emocional): se guardan cifrados y solo con
+ *   consentimiento explícito vigente de ese cliente para ese módulo, comprobado aquí antes de guardar. Sin
+ *   clave de cifrado configurada (server/sensitive/config.ts) el servidor rechaza leerlos o guardarlos antes
+ *   de tocar la base de datos.
  * - El registro de auditoría guarda quién, qué acción y qué campos; nunca contenido.
  * - Ningún error ni log incluye contenido de notas o datos sensibles.
  */
@@ -13,18 +14,21 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import {
+  CONSENT_METHODS,
+  CONSENT_TEXTS,
   changedFields,
   emotionalPayload,
   firstVisitPayload,
   lastVisit,
   nextAppointment,
   profileInput,
+  retentionReview,
   servicesReceived,
   sessionInput,
   type SessionInput,
 } from "../../shared/clientCare";
 import * as care from "../clientCareDb";
-import { allModulesReadiness, moduleReadiness, type SensitiveModule } from "../sensitive/config";
+import { allModulesReadiness, keyVersion, moduleReadiness, type SensitiveModule } from "../sensitive/config";
 import { decryptPayload, encryptPayload } from "../sensitive/crypto";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -37,7 +41,7 @@ const MODULE_LABEL: Record<SensitiveModule, string> = {
   emotional: "Acompañamiento emocional",
 };
 
-/** Bloqueo de servidor de un módulo sensible. Se ejecuta antes de validar la entrada o consultar datos. */
+/** Sin clave de cifrado no se puede leer ni guardar: se rechaza antes de validar la entrada o consultar datos. */
 const sensitiveProcedure = (module: SensitiveModule) =>
   adminProcedure.use(async ({ ctx, next, getRawInput }) => {
     if (!moduleReadiness(module).enabled) {
@@ -48,21 +52,24 @@ const sensitiveProcedure = (module: SensitiveModule) =>
       } catch {
         /* sin entrada legible: se registra sin cliente */
       }
-      await care.insertAudit({ userId: ctx.user.id, action: "denied_disabled", entityType: module, clientId }).catch(() => undefined);
-      throw new TRPCError({ code: "FORBIDDEN", message: `Módulo «${MODULE_LABEL[module]}» desactivado: no se pueden leer ni guardar datos.` });
+      await care.insertAudit({ userId: ctx.user.id, action: "denied_no_key", entityType: module, clientId }).catch(() => undefined);
+      throw new TRPCError({ code: "FORBIDDEN", message: `«${MODULE_LABEL[module]}»: falta configurar la clave de cifrado en el servidor.` });
     }
     return next({ ctx });
   });
 
 const clientIdInput = z.object({ clientId: z.number().int().positive() });
+const moduleInput = clientIdInput.extend({ module: z.enum(["first_visit", "emotional"]) });
+
+function requireReady(module: SensitiveModule) {
+  if (!moduleReadiness(module).enabled) throw new TRPCError({ code: "FORBIDDEN", message: "Falta configurar la clave de cifrado en el servidor." });
+}
 
 async function requireClient(clientId: number) {
   const client = await care.getClientRow(clientId);
   if (!client) throw new TRPCError({ code: "NOT_FOUND", message: "Cliente no encontrado" });
   return client;
 }
-
-const keyVersion = () => process.env.SENSITIVE_KEY_VERSION ?? "";
 
 function decryptOrFail<T>(ciphertext: string, clientId: number, module: SensitiveModule): T {
   try {
@@ -229,36 +236,73 @@ export const clientCareRouter = router({
   emotional: sensitiveRouter("emotional", emotionalPayload),
 
   consents: router({
-    list: adminProcedure
-      .input(clientIdInput.extend({ module: z.enum(["first_visit", "emotional"]) }))
-      .use(async ({ next, getRawInput }) => {
-        const raw = (await getRawInput()) as { module?: SensitiveModule };
-        if (!raw?.module || !moduleReadiness(raw.module).enabled) throw new TRPCError({ code: "FORBIDDEN", message: "Módulo protegido desactivado." });
-        return next();
-      })
-      .query(async ({ input }) => (await care.listConsents(input.clientId)).filter((c) => c.module === input.module)),
+    /** Historial de consentimientos del módulo (fechas, versión, forma): no contiene datos de salud. */
+    list: adminProcedure.input(moduleInput).query(async ({ input }) => (await care.listConsents(input.clientId)).filter((c) => c.module === input.module)),
+    /**
+     * Registro del consentimiento explícito. Exige confirmar que el cliente ha recibido el texto vigente y lo
+     * acepta expresamente (nunca se marca por defecto). Guarda fecha, versión del texto y forma de obtenerlo.
+     */
     grant: adminProcedure
-      .input(clientIdInput.extend({ module: z.enum(["first_visit", "emotional"]), method: z.enum(["papel_firmado", "formulario_electronico"]) }))
+      .input(moduleInput.extend({ method: z.enum(CONSENT_METHODS), informed: z.literal(true) }))
       .mutation(async ({ input, ctx }) => {
-        if (!moduleReadiness(input.module).enabled) throw new TRPCError({ code: "FORBIDDEN", message: "Módulo protegido desactivado." });
+        requireReady(input.module);
         await requireClient(input.clientId);
         if (await care.activeConsent(input.clientId, input.module)) throw new TRPCError({ code: "CONFLICT", message: "Ya hay un consentimiento vigente para este módulo." });
-        const id = await care.insertConsent({ clientId: input.clientId, module: input.module, textVersion: process.env.PRIVACY_NOTICE_VERSION ?? "", method: input.method, grantedAt: Date.now(), recordedBy: ctx.user.id });
+        const id = await care.insertConsent({ clientId: input.clientId, module: input.module, textVersion: CONSENT_TEXTS[input.module].version, method: input.method, grantedAt: Date.now(), recordedBy: ctx.user.id });
         await care.insertAudit({ userId: ctx.user.id, action: "consent_granted", entityType: input.module, entityId: id, clientId: input.clientId });
         return { id };
       }),
-    /** Se puede retirar siempre (también con el módulo desactivado): bloquea nuevos tratamientos y marca revisión. */
+    /**
+     * Retirada (siempre posible). Por defecto suprime en el acto los datos del módulo. Solo si hay una
+     * obligación legal de conservarlos se mantienen, y quedan marcados para revisión.
+     */
     withdraw: adminProcedure
-      .input(clientIdInput.extend({ consentId: z.number().int().positive(), module: z.enum(["first_visit", "emotional"]) }))
+      .input(moduleInput.extend({ consentId: z.number().int().positive(), keepForLegalObligation: z.boolean().default(false) }))
       .mutation(async ({ input, ctx }) => {
-        await care.withdrawConsent(input.consentId, input.clientId, Date.now());
+        await requireClient(input.clientId);
+        const keep = input.keepForLegalObligation;
+        if (!(await care.withdrawConsent(input.consentId, input.clientId, input.module, Date.now(), keep))) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "No hay un consentimiento vigente que retirar." });
+        }
         await care.insertAudit({ userId: ctx.user.id, action: "consent_withdrawn", entityType: input.module, entityId: input.consentId, clientId: input.clientId });
-        return { reviewRequired: true };
+        if (!keep) {
+          await care.deleteSensitiveForClient(input.clientId, input.module);
+          await care.insertAudit({ userId: ctx.user.id, action: "erase", entityType: input.module, clientId: input.clientId });
+        }
+        return { erased: !keep, reviewRequired: keep };
       }),
+    /** Revisión periódica hecha: los datos siguen siendo necesarios para la finalidad. */
+    markReviewed: adminProcedure.input(moduleInput).mutation(async ({ input, ctx }) => {
+      const consent = await care.activeConsent(input.clientId, input.module);
+      if (!consent) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Sin consentimiento vigente: los datos deben suprimirse, no revisarse." });
+      await care.markConsentReviewed(consent.id, input.clientId, Date.now());
+      await care.insertAudit({ userId: ctx.user.id, action: "retention_reviewed", entityType: input.module, entityId: consent.id, clientId: input.clientId });
+      return { reviewed: true };
+    }),
+    /** Fichas cuyos datos de Primera visita o Acompañamiento toca revisar (sin contenido: nombre, módulo y motivo). */
+    reviewsDue: adminProcedure.query(async () =>
+      (await care.consentsWithData())
+        .map((c) => ({ clientId: c.clientId, name: `${c.firstName} ${c.lastName}`.trim(), module: c.module, reason: retentionReview(c, true) }))
+        .filter((c) => c.reason !== null),
+    ),
   }),
 
   rights: router({
-    /** Exportación estructurada (art. 15/20). Los datos sensibles solo se incluyen si su módulo está habilitado. */
+    /** Exportación de UN módulo (Primera visita o Acompañamiento) con su historial de consentimientos. */
+    exportModule: adminProcedure.input(moduleInput).mutation(async ({ input, ctx }) => {
+      requireReady(input.module);
+      await requireClient(input.clientId);
+      const [rows, consents] = await Promise.all([care.listSensitive(input.clientId, input.module), care.listConsents(input.clientId)]);
+      await care.insertAudit({ userId: ctx.user.id, action: "export", entityType: input.module, clientId: input.clientId });
+      return {
+        exportedAt: new Date().toISOString(),
+        clientId: input.clientId,
+        module: input.module,
+        consents: consents.filter((c) => c.module === input.module),
+        records: rows.map((r) => ({ recordDate: r.recordDate, data: decryptOrFail(r.ciphertext, input.clientId, input.module) })),
+      };
+    }),
+    /** Exportación estructurada de todo el cliente (art. 15/20). Sin clave de cifrado, los datos protegidos solo se cuentan. */
     export: adminProcedure.input(clientIdInput).mutation(async ({ input, ctx }) => {
       await requireClient(input.clientId);
       const admin = await care.exportAdministrative(input.clientId);
@@ -289,10 +333,11 @@ export const clientCareRouter = router({
       await care.insertAudit({ userId: ctx.user.id, action: "erase", entityType: "client_care", entityId: input.clientId, clientId: input.clientId });
       return { erased: true };
     }),
-    /** Borra los datos de UN módulo sensible (p. ej. tras retirar el consentimiento). No necesita leerlos. */
-    eraseModule: adminProcedure.input(clientIdInput.extend({ module: z.enum(["first_visit", "emotional"]) })).mutation(async ({ input, ctx }) => {
+    /** Borra los datos de UN módulo (a petición, cuando dejan de ser necesarios o tras retirar el consentimiento). No necesita leerlos. */
+    eraseModule: adminProcedure.input(moduleInput).mutation(async ({ input, ctx }) => {
       await requireClient(input.clientId);
       await care.deleteSensitiveForClient(input.clientId, input.module);
+      await care.clearReviewRequired(input.clientId, input.module);
       await care.insertAudit({ userId: ctx.user.id, action: "erase", entityType: input.module, clientId: input.clientId });
       return { erased: true };
     }),

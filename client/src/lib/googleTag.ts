@@ -64,7 +64,11 @@ function ensureGtag(): GtagFn {
   return w.gtag;
 }
 
+/** CRM y administración (fichas de clientes): nunca se carga Google ni se envían eventos, haya o no consentimiento. */
+const isPrivateArea = () => /^\/(crm|admin)(\/|$)/.test(window.location?.pathname ?? "");
+
 function applyConsent(): void {
+  if (isPrivateArea()) return;
   const consent = getConsent();
   if ((IDS.length === 0 && !HAS_GTM) || !consent || (!consent.analytics && !consent.ads)) {
     // Sin ID o sin consentimiento: no se carga nada. Si ya estaba cargado, se retira el permiso.
@@ -118,7 +122,7 @@ export function initGoogleTag(): void {
 export function reportBookingRequestConversion(): void {
   const consent = getConsent();
   const w = window as GoogleWindow;
-  if (!ADS_ID || !ID_PATTERN.test(ADS_ID) || !BOOKING_LABEL || !consent?.ads || !w.gtag) return;
+  if (isPrivateArea() || !ADS_ID || !ID_PATTERN.test(ADS_ID) || !BOOKING_LABEL || !consent?.ads || !w.gtag) return;
   w.gtag("event", "conversion", { send_to: `${ADS_ID}/${BOOKING_LABEL}` });
 }
 
@@ -130,7 +134,7 @@ export function reportBookingRequestConversion(): void {
 export function reportWhatsAppClickConversion(): void {
   const consent = getConsent();
   const w = window as GoogleWindow;
-  if (!ADS_ID || !ID_PATTERN.test(ADS_ID) || !WHATSAPP_LABEL || !consent?.ads || !w.gtag) return;
+  if (isPrivateArea() || !ADS_ID || !ID_PATTERN.test(ADS_ID) || !WHATSAPP_LABEL || !consent?.ads || !w.gtag) return;
   w.gtag("event", "conversion", { send_to: `${ADS_ID}/${WHATSAPP_LABEL}`, transport_type: "beacon" });
 }
 
@@ -141,6 +145,6 @@ export function reportWhatsAppClickConversion(): void {
 export function sendGa4Event(name: string, params: Record<string, string> = {}): void {
   const consent = getConsent();
   const w = window as GoogleWindow;
-  if (!GA4_ID || !ID_PATTERN.test(GA4_ID) || !consent?.analytics || !w.gtag) return;
+  if (isPrivateArea() || !GA4_ID || !ID_PATTERN.test(GA4_ID) || !consent?.analytics || !w.gtag) return;
   w.gtag("event", name, params);
 }

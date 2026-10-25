@@ -20,14 +20,6 @@ import PrimeraVisitaTab from "@/components/crm/ficha/PrimeraVisitaTab";
 import AcompanamientoTab from "@/components/crm/ficha/AcompanamientoTab";
 
 type Tab = "resumen" | "sesiones" | "citas" | "notas" | "primera" | "acompanamiento";
-const SHOW_EMOTIONAL_KEY = "cvc_show_emotional_tab";
-const readShowEmotional = () => {
-  try {
-    return localStorage.getItem(SHOW_EMOTIONAL_KEY) === "1";
-  } catch {
-    return false;
-  }
-};
 
 const NOTE_TYPES: Record<string, { label: string; color: string }> = {
   general: { label: "General", color: "bg-gray-100 text-gray-600" },
@@ -69,7 +61,6 @@ export default function ClienteDetalle() {
   const clientId = parseInt(params.id);
   const [activeTab, setActiveTab] = useState<Tab>("resumen");
   const [openNewSession, setOpenNewSession] = useState(false);
-  const [showEmotional, setShowEmotional] = useState(readShowEmotional);
   const [newNote, setNewNote] = useState("");
   const [noteType, setNoteType] = useState<"general" | "sesion" | "seguimiento" | "observacion" | "alerta">("general");
   const [showNoteForm, setShowNoteForm] = useState(false);
@@ -86,21 +77,6 @@ export default function ClienteDetalle() {
   const { data: appointments, refetch: refetchAppts } = trpc.crm.appointments.list.useQuery({ clientId });
   const { data: notes, refetch: refetchNotes } = trpc.crm.notes.list.useQuery({ clientId });
   const { data: sessions } = trpc.care.sessions.list.useQuery({ clientId });
-  const { data: modules } = trpc.care.modules.useQuery();
-  const emotionalEnabled = !!modules?.find((m) => m.module === "emotional")?.enabled;
-  const toggleEmotional = () => {
-    const next = !showEmotional;
-    setShowEmotional(next);
-    try {
-      localStorage.setItem(SHOW_EMOTIONAL_KEY, next ? "1" : "0");
-    } catch {
-      /* sin almacenamiento */
-    }
-    if (!next && activeTab === "acompanamiento") setActiveTab("resumen");
-  };
-  useEffect(() => {
-    if (activeTab === "acompanamiento" && !(emotionalEnabled && showEmotional)) setActiveTab("resumen");
-  }, [activeTab, emotionalEnabled, showEmotional]);
 
   const acceptAppt = trpc.crm.appointments.accept.useMutation({
     onSuccess: () => { refetchAppts(); toast.success("Cita confirmada y email enviado"); },
@@ -313,7 +289,7 @@ export default function ClienteDetalle() {
                 ["citas", `Citas (${appointments?.length ?? 0})`],
                 ["notas", `Notas (${notes?.length ?? 0})`],
                 ["primera", "Primera visita"],
-                ...(emotionalEnabled && showEmotional ? [["acompanamiento", "Acompañamiento"]] : []),
+                ["acompanamiento", "Acompañamiento"],
               ] as Array<[Tab, string]>
             ).map(([tab, tabLabel]) => (
               <button
@@ -321,24 +297,17 @@ export default function ClienteDetalle() {
                 role="tab"
                 aria-selected={activeTab === tab}
                 onClick={() => setActiveTab(tab)}
-                className={`min-h-[44px] px-2 sm:px-4 py-2.5 sm:py-3 text-[0.68rem] sm:text-xs font-body uppercase tracking-wider text-center leading-tight transition-colors border sm:border-0 sm:border-b-2 ${
+                className={`min-h-[44px] px-1 sm:px-4 py-2.5 sm:py-3 text-[0.68rem] sm:text-xs font-body uppercase tracking-normal sm:tracking-[0.08em] text-center leading-tight transition-colors border sm:border-0 sm:border-b-2 ${
                   activeTab === tab
                     ? "border-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]/10 sm:bg-transparent text-[oklch(0.38_0.07_148)]"
                     : "border-[oklch(0.92_0.01_80)] sm:border-transparent bg-white sm:bg-transparent text-[oklch(0.45_0.02_60)] hover:text-[oklch(0.30_0.02_55)]"
                 }`}
-                style={{ fontWeight: activeTab === tab ? 500 : 400, letterSpacing: "0.08em" }}
+                style={{ fontWeight: activeTab === tab ? 500 : 400 }}
               >
                 {tabLabel}
               </button>
             ))}
           </div>
-          {emotionalEnabled && (
-            <div className="flex justify-end -mt-3 mb-3">
-              <button onClick={toggleEmotional} className="text-[0.7rem] font-body text-[oklch(0.52_0.02_60)] hover:text-[oklch(0.52_0.08_148)]">
-                {showEmotional ? "Ocultar acompañamiento en este dispositivo" : "Mostrar acompañamiento"}
-              </button>
-            </div>
-          )}
 
           {activeTab === "resumen" && (
             <ResumenTab
@@ -358,7 +327,7 @@ export default function ClienteDetalle() {
             <SesionesTab clientId={clientId} openNew={openNewSession} onNewHandled={() => setOpenNewSession(false)} />
           )}
           {activeTab === "primera" && <PrimeraVisitaTab clientId={clientId} />}
-          {activeTab === "acompanamiento" && emotionalEnabled && showEmotional && <AcompanamientoTab clientId={clientId} />}
+          {activeTab === "acompanamiento" && <AcompanamientoTab clientId={clientId} />}
 
           {/* CITAS */}
           {activeTab === "citas" && (
@@ -476,7 +445,7 @@ export default function ClienteDetalle() {
                     ))}
                   </div>
                   <p className="text-[0.7rem] text-[oklch(0.52_0.02_60)] font-body leading-relaxed" style={{ fontWeight: 300 }}>
-                    Para gestión y detalles prácticos (avisos, pagos, preferencias, seguimiento). No anotes aquí datos de salud ni emocionales.
+                    Para gestión y detalles prácticos (avisos, pagos, preferencias, seguimiento). Lo de salud o emocional va en Primera visita o Acompañamiento.
                   </p>
                   <textarea
                     value={newNote}

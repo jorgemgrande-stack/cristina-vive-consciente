@@ -1,131 +1,136 @@
-# Privacidad de las fichas de clientes
+# Primera visita y Acompañamiento emocional: tratamiento de los datos
 
-> **No es asesoramiento jurídico.** Este documento recoge requisitos técnicos y preguntas que deben confirmar
-> Cristina y un asesor de protección de datos. Ninguna conclusión de aquí está verificada como cumplimiento
-> legal. Las secciones con datos de salud o emocionales **siguen desactivadas en producción**.
+> **No es asesoramiento jurídico ni una declaración de cumplimiento.** Recoge las reglas de uso decididas para la
+> ficha, cómo las aplica la aplicación y qué queda pendiente (§6). Las medidas técnicas ayudan, pero no
+> garantizan por sí solas el cumplimiento del RGPD ni de la LOPDGDD.
 
-## 1. Qué datos hay y cómo se separan
+## 1. Reglas de uso
 
-| Tipo | Dónde | Estado |
+1. **Finalidad:** ayudar a Cristina a preparar las sesiones, darles seguimiento y conocer las preferencias que el cliente quiera compartir. Nada más.
+2. **Minimización:** solo lo que el cliente quiera contar y sea útil para esa finalidad. Todos los campos son opcionales y breves.
+3. **Sin diagnósticos:** no se escriben diagnósticos médicos ni psicológicos, y Cristina no se presenta como profesional sanitaria.
+4. **Separación:** datos generales (Resumen, Citas, Notas), Primera visita, Sesiones y Acompañamiento emocional están separados.
+5. **Consentimiento explícito, informado, voluntario y separado** para Primera visita y para Acompañamiento:
+   - nunca se marca por defecto;
+   - aceptar el módulo emocional no es condición para reservar ni recibir ningún servicio.
+6. **Antes de guardar,** el servidor comprueba que existe el consentimiento vigente de ese cliente para ese módulo.
+7. **Registro y retirada:** se registran la fecha, la versión del texto y la forma del consentimiento. Se puede retirar desde la ficha, y al retirarlo se suprimen los datos del módulo.
+8. **Acceso:** Cristina es por ahora la única usuaria administradora. Hay autenticación, cifrado, control de acceso y auditoría, sin escribir nunca el contenido en los registros.
+9. **Sin terceros:** estos datos no van a analítica, publicidad, herramientas de IA, correo ni WhatsApp.
+10. **Derechos:** se pueden exportar y suprimir los datos de todo el cliente o de cada módulo.
+11. **Conservación limitada:** hay una revisión periódica, y se eliminan los datos cuando dejan de ser necesarios o cuando se pide, salvo obligación legal de conservarlos.
+
+## 2. Qué datos hay y dónde
+
+| Tipo | Dónde | Cómo |
 |---|---|---|
-| Administrativos y prácticos: nombre, teléfono, citas, tarifa particular, «Información para recordar» y notas prácticas de sesión | `clients`, `session_history` y `appointments`, en texto normal | Activo |
-| **Ficha de primera visita**: motivo, alergias o sensibilidades, salud relevante para la sesión, zonas a evitar, bienestar físico o emocional y observaciones | `client_sensitive_records` (`module = first_visit`), **cifrado** | **Desactivado** |
-| **Acompañamiento emocional**: relato del cliente, observaciones de la profesional y seguimiento | `client_sensitive_records` (`module = emotional`), **cifrado** | **Desactivado** |
-| Consentimientos: fecha, versión del texto, forma de obtención y retirada | `client_consents` | Desactivado, igual que su módulo |
-| Registro de accesos y cambios: quién, qué acción y qué campos, **nunca el contenido** | `crm_audit_log` | Activo |
+| Generales y prácticos: contacto, citas, tarifa, «Información para recordar», notas de gestión y notas prácticas de sesión | `clients`, `appointments`, `client_notes`, `session_history` | Texto normal |
+| **Primera visita:** motivo, alergias o sensibilidades, circunstancias para la sesión, zonas a evitar, cómo se encuentra, otras observaciones | `client_sensitive_records` (`module = first_visit`) | **Cifrado** |
+| **Acompañamiento emocional:** relato del cliente, observaciones de Cristina, objetivos y pendientes (anotaciones fechadas) | `client_sensitive_records` (`module = emotional`) | **Cifrado** |
+| Consentimientos: fecha, versión del texto, forma, retirada y última revisión | `client_consents` | Sin datos de salud |
+| Registro de accesos y cambios: quién, acción y nombres de campos, **nunca contenido** | `crm_audit_log` | — |
 
-La interfaz pide expresamente que **no** se escriban datos de salud, emocionales ni familiares en los campos administrativos.
+## 3. Cómo aplica la aplicación cada regla
 
-**Aviso sobre datos que ya existen:** 106 clientes tienen texto en el campo antiguo `clients.notes`, procedente de la importación inicial. No se ha leído ni copiado. Se muestra plegado como «Notas importadas» y con un aviso. **Cristina debe revisarlo** y retirar cualquier dato de salud o personal sensible.
+| Regla | Dónde se aplica |
+|---|---|
+| Minimización y campos breves | Esquemas `firstVisitPayload` y `emotionalPayload` en `shared/clientCare.ts`. Todo es opcional, con un máximo de 1000 caracteres por campo, validado también en el servidor. |
+| Sin diagnósticos | Textos de ayuda en cada campo y textos de consentimiento («no son diagnósticos», «no es terapia psicológica ni atención sanitaria»). |
+| Separación | Pestañas distintas y tabla aparte. Cada registro cifrado va ligado a su cliente y a su módulo (AAD): copiado a otra ficha o a otro módulo, no se descifra. |
+| Consentimiento informado y no marcado | «Pedir consentimiento» muestra el texto para el cliente (`CONSENT_TEXTS`, con versión) y una casilla **sin marcar**. Sin marcarla no se puede registrar, y el servidor exige `informed: true` (`care.consents.grant`). |
+| Consentimiento separado | Cada módulo tiene el suyo: el de Primera visita no sirve para Acompañamiento. |
+| Comprobación antes de guardar | `requireActiveConsent` en `server/routers/clientCare.ts` responde `PRECONDITION_FAILED` aunque se llame a la API directamente. Sin consentimiento, la interfaz no muestra el formulario. |
+| Fecha y versión | `client_consents.grantedAt`, `textVersion` y `method`. |
+| Retirada con supresión | `care.consents.withdraw` registra la retirada y **suprime en el acto** los datos de ese módulo, y solo de ese. Si una obligación legal obliga a conservarlos, hay que marcarlo expresamente: entonces quedan pendientes de revisión hasta suprimirlos. |
+| Acceso y auditoría | Todas las operaciones exigen sesión de administración y se comprueban en el servidor. Se auditan la lectura, el guardado, la exportación, el consentimiento, la retirada, la revisión y la supresión, sin contenido. Los errores no repiten el texto recibido. |
+| Cifrado | AES-256-GCM en la aplicación (`server/sensitive/crypto.ts`). En la base de datos y en sus copias solo hay texto cifrado. Sin clave configurada, el servidor no lee ni guarda (§7). |
+| Sin terceros | El módulo no importa correo, WhatsApp ni ningún servicio externo, y los tests lo comprueban. Google (GTM, GA4, Ads) **no se carga ni envía eventos en `/crm` ni en `/admin`**, aunque se hayan aceptado las cookies (`client/src/lib/googleTag.ts`). No hay integración con herramientas de IA. |
+| Exportar | De la sección: botón «Exportar esta sección» (`care.rights.exportModule`). De todo el cliente: Resumen → «Datos del cliente» → «Exportar todo» (`care.rights.export`). El JSON se genera en el navegador y no pasa por terceros. |
+| Suprimir | De la sección: «Suprimir esta sección» (`care.rights.eraseModule`). De la ficha: Resumen → «Datos del cliente» → «Suprimir ficha», escribiendo el nombre (`care.rights.erase`). Borra sesiones, notas, Primera visita, Acompañamiento y consentimientos, y conserva citas y facturas. |
+| Revisión periódica | Cada 12 meses desde el consentimiento o la última revisión (`RETENTION_REVIEW_MONTHS`): aviso en Clientes, con nombre y sección, y en la ficha, con «Sí, se necesitan» o «Suprimir». También avisa de los datos conservados tras una retirada. |
 
-## 2. Conclusiones de la revisión normativa (pendientes de confirmar)
+**Probado** con datos ficticios en la base `cristina_test`: tests automáticos (`server/clientCare.test.ts`) y recorrido completo en el navegador, en móvil.
 
-Fuentes oficiales consultadas:
-- **RGPD:** DOUE L 119 de 4.5.2016 (<https://www.boe.es/doue/2016/119/L00001-00088.pdf>; conviene cotejarlo en EUR-Lex).
+## 4. Cómo usarlo (Cristina)
+
+1. **Primera visita:** abre la pestaña y pulsa «Pedir consentimiento».
+   - Enseña o entrega al cliente el texto que aparece (en papel para firmar o por formulario).
+   - Solo si lo acepta expresamente, marca la casilla, elige la forma y pulsa «Registrar consentimiento».
+   - Guarda la copia firmada o el registro del formulario.
+2. **Acompañamiento:** igual, con su propio consentimiento. Si el cliente no lo quiere, no pasa nada: la reserva y las sesiones no dependen de ello.
+3. **Qué escribir:** solo lo que el cliente cuenta y sirve para la sesión, con sus palabras. Ni diagnósticos ni etiquetas.
+4. **Si el cliente retira el consentimiento:** «Retirar» → «Retirar y suprimir». Marca «Conservarlos…» solo si hay una obligación legal concreta.
+5. **Si el cliente pide una copia o el borrado:**
+   - «Exportar esta sección» o «Exportar todo»;
+   - «Suprimir esta sección» o «Suprimir ficha».
+   - Respuesta en un mes como máximo (art. 12.3 RGPD). Apunta la fecha de la petición y la de la respuesta.
+6. **Revisión periódica:** cuando aparezca el aviso, decide si los datos siguen siendo necesarios. Si no, suprímelos.
+
+## 5. Datos que ya existían
+
+106 clientes tienen texto en el campo antiguo `clients.notes`, procedente de la importación inicial. No se ha leído ni copiado. Se muestra plegado como «Notas importadas».
+
+**Cristina debe revisarlo.** Si contiene salud o emociones, puede pasarlo a Primera visita o Acompañamiento, **solo con el consentimiento del cliente**, o borrarlo.
+
+## 6. Pendiente
+
+### 6.1 Decisiones que debe confirmar Cristina
+
+- [ ] **Textos de consentimiento** (`CONSENT_TEXTS` en `shared/clientCare.ts`, versiones `pv-2026-10-v1` y `ae-2026-10-v1`): validar la redacción.
+  - Si se cambia un texto, hay que subir su versión.
+  - Confirmar el email de contacto, `info@cristinaviveconsciente.es`, y el nombre del responsable que aparece.
+- [ ] **Plazo de revisión:** 12 meses por defecto. Se cambia en `RETENTION_REVIEW_MONTHS`.
+- [ ] **Campos:** confirmar que todos son necesarios para la finalidad. Quitar uno es sencillo.
+- [ ] **Primera visita y reservas:** decidir si se puede dar una sesión sin consentimiento a Primera visita. Hoy la aplicación no lo impide, y el texto dice que es voluntario.
+- [ ] **Forma del consentimiento:** dónde se guardan las copias firmadas en papel y cómo funciona el «formulario electrónico». Hoy no existe un formulario para el cliente en la web: solo se registra en la ficha.
+
+### 6.2 Requisitos jurídicos o contractuales que no se resuelven con configuración técnica
+
+Ninguno impide usar los módulos con las salvaguardas de §3, pero quedan **pendientes**:
+
+1. **Información al cliente (art. 13 RGPD):**
+   - la web **no tiene política de privacidad**, solo de cookies;
+   - hace falta una, con capas (art. 11 LOPDGDD), que identifique al responsable, la finalidad, la base jurídica, los encargados y las transferencias, los plazos y los derechos, incluido el de reclamar ante la AEPD;
+   - el texto de consentimiento remite a ella de forma implícita, y debería enlazarla.
+2. **Base jurídica:**
+   - la aplicación implementa el consentimiento explícito (art. 9.2.a) como control;
+   - conviene que un asesor confirme que es la adecuada y que no aplican el art. 9.2.h ni el 9.3.
+3. **Registro de actividades de tratamiento (art. 30):** no consta que esté hecho. Previsiblemente es obligatorio, porque hay datos de salud.
+4. **Análisis de riesgos y decisión sobre la evaluación de impacto (EIPD, art. 35):** se cumple al menos el criterio de datos de categoría especial de la lista de la AEPD. Debe documentarse la decisión.
+5. **Railway como encargado del tratamiento (art. 28) y transferencia a EE. UU.:**
+   - aceptar o revisar su contrato de encargado (DPA) y sus subencargados;
+   - comprobar su adhesión al Marco de Privacidad de Datos UE-EE. UU. u otras garantías del art. 46.
+   - **No verificado.**
+6. **Plazos legales de conservación** que pudieran aplicar a este sector, y posible regulación autonómica de las actividades.
+7. **Procedimiento ante brechas de seguridad** (arts. 33 y 34): notificación en 72 horas cuando proceda.
+8. **Delegado de protección de datos:** previsiblemente no es obligatorio. Conviene documentar la decisión.
+
+### 6.3 Mejoras técnicas recomendadas (no bloquean el uso)
+
+1. **Segundo factor de autenticación** en el acceso de administración. Hoy hay contraseña, límite de 5 intentos cada 15 minutos y cookie segura.
+2. **Custodia de la clave:** está en las variables de Railway, el mismo proveedor que la base de datos. Protege las copias y exportaciones de la base, pero no frente a un acceso a la cuenta de Railway.
+   - Guardar una copia de la clave fuera de Railway: **sin la clave, los datos no se pueden recuperar**.
+3. **Rotación de la clave:** se guarda la versión con cada registro, pero rotarla exige un script que vuelva a cifrar los datos. Ese script todavía no existe.
+4. **Copias de seguridad** de la base de datos con prueba de restauración. **Cifrado en reposo** de MySQL en Railway: no verificado.
+
+## 7. Configuración
+
+El único requisito de configuración es la clave de cifrado, en el servicio web de Railway:
+
+1. Generarla en un equipo de confianza y guardar una copia fuera de Railway:
+   `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`
+2. Añadir `SENSITIVE_DATA_KEY=<clave>` y `SENSITIVE_KEY_VERSION=k1`, y redesplegar.
+   - **No** cambiar después la clave de un entorno con datos.
+3. Las variables antiguas `SENSITIVE_FIRST_VISIT_ENABLED`, `SENSITIVE_EMOTIONAL_ENABLED`, `PRIVACY_REVIEW_REF`, `PRIVACY_LEGAL_BASIS` y `PRIVACY_NOTICE_VERSION` **ya no se usan**.
+
+Sin la clave, ambas pestañas muestran «falta la clave de cifrado» y el servidor no lee ni guarda esos datos. El resto de la ficha funciona igual.
+
+## 8. Fuentes consultadas
+
+- **RGPD:** DOUE L 119 de 4.5.2016 (<https://www.boe.es/doue/2016/119/L00001-00088.pdf>)
 - **LOPDGDD:** <https://www.boe.es/buscar/act.php?id=BOE-A-2018-16673>
 - **CEPD, Directrices 05/2020 sobre el consentimiento:** <https://www.edpb.europa.eu/system/files/documents/files/file1/edpb_guidelines_202005_consent_es.pdf>
-- **AEPD:** listas de EIPD de los artículos 35.4 y 35.5 (<https://www.aepd.es/documento/listas-dpia-es-35-4.pdf>, <https://www.aepd.es/documento/listasdpia-35.5l.pdf>), Facilita (<https://www.aepd.es/guias-y-herramientas/herramientas/facilita-rgpd>), Guía para el sector sanitario (<https://www.aepd.es/guias/guia-profesionales-sector-sanitario.pdf>) y nota sobre el Marco de Privacidad UE-EE. UU. (<https://www.aepd.es/prensa-y-comunicacion/notas-de-prensa/aepd-valora-sentencia-tribunal-general-ue-que-confirma-marco-transferencias-datos-ue-eeuu>).
-
-1. **Son datos de salud.** La ficha de primera visita y, con alta probabilidad, el acompañamiento emocional son «datos relativos a la salud» (art. 4.15 y considerando 35 RGPD), independientemente de que quien los recoja no sea sanitaria. Un relato libre puede revelar además otras categorías especiales, como creencias o vida sexual (art. 9.1). Por eso los formularios **no** preguntan por ellas.
-2. **Bases jurídicas.**
-   - **Datos administrativos:** previsiblemente la ejecución de un contrato (art. 6.1.b).
-   - **Primera visita y acompañamiento:** la vía más plausible para una profesional no sanitaria es el **consentimiento explícito (art. 9.2.a)**, con un consentimiento separado para cada finalidad (CEPD 05/2020, apartado 44).
-   - **El art. 9.2.h y el 9.3 probablemente no aplican:** exigen asistencia sanitaria o un profesional con secreto profesional establecido por ley. **Lo debe confirmar un asesor.**
-3. **Requisitos del consentimiento.** Debe ser demostrable (art. 7.1), separado de otros asuntos (art. 7.2), retirable con la misma facilidad (art. 7.3), libre (art. 7.4) y mediante una declaración expresa (CEPD, apartado 93).
-   - **Duda abierta:** si es «libre» cuando la ficha se presenta como requisito de seguridad para dar la sesión. **Lo debe valorar un asesor.**
-4. **Información al cliente.** Hay que darle la información del art. 13, que puede ser por capas (art. 11 LOPDGDD).
-5. **Registro de actividades (art. 30.5):** **obligatorio**, porque incluye categorías especiales.
-6. **Evaluación de impacto (EIPD):** se cumple al menos el criterio «categorías especiales» de la lista de la AEPD, y quizá el de «aspectos de la personalidad». La exclusión de los autónomos que ejercen de forma individual decae si se cumplen dos o más criterios. **Un asesor debe decidir si hace falta.** Como mínimo, documentar un análisis de riesgos. Facilita **no** sirve para datos de salud.
-7. **Delegado de protección de datos:** previsiblemente no es obligatorio, porque la escala es pequeña y la profesional ejerce a título individual. Conviene documentar la decisión.
-8. **Retirada del consentimiento:** obliga a suprimir los datos si no hay otra base (art. 17.1.b; CEPD, apartado 119). Ver §5.
-9. **Encargados y transferencias.** Railway, el alojamiento, es encargado del tratamiento (art. 28) y es una empresa de EE. UU.
-   - Hay que revisar su contrato de encargado (DPA) y sus subencargados, y comprobar su certificación en el Marco de Privacidad de Datos UE-EE. UU. en dataprivacyframework.gov. Si no la tiene, hacen falta otras garantías (art. 46).
-   - **Nada de esto está verificado.**
-10. **Terceros.** No se envían datos de salud ni emocionales a IA, analítica, correo ni WhatsApp (ver §4).
-
-**No verificado:**
-- la certificación y el DPA de Railway;
-- los plazos legales de conservación aplicables a este sector;
-- la posible regulación autonómica de la kinesiología;
-- los plazos de notificación de brechas (arts. 33 y 34).
-
-## 3. Lista de preparación antes de activar cualquier sección protegida
-
-Ninguna casilla está resuelta. Marcarlas es responsabilidad de Cristina, con un asesor donde se indica.
-
-- [ ] **Asesor:** confirmar la base jurídica: art. 6.1.a + 9.2.a para la primera visita y el acompañamiento, y 6.1.b para lo administrativo. Confirmar que no aplica el 9.2.h ni el 9.3.
-- [ ] **Cristina:** confirmar que no es sanitaria colegiada ni centro sanitario autorizado, y si su comunidad autónoma regula alguna de sus actividades.
-- [ ] **Asesor:** decidir si la ficha de primera visita puede ser condición para dar la sesión sin que el consentimiento deje de ser libre.
-- [ ] **Finalidad y minimización:** revisar campo por campo qué es imprescindible. Pueden quitarse campos.
-- [ ] **Textos:** cláusula del art. 13 por capas y **dos** textos de consentimiento separados, uno por módulo, con versión. Los redacta o revisa el asesor y los valida Cristina.
-- [ ] **Registro de actividades** (art. 30) completado.
-- [ ] **Análisis de riesgos y decisión motivada sobre la EIPD.**
-- [ ] **Decisión documentada** sobre el delegado de protección de datos.
-- [ ] **Railway:** DPA aceptado, subencargados revisados, región de los datos y certificación en el Marco de Privacidad de Datos comprobadas.
-- [ ] **Conservación:** plazos y criterios definidos (§5).
-- [ ] **Procedimientos:** atención de derechos en un mes (§6) y gestión de brechas.
-- [ ] **Seguridad (§4):** clave de cifrado generada y custodiada; **segundo factor de autenticación** para el acceso de administración (pendiente, §7); copias de seguridad cifradas y probadas.
-
-## 4. Medidas técnicas implementadas
-
-- **Bloqueo de servidor por defecto.**
-  - `server/sensitive/config.ts`: un módulo solo se habilita si están **todas** las variables de §8.
-  - **Con el módulo desactivado:** el servidor rechaza con `FORBIDDEN` leer, crear o modificar datos y consentimientos de ese módulo **antes de validar la entrada o consultar la base de datos**. No basta con ocultar la pestaña. El rechazo se registra en la auditoría, sin contenido.
-- **Cifrado de aplicación AES-256-GCM** (`server/sensitive/crypto.ts`).
-  - Cada registro va ligado a su cliente y a su módulo: un texto cifrado copiado a otra ficha o a otro módulo no se descifra, y cualquier manipulación se detecta.
-  - En la base de datos y en sus copias solo hay texto cifrado.
-  - La clave viene del entorno del servidor y nunca del repositorio.
-- **Consentimiento por módulo** (`client_consents`).
-  - Sin uno vigente, el servidor no guarda nada.
-  - Retirarlo bloquea los registros nuevos, deja constancia de la fecha y marca `reviewRequired`.
-- **Registro de accesos y cambios** (`crm_audit_log`): quién, qué acción, sobre qué registro y qué campos. Se registran las lecturas de datos sensibles y los intentos rechazados. **Nunca el contenido.**
-- **Sin fugas.**
-  - Los errores no repiten el texto recibido.
-  - Los datos sensibles no se registran en consola ni se envían por correo, WhatsApp, analítica ni a terceros.
-  - El módulo no importa ningún servicio de notificaciones. Los tests espían `fetch`, correo y WhatsApp.
-- **Acceso de administración reforzado.**
-  - Credenciales comparadas en tiempo constante.
-  - Límite de 5 intentos fallidos cada 15 minutos por IP.
-  - Cookie `httpOnly`, `sameSite=lax` y `secure` en producción, con sesión de 30 días.
-  - **Corregido:** el login respondía con pistas sobre el email y la longitud de las credenciales.
-- **Mínimo privilegio:** solo existe un perfil, el de administración, y todas las operaciones exigen ese rol en el servidor. No se han creado usuarios nuevos.
-- **Sin datos de producción en pruebas:** los tests y las pruebas en navegador usan la base `cristina_test`, con datos ficticios (`scripts/fixtures/clientes-ficticios.sql`).
-
-## 5. Conservación y supresión (configurable, sin plazos inventados)
-
-- **Plazos:** no se ha fijado ninguno, porque **los decide Cristina con el asesor** (art. 5.1.e; art. 32 LOPDGDD sobre el bloqueo). Hasta entonces no hay borrado automático.
-- **Herramientas disponibles en el CRM:**
-  - **Suprimir datos de un módulo** (`care.rights.eraseModule`): borra los registros cifrados sin necesidad de leerlos. Se ofrece al retirar el consentimiento.
-  - **Suprimir la ficha** (`care.rights.erase`): borra sesiones, notas, datos sensibles y consentimientos, y vacía los campos de la ficha. **No** toca citas ni facturas, que pueden estar sujetas a otras obligaciones de conservación a confirmar. Pide escribir el nombre completo del cliente.
-  - **Eliminar el cliente** (función existente): ahora borra también sus datos sensibles y sus consentimientos.
-- **Cuando se fijen los plazos:** documentarlos aquí y, si se desea, programar un proceso de revisión que **proponga** borrados (no que los ejecute solo).
-
-## 6. Derechos (arts. 15 a 21)
-
-- **Acceso y portabilidad:** `care.rights.export` devuelve un JSON estructurado. Los datos sensibles solo se incluyen si su módulo está habilitado; si no, solo se indica cuántos registros hay.
-- **Rectificación:** edición desde la ficha, con trazabilidad.
-- **Supresión:** ver §5.
-- **Plazo:** un mes, prorrogable dos más (art. 12.3).
-- **Registro:** apuntar cada solicitud y su respuesta.
-
-## 7. Requisitos técnicos pendientes antes de activar
-
-1. **Segundo factor de autenticación (2FA)** para el acceso de administración. Ahora es solo una contraseña, y la AEPD lo recomienda para datos de salud.
-2. **Custodia de la clave de cifrado.** Se guarda en las variables de entorno de Railway, el mismo proveedor que la base de datos, así que protege frente a copias o exportaciones de la base, pero no frente a un acceso a la cuenta de Railway. Valorar un gestor de secretos, y documentar cómo se rota la clave (`SENSITIVE_KEY_VERSION`) y cómo se recupera si se pierde: **sin la clave, los datos son irrecuperables**.
-3. **Copias de seguridad cifradas y prueba de restauración** de la base de datos de Railway.
-4. **Cifrado en reposo de MySQL en Railway:** no verificado.
-
-## 8. Pasos exactos para habilitar un módulo (cuando §3 y §7 estén resueltos)
-
-1. Generar la clave en un equipo de confianza y guardarla también fuera de Railway, para poder recuperarla:
-   `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`
-2. En Railway, en el servicio web, añadir estas variables **sin publicarlas en ningún otro sitio**:
-   - `SENSITIVE_DATA_KEY=<clave>`
-   - `SENSITIVE_KEY_VERSION=k1`
-   - `PRIVACY_REVIEW_REF=<referencia del análisis de riesgos o EIPD y fecha>`
-   - `PRIVACY_LEGAL_BASIS=explicit_consent`
-   - `PRIVACY_NOTICE_VERSION=<versión del texto de consentimiento aprobado>`
-   - **Y solo el módulo que se quiera habilitar:** `SENSITIVE_FIRST_VISIT_ENABLED=true` y/o `SENSITIVE_EMOTIONAL_ENABLED=true`
-3. Redesplegar. Comprobar en una ficha de prueba que la sección muestra «Registrar consentimiento».
-4. Para cada cliente: obtener **antes** su consentimiento explícito con el texto vigente, registrarlo en la ficha y solo después anotar datos.
-5. Para desactivar un módulo: quitar su variable `…_ENABLED` y redesplegar. Los datos siguen cifrados y bloqueados.
+- **AEPD:**
+  - listas de EIPD (<https://www.aepd.es/documento/listas-dpia-es-35-4.pdf>, <https://www.aepd.es/documento/listasdpia-35.5l.pdf>);
+  - Guía para el sector sanitario (<https://www.aepd.es/guias/guia-profesionales-sector-sanitario.pdf>);
+  - nota sobre el Marco de Privacidad UE-EE. UU. (<https://www.aepd.es/prensa-y-comunicacion/notas-de-prensa/aepd-valora-sentencia-tribunal-general-ue-que-confirma-marco-transferencias-datos-ue-eeuu>).

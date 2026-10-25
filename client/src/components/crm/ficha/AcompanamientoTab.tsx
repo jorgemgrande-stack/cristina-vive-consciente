@@ -1,8 +1,8 @@
 /**
- * Ficha · Acompañamiento emocional (opcional, oculto si no se usa). Anotaciones fechadas que separan:
- * «Relato del cliente», «Observaciones de la profesional» y «Objetivos o cuestiones para seguimiento».
- * Sin diagnósticos: se registra lo que el cliente relata y lo que la profesional observa, como tal.
- * Bloqueado en el servidor hasta habilitar el módulo; requiere consentimiento explícito propio.
+ * Ficha · Acompañamiento emocional. Anotaciones fechadas que separan:
+ * «Relato del cliente», «Tus observaciones» y «Objetivos o cuestiones para seguimiento».
+ * Sin diagnósticos: se registra lo que el cliente relata y lo que Cristina observa, como tal.
+ * Cifrado en el servidor; requiere consentimiento explícito propio, independiente del de Primera visita.
  */
 import { useState } from "react";
 import { HeartHandshake, Loader2, Plus } from "lucide-react";
@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { LIMITS } from "@shared/clientCare";
 import { btnGhost, btnPrimary, card, confirmDiscard, dateInputToMs, dateInputValue, EmptyState, Field, formatDay, input } from "./ui";
-import { ConsentPanel, ModuloBloqueado, useModule } from "./Protegido";
+import { ConsentPanel, IntroModulo, ModuleDataTools, ModuloSinClave, useModule } from "./Protegido";
 
 const GROUPS = [
   {
@@ -26,8 +26,8 @@ const GROUPS = [
   },
   {
     key: "professionalObservations",
-    title: "Observaciones de la profesional",
-    hint: "Tu observación subjetiva y el trabajo realizado. Sin diagnósticos médicos ni psicológicos.",
+    title: "Tus observaciones",
+    hint: "Lo que has observado y el trabajo realizado. Sin diagnósticos médicos ni psicológicos.",
     fields: [
       ["workDone", "Trabajo realizado"],
       ["observations", "Observaciones"],
@@ -49,7 +49,7 @@ const emptyEntry = (): Entry => Object.fromEntries(GROUPS.map((g) => [g.key, Obj
 export default function AcompanamientoTab({ clientId }: { clientId: number }) {
   const { status, isLoading } = useModule("emotional");
   if (isLoading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin" size={18} /></div>;
-  if (!status?.enabled) return <ModuloBloqueado title="Acompañamiento emocional" />;
+  if (!status?.enabled) return <ModuloSinClave title="Acompañamiento emocional" />;
   return <Anotaciones clientId={clientId} />;
 }
 
@@ -74,13 +74,14 @@ function Anotaciones({ clientId }: { clientId: number }) {
 
   return (
     <div className="space-y-3">
-      <ConsentPanel clientId={clientId} module="emotional" onActiveChange={setHasConsent} />
-      {!open && (
-        <button className={`${btnPrimary} w-full sm:w-auto`} disabled={!hasConsent} onClick={() => setOpen(true)}>
+      <IntroModulo module="emotional" />
+      <ConsentPanel clientId={clientId} module="emotional" recordCount={rows?.length ?? 0} onActiveChange={setHasConsent} />
+      {!open && hasConsent && (
+        <button className={`${btnPrimary} w-full sm:w-auto`} onClick={() => setOpen(true)}>
           <Plus size={14} /> Nueva anotación
         </button>
       )}
-      {open && (
+      {open && hasConsent && (
         <form
           className={`${card} space-y-5`}
           onSubmit={(e) => {
@@ -100,7 +101,7 @@ function Anotaciones({ clientId }: { clientId: number }) {
                   <textarea
                     id={`em-${g.key}-${f}`}
                     rows={2}
-                    maxLength={LIMITS.longText}
+                    maxLength={LIMITS.sensitiveText}
                     value={entry[g.key][f]}
                     onChange={(e) => setEntry((x) => ({ ...x, [g.key]: { ...x[g.key], [f]: e.target.value } }))}
                     className={`${input} resize-y`}
@@ -145,6 +146,7 @@ function Anotaciones({ clientId }: { clientId: number }) {
           })}
         </ol>
       )}
+      <ModuleDataTools clientId={clientId} module="emotional" recordCount={rows?.length ?? 0} />
     </div>
   );
 }

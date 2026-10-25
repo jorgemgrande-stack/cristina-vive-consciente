@@ -3,7 +3,8 @@
  *
  * Separación de datos (ver docs/PRIVACIDAD_FICHAS.md):
  *  - Administrativos y prácticos: tabla `clients` y `session_history` (texto normal).
- *  - Categoría especial (salud / emocional): `client_sensitive_records`, cifrados y bloqueados por defecto.
+ *  - Salud / emocional (Primera visita, Acompañamiento): `client_sensitive_records`, cifrados y solo con
+ *    consentimiento explícito vigente de ese cliente para ese módulo.
  */
 import { z } from "zod";
 
@@ -13,13 +14,15 @@ export const REMEMBER_INFO_HELP =
   "No escribas aquí diagnósticos, salud, medicación, historia familiar, vida sexual ni relatos personales.";
 
 export const SESSION_NOTES_HELP =
-  "Notas prácticas de la sesión. Nada de salud, emociones ni relatos personales: eso va en las secciones protegidas cuando estén habilitadas.";
+  "Notas prácticas de la sesión. Lo relativo a salud o emociones va en Primera visita o Acompañamiento, con su consentimiento.";
 
 // ─── Límites de los campos (también se validan en el servidor) ───────────────
 export const LIMITS = {
   shortText: 150,
   rateNote: 200,
   longText: 2000,
+  /** Campos de Primera visita y Acompañamiento: breves a propósito (minimización) */
+  sensitiveText: 1000,
 } as const;
 
 const optionalText = (max: number) => z.string().trim().max(max).optional().nullable();
@@ -52,7 +55,7 @@ export const sessionInput = z.object({
 export type SessionInput = z.infer<typeof sessionInput>;
 
 // ─── Datos de categoría especial: estructura (se guarda cifrada) ─────────────
-const sensitiveText = optionalText(LIMITS.longText);
+const sensitiveText = optionalText(LIMITS.sensitiveText);
 
 /** Ficha de primera visita: todos los campos opcionales */
 export const firstVisitPayload = z.object({
@@ -83,6 +86,61 @@ export const emotionalPayload = z.object({
   }),
 });
 export type EmotionalPayload = z.infer<typeof emotionalPayload>;
+
+// ─── Consentimiento explícito por módulo ─────────────────────────────────────
+export type SensitiveModuleKey = "first_visit" | "emotional";
+
+/**
+ * Textos que se muestran al cliente antes de registrar su consentimiento. Con cada consentimiento se guarda
+ * la versión: si se cambia un texto, hay que cambiar también su versión. BORRADOR pendiente de que Cristina
+ * lo valide (docs/PRIVACIDAD_FICHAS.md §8).
+ */
+export const CONSENT_TEXTS: Record<SensitiveModuleKey, { version: string; title: string; text: string }> = {
+  first_visit: {
+    version: "pv-2026-10-v1",
+    title: "Primera visita",
+    text:
+      "Cristina Battistelli (Cristina Vive Consciente) anotará en tu ficha la información de salud y bienestar que quieras " +
+      "compartir (motivo de la visita, alergias o sensibilidades, circunstancias a tener en cuenta y zonas a evitar) para " +
+      "preparar tus sesiones y darles seguimiento. Cristina no es profesional sanitaria: estas notas no son diagnósticos ni " +
+      "sustituyen la atención médica. Es voluntario y solo se anota lo que decidas contar. La información se guarda cifrada, " +
+      "solo accede Cristina y no se usa para publicidad, analítica ni herramientas de inteligencia artificial, ni se envía por " +
+      "correo o WhatsApp. Puedes pedir una copia, corregirla o retirar este consentimiento en cualquier momento; al retirarlo " +
+      "se suprimen estos datos. Contacto: info@cristinaviveconsciente.es.",
+  },
+  emotional: {
+    version: "ae-2026-10-v1",
+    title: "Acompañamiento emocional",
+    text:
+      "Cristina Battistelli (Cristina Vive Consciente) anotará lo que quieras compartir en el acompañamiento emocional " +
+      "(lo que relatas, sus observaciones y los objetivos de seguimiento) para preparar las sesiones y darles continuidad. " +
+      "No es terapia psicológica ni atención sanitaria, y no se hacen diagnósticos. Es voluntario e independiente de la " +
+      "primera visita: aceptarlo no es condición para reservar ni recibir ningún servicio. La información se guarda cifrada, " +
+      "solo accede Cristina y no se usa para publicidad, analítica ni herramientas de inteligencia artificial, ni se envía por " +
+      "correo o WhatsApp. Puedes pedir una copia, corregirla o retirar este consentimiento en cualquier momento; al retirarlo " +
+      "se suprimen estos datos. Contacto: info@cristinaviveconsciente.es.",
+  },
+};
+
+export const CONSENT_METHODS = ["papel_firmado", "formulario_electronico"] as const;
+
+// ─── Revisión periódica de la conservación ───────────────────────────────────
+/** Cada cuánto se pregunta si los datos de un módulo siguen siendo necesarios (a confirmar por Cristina). */
+export const RETENTION_REVIEW_MONTHS = 12;
+const REVIEW_MS = RETENTION_REVIEW_MONTHS * 30 * 86_400_000;
+
+type ConsentLike = { grantedAt: number; withdrawnAt?: number | null; reviewedAt?: number | null };
+
+/**
+ * ¿Toca revisar los datos de un módulo? (solo si quedan datos)
+ * - «withdrawn»: consentimiento retirado → suprimir salvo obligación legal de conservarlos.
+ * - «periodic»: han pasado RETENTION_REVIEW_MONTHS desde el consentimiento o la última revisión.
+ */
+export function retentionReview(consent: ConsentLike | undefined, hasData: boolean, now: number = Date.now()): "withdrawn" | "periodic" | null {
+  if (!consent || !hasData) return null;
+  if (consent.withdrawnAt) return "withdrawn";
+  return now - Math.max(consent.grantedAt, consent.reviewedAt ?? 0) >= REVIEW_MS ? "periodic" : null;
+}
 
 // ─── Cálculos del resumen ────────────────────────────────────────────────────
 type SessionLike = { sessionDate: number; serviceId?: number | null };

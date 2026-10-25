@@ -1,7 +1,7 @@
 # Ficha integral de clientes
 
 Herramienta sencilla de seguimiento para Cristina. **No** es una historia clínica. Está pensada primero para móvil.
-La privacidad de las secciones protegidas se explica en [PRIVACIDAD_FICHAS.md](PRIVACIDAD_FICHAS.md).
+Las reglas de uso de Primera visita y Acompañamiento emocional están en [PRIVACIDAD_FICHAS.md](PRIVACIDAD_FICHAS.md).
 
 ## Qué ofrece
 
@@ -9,11 +9,13 @@ La privacidad de las secciones protegidas se explica en [PRIVACIDAD_FICHAS.md](P
 
 | Pestaña | Contenido |
 |---|---|
-| **Resumen** (por defecto) | «Información para recordar», destacada y con ayuda sobre qué no escribir. Teléfono con llamada y WhatsApp, ocupación y tarifa particular. **Última visita**, calculada con la sesión más reciente. **Próxima cita**, tomada de las reservas (la cita futura pendiente o confirmada más cercana). Servicios recibidos, enlazados a servicios reales. Acceso a la última sesión y al historial. Notas importadas (texto antiguo, plegado y con aviso). |
+| **Resumen** (por defecto) | «Información para recordar», destacada y con ayuda sobre qué no escribir. Teléfono con llamada y WhatsApp, ocupación y tarifa particular. **Última visita**, calculada con la sesión más reciente. **Próxima cita**, tomada de las reservas (la cita futura pendiente o confirmada más cercana). Servicios recibidos, enlazados a servicios reales. Acceso a la última sesión y al historial. Notas importadas (texto antiguo, plegado y con aviso). Al final, **Datos del cliente** (plegado): exportar todo y suprimir la ficha. |
 | **Sesiones** | «Añadir nueva sesión»: fecha automática editable, servicio (por defecto el de la última sesión), duración automática según el servicio, observaciones prácticas, preferencias del cliente y pendiente para la próxima. De más reciente a más antigua. Cada sesión es una entrada nueva; editar una muestra «Editada el…» y lo registra en la auditoría. |
 | **Citas** y **Notas** | Igual que antes: aceptar, cancelar o proponer fechas, y notas tipadas. |
-| **Primera visita** | Sección protegida: **desactivada**. |
-| **Acompañamiento** | Sección protegida: **desactivada**. Además está oculta, y si se habilita solo aparece al pulsar «Mostrar acompañamiento» en ese dispositivo. |
+| **Primera visita** | Salud y bienestar que el cliente quiera compartir para preparar las sesiones. Explicación breve; «Pedir consentimiento» muestra el texto para el cliente y una casilla sin marcar; con el consentimiento registrado aparece el formulario (6 campos opcionales, breves). Retirar, revisión periódica, exportar y suprimir la sección. Cifrado. |
+| **Acompañamiento** | Anotaciones fechadas que separan relato del cliente, observaciones de Cristina y seguimiento. Consentimiento **propio**, independiente del de Primera visita, con las mismas herramientas. Cifrado. |
+
+**Clientes:** si toca revisar los datos de Primera visita o Acompañamiento de alguna ficha (12 meses, o consentimiento retirado con datos conservados), aparece un aviso con el nombre y la sección, sin contenido.
 
 **Otras mejoras:**
 - **Buscador:** cada palabra busca en nombre, apellidos, email o teléfono, así que «ana garcía» encuentra a Ana García.
@@ -25,11 +27,11 @@ La privacidad de las secciones protegidas se explica en [PRIVACIDAD_FICHAS.md](P
 |---|---|
 | Reglas puras (cálculos, validación, textos de ayuda) | `shared/clientCare.ts` |
 | Acceso a datos | `server/clientCareDb.ts` |
-| API (`trpc.care.*`), permisos y bloqueos | `server/routers/clientCare.ts` |
-| Activación de los módulos sensibles y cifrado | `server/sensitive/config.ts`, `server/sensitive/crypto.ts` |
+| API (`trpc.care.*`), permisos, consentimiento, exportación y supresión | `server/routers/clientCare.ts` |
+| Clave de cifrado (único requisito de configuración) y cifrado | `server/sensitive/config.ts`, `server/sensitive/crypto.ts` |
 | Refuerzo del acceso de administración | `server/_core/adminAuth.ts` |
 | Interfaz | `client/src/components/crm/ficha/*`, `client/src/pages/crm/ClienteDetalle.tsx` |
-| Tests | `server/clientCare.test.ts` (68 tests) |
+| Tests | `server/clientCare.test.ts` (79 tests) |
 
 ## Migración 0024 (aditiva)
 
@@ -56,6 +58,17 @@ railway run --service MySQL -- powershell -NoProfile -Command '$env:DATABASE_URL
 
 **Probada sobre una base con datos ficticios:** aplica 12 cambios; una segunda ejecución no cambia nada; los datos previos quedan intactos; la reversión deja la estructura exactamente igual que antes; y se puede volver a aplicar.
 
+## Migración 0025 (aditiva)
+
+`drizzle/0025_consent_review.sql` añade `client_consents.reviewedAt` (admite vacío): fecha de la última revisión periódica. No modifica datos.
+
+```bash
+node scripts/apply-0025-consent-review.mjs --dry-run
+node scripts/apply-0025-consent-review.mjs
+```
+
+**Reversión:** `drizzle/0025_consent_review.down.sql` (solo quita esa columna). **Se aplica antes de desplegar.**
+
 ## Pruebas
 
 ```bash
@@ -66,15 +79,14 @@ pnpm check && pnpm test && pnpm build
 - búsqueda y apertura de la ficha;
 - Resumen y edición;
 - registro y edición de sesiones;
-- bloqueo de las secciones protegidas, también llamando a la API directamente;
-- que Citas, Notas y el panel siguen funcionando.
-
-Con las secciones protegidas habilitadas, **solo en la base de pruebas y con una clave temporal**, se probaron además el consentimiento, el cifrado, la retirada y la supresión.
+- que Citas, Notas y el panel siguen funcionando;
+- Primera visita y Acompañamiento, con una clave temporal y en móvil de 390 y 360 px: sin consentimiento no hay formulario y el servidor rechaza guardar (también llamando a la API); casilla sin marcar; registro con fecha y versión; guardado cifrado y lectura; consentimiento separado por módulo; exportación de la sección y de todo el cliente; retirada con supresión solo de ese módulo; revisión periódica; supresión de la ficha conservando citas; auditoría sin contenido.
 
 ## Despliegue
 
-1. Aplicar 0024 en producción (dry-run y después aplicar).
-2. Fusionar el PR, que despliega automáticamente en Railway.
-3. Verificar la ficha en producción.
+1. Generar la clave de cifrado y guardar una copia fuera de Railway (PRIVACIDAD_FICHAS.md §7). Añadir `SENSITIVE_DATA_KEY` y `SENSITIVE_KEY_VERSION=k1` en el servicio web de Railway.
+2. Aplicar 0025 en producción (dry-run y después aplicar).
+3. Fusionar el PR, que despliega automáticamente en Railway.
+4. Verificar en producción que Primera visita muestra «Pedir consentimiento», **sin escribir datos en fichas reales**.
 
-Las secciones protegidas quedan **desactivadas** mientras no existan las variables de entorno descritas en PRIVACIDAD_FICHAS.md §8.
+Sin la clave, Primera visita y Acompañamiento muestran «falta la clave de cifrado» y el servidor no lee ni guarda esos datos; el resto de la ficha funciona igual.

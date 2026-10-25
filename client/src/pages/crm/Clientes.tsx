@@ -28,6 +28,9 @@ export default function CRMClientes() {
     status: status !== "all" ? status : undefined,
   });
 
+  // Fichas con datos de Primera visita o Acompañamiento que toca revisar (solo nombre y motivo)
+  const { data: reviewsDue } = trpc.care.consents.reviewsDue.useQuery();
+
   const deleteClient = trpc.crm.clients.delete.useMutation({
     onSuccess: () => refetch(),
   });
@@ -78,6 +81,24 @@ export default function CRMClientes() {
           </Link>
         </div>
       </div>
+
+      {!!reviewsDue?.length && (
+        <div className="mb-4 bg-amber-50 border border-amber-200 px-4 py-3">
+          <p className="text-xs font-body text-amber-900" style={{ fontWeight: 500 }}>
+            Revisión de datos pendiente: ¿siguen siendo necesarios?
+          </p>
+          <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+            {reviewsDue.map((r) => (
+              <li key={`${r.clientId}-${r.module}`}>
+                <Link href={`/crm/clientes/${r.clientId}`} className="text-xs font-body text-amber-900 underline min-h-[32px] inline-flex items-center">
+                  {r.name} · {r.module === "first_visit" ? "Primera visita" : "Acompañamiento"}
+                  {r.reason === "withdrawn" ? " (consentimiento retirado)" : ""}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white border border-[oklch(0.92_0.01_80)] overflow-hidden">

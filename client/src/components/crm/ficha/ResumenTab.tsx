@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { LIMITS, REMEMBER_INFO_HELP } from "@shared/clientCare";
 import { btnGhost, btnPrimary, card, confirmDiscard, Field, formatDay, formatDayTime, input, SectionTitle } from "./ui";
+import DatosCliente from "./DatosCliente";
 
 type Props = { clientId: number; onAddSession: () => void; onOpenSessions: () => void; onAddNote: () => void };
 
@@ -196,11 +197,13 @@ export default function ResumenTab({ clientId, onAddSession, onOpenSessions, onA
             Notas importadas (texto anterior)
           </SectionTitle>
           <p className="text-[0.7rem] text-[oklch(0.52_0.02_60)] font-body">
-            Texto heredado del sistema anterior. Si contiene datos de salud o personales sensibles, conviene revisarlo y retirarlo desde «Editar cliente».
+            Texto heredado del sistema anterior. Si contiene datos de salud o emocionales, pásalos a Primera visita o Acompañamiento (con el consentimiento del cliente) o retíralos desde «Editar cliente».
           </p>
           {showLegacy && <p className="text-sm text-[oklch(0.28_0.025_55)] font-body mt-2 whitespace-pre-line" style={{ fontWeight: 300 }}>{c.legacyNotes}</p>}
         </div>
       )}
+
+      <DatosCliente clientId={clientId} fullName={`${c.firstName} ${c.lastName}`} />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 /**
- * Ficha integral de clientes: permisos, cálculos, sesiones, trazabilidad y bloqueo real de los módulos sensibles.
+ * Ficha integral de clientes: permisos, cálculos, sesiones, trazabilidad, y Primera visita / Acompañamiento
+ * (consentimiento por módulo, cifrado, retirada con supresión, revisión periódica, exportación).
  * Base de datos simulada en memoria con datos 100 % ficticios.
  */
 import crypto from "node:crypto";
@@ -63,12 +64,30 @@ const db = vi.hoisted(() => {
     activeConsent: vi.fn(async (clientId: number, module: string) => s().consents.find((c) => c.clientId === clientId && c.module === module && !c.withdrawnAt)),
     insertConsent: vi.fn(async (data: Row) => {
       const id = ++s().seq;
-      s().consents.push({ id, ...data, withdrawnAt: null, reviewRequired: false });
+      s().consents.push({ id, ...data, withdrawnAt: null, reviewRequired: false, reviewedAt: null });
       return id;
     }),
-    withdrawConsent: vi.fn(async (id: number, clientId: number, at: number) => {
+    withdrawConsent: vi.fn(async (id: number, clientId: number, module: string, at: number, reviewRequired: boolean) => {
+      const c = s().consents.find((x) => x.id === id && x.clientId === clientId && x.module === module && !x.withdrawnAt);
+      if (c) Object.assign(c, { withdrawnAt: at, reviewRequired });
+      return !!c;
+    }),
+    markConsentReviewed: vi.fn(async (id: number, clientId: number, at: number) => {
       const c = s().consents.find((x) => x.id === id && x.clientId === clientId);
-      if (c) Object.assign(c, { withdrawnAt: at, reviewRequired: true });
+      if (c) c.reviewedAt = at;
+    }),
+    clearReviewRequired: vi.fn(async (clientId: number, module: string) => {
+      s().consents.filter((c) => c.clientId === clientId && c.module === module).forEach((c) => (c.reviewRequired = false));
+    }),
+    consentsWithData: vi.fn(async () => {
+      const out: Row[] = [];
+      for (const c of [...s().consents].sort((a, b) => b.grantedAt - a.grantedAt)) {
+        if (out.some((o) => o.clientId === c.clientId && o.module === c.module)) continue;
+        if (!s().sensitive.some((r) => r.clientId === c.clientId && r.module === c.module)) continue;
+        const cl = s().clients.find((x) => x.id === c.clientId)!;
+        out.push({ ...c, firstName: cl.firstName, lastName: cl.lastName });
+      }
+      return out;
     }),
     deleteConsentsForClient: vi.fn(async () => undefined),
     exportAdministrative: vi.fn(async (clientId: number) => ({ client: s().clients.find((c) => c.id === clientId), sessions: [], notes: [], appointments: [], invoices: [], consents: [] })),
@@ -86,7 +105,7 @@ vi.mock("./whatsapp", () => ({ notifyAdminWhatsApp: notifications.notifyAdminWha
 import { clientCareRouter } from "./routers/clientCare";
 import { decryptPayload, encryptPayload } from "./sensitive/crypto";
 import { moduleReadiness } from "./sensitive/config";
-import { changedFields, lastVisit, nextAppointment, servicesReceived, sortSessions } from "../shared/clientCare";
+import { CONSENT_TEXTS, changedFields, lastVisit, nextAppointment, retentionReview, servicesReceived, sortSessions } from "../shared/clientCare";
 import { clientSearchTerms } from "./db";
 import { adminSessionCookieOptions, createLoginLimiter, safeEqual } from "./_core/adminAuth";
 
@@ -100,14 +119,10 @@ const SECRET_HEALTH = "ALERGIA-FICTICIA-zx81";
 const SECRET_EMOTION = "RELATO-FICTICIO-qq42";
 const PRACTICAL = "PRESION-SUAVE-FICTICIA";
 
+// Clave ficticia generada para cada ejecución: lo único que hace falta configurar
 const TEST_ENV = {
-  SENSITIVE_FIRST_VISIT_ENABLED: "true",
-  SENSITIVE_EMOTIONAL_ENABLED: "true",
   SENSITIVE_DATA_KEY: crypto.randomBytes(32).toString("base64"),
   SENSITIVE_KEY_VERSION: "test1",
-  PRIVACY_REVIEW_REF: "REVISION-FICTICIA",
-  PRIVACY_LEGAL_BASIS: "explicit_consent",
-  PRIVACY_NOTICE_VERSION: "v-test",
 };
 const enableSensitive = () => Object.entries(TEST_ENV).forEach(([k, v]) => vi.stubEnv(k, v));
 
@@ -166,9 +181,12 @@ const OPERATIONS: Array<[string, (c: ReturnType<typeof caller>) => Promise<unkno
   ["emotional.list", (c) => c.emotional.list({ clientId: 1 })],
   ["emotional.save", (c) => c.emotional.save({ clientId: 1, recordDate: NOW, data: {} })],
   ["consents.list", (c) => c.consents.list({ clientId: 1, module: "first_visit" })],
-  ["consents.grant", (c) => c.consents.grant({ clientId: 1, module: "first_visit", method: "papel_firmado" })],
+  ["consents.grant", (c) => c.consents.grant({ clientId: 1, module: "first_visit", method: "papel_firmado", informed: true })],
   ["consents.withdraw", (c) => c.consents.withdraw({ clientId: 1, consentId: 1, module: "first_visit" })],
+  ["consents.markReviewed", (c) => c.consents.markReviewed({ clientId: 1, module: "first_visit" })],
+  ["consents.reviewsDue", (c) => c.consents.reviewsDue()],
   ["rights.export", (c) => c.rights.export({ clientId: 1 })],
+  ["rights.exportModule", (c) => c.rights.exportModule({ clientId: 1, module: "first_visit" })],
   ["rights.erasePreview", (c) => c.rights.erasePreview({ clientId: 1 })],
   ["rights.erase", (c) => c.rights.erase({ clientId: 1, confirmName: "Lucía Ficticia Pérez" })],
   ["rights.eraseModule", (c) => c.rights.eraseModule({ clientId: 1, module: "emotional" })],
@@ -255,24 +273,23 @@ describe("perfil", () => {
   });
 });
 
-// ─── Módulos sensibles desactivados (estado por defecto) ─────────────────────
-describe("módulos sensibles DESACTIVADOS: imposibilidad real de leer o escribir", () => {
-  it("por defecto ambos módulos están bloqueados", async () => {
+// ─── Sin clave de cifrado: único requisito técnico ──────────────────────────
+describe("Primera visita y Acompañamiento SIN clave de cifrado", () => {
+  it("el único requisito de configuración es la clave; no hay interruptores por revisión jurídica", async () => {
     const m = await admin().modules();
     expect(m.every((x) => !x.enabled)).toBe(true);
-    expect(moduleReadiness("first_visit", {}).missing).toEqual([
-      "SENSITIVE_FIRST_VISIT_ENABLED", "SENSITIVE_DATA_KEY", "SENSITIVE_KEY_VERSION", "PRIVACY_REVIEW_REF", "PRIVACY_LEGAL_BASIS", "PRIVACY_NOTICE_VERSION",
-    ]);
+    expect(moduleReadiness("first_visit", {}).missing).toEqual(["SENSITIVE_DATA_KEY"]);
+    expect(moduleReadiness("emotional", { SENSITIVE_DATA_KEY: "corta" }).enabled).toBe(false);
+    expect(moduleReadiness("emotional", { SENSITIVE_DATA_KEY: TEST_ENV.SENSITIVE_DATA_KEY }).enabled).toBe(true);
   });
 
   const BLOCKED: Array<[string, () => Promise<unknown>]> = [
     ["firstVisit.list", () => admin().firstVisit.list({ clientId: 1 })],
     ["firstVisit.save", () => admin().firstVisit.save({ clientId: 1, recordDate: NOW, data: { allergies: SECRET_HEALTH } })],
-    ["firstVisit.save (edición)", () => admin().firstVisit.save({ clientId: 1, id: 5, recordDate: NOW, data: { allergies: SECRET_HEALTH } })],
     ["emotional.list", () => admin().emotional.list({ clientId: 1 })],
     ["emotional.save", () => admin().emotional.save({ clientId: 1, recordDate: NOW, data: { clientAccount: { emotions: SECRET_EMOTION }, professionalObservations: {}, followUp: {} } })],
-    ["consents.list", () => admin().consents.list({ clientId: 1, module: "emotional" })],
-    ["consents.grant", () => admin().consents.grant({ clientId: 1, module: "first_visit", method: "papel_firmado" })],
+    ["consents.grant", () => admin().consents.grant({ clientId: 1, module: "first_visit", method: "papel_firmado", informed: true })],
+    ["rights.exportModule", () => admin().rights.exportModule({ clientId: 1, module: "emotional" })],
   ];
   it.each(BLOCKED)("%s → FORBIDDEN sin tocar los datos", async (_n, op) => {
     await expect(op()).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -280,17 +297,9 @@ describe("módulos sensibles DESACTIVADOS: imposibilidad real de leer o escribir
     expect(store.sensitive).toHaveLength(0);
   });
 
-  it("aunque la clave esté configurada, sin el interruptor ni la revisión sigue bloqueado", async () => {
-    vi.stubEnv("SENSITIVE_DATA_KEY", TEST_ENV.SENSITIVE_DATA_KEY);
-    vi.stubEnv("SENSITIVE_FIRST_VISIT_ENABLED", "true");
-    await expect(admin().firstVisit.list({ clientId: 1 })).rejects.toMatchObject({ code: "FORBIDDEN" });
-    vi.stubEnv("PRIVACY_LEGAL_BASIS", "interes_legitimo"); // base no implementada como control
-    expect(moduleReadiness("first_visit").enabled).toBe(false);
-  });
-
   it("el rechazo queda registrado sin contenido y sin enviar nada fuera", async () => {
     await admin().firstVisit.save({ clientId: 1, recordDate: NOW, data: { allergies: SECRET_HEALTH } }).catch(() => undefined);
-    expect(store.audit).toContainEqual(expect.objectContaining({ action: "denied_disabled", entityType: "first_visit", clientId: 1 }));
+    expect(store.audit).toContainEqual(expect.objectContaining({ action: "denied_no_key", entityType: "first_visit", clientId: 1 }));
     const everything = JSON.stringify(store.audit) + logged.join("\n");
     expect(everything).not.toContain(SECRET_HEALTH);
     expect(notifications.sendEmail).not.toHaveBeenCalled();
@@ -298,14 +307,14 @@ describe("módulos sensibles DESACTIVADOS: imposibilidad real de leer o escribir
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
-  it("la exportación no descifra nada: solo indica que hay registros bloqueados", async () => {
+  it("la exportación general no descifra nada: solo cuenta los registros", async () => {
     store.sensitive.push({ id: 1, clientId: 1, module: "emotional", ciphertext: "v1.x.y.z", recordDate: NOW });
     const out = await admin().rights.export({ clientId: 1 });
     expect(out.sensitive).toEqual({ first_visit: { blocked: true, records: 0 }, emotional: { blocked: true, records: 1 } });
     expect(db.listSensitive).not.toHaveBeenCalled();
   });
 
-  it("borrar los datos de un módulo sí se permite (supresión) sin leerlos", async () => {
+  it("suprimir los datos de un módulo sí se permite sin leerlos", async () => {
     store.sensitive.push({ id: 1, clientId: 1, module: "emotional", ciphertext: "v1.x.y.z", recordDate: NOW });
     await admin().rights.eraseModule({ clientId: 1, module: "emotional" });
     expect(store.sensitive).toHaveLength(0);
@@ -313,51 +322,132 @@ describe("módulos sensibles DESACTIVADOS: imposibilidad real de leer o escribir
   });
 });
 
-// ─── Módulos sensibles habilitados (entorno de prueba) ───────────────────────
-describe("módulos sensibles HABILITADOS: consentimiento, cifrado y retirada", () => {
+// ─── Operativos (con clave): consentimiento, cifrado, retirada, revisión, exportación ─
+describe("Primera visita y Acompañamiento OPERATIVOS", () => {
   beforeEach(enableSensitive);
+  const grant = (module: "first_visit" | "emotional" = "first_visit") => admin().consents.grant({ clientId: 1, module, method: "papel_firmado", informed: true });
 
   it("sin consentimiento explícito vigente no se guarda nada", async () => {
     await expect(admin().firstVisit.save({ clientId: 1, recordDate: NOW, data: { allergies: SECRET_HEALTH } })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(db.insertSensitive).not.toHaveBeenCalled();
   });
 
+  it("el consentimiento exige confirmar que el cliente ha sido informado (nunca por defecto)", async () => {
+    await expect(admin().consents.grant({ clientId: 1, module: "first_visit", method: "papel_firmado" } as any)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(admin().consents.grant({ clientId: 1, module: "first_visit", method: "papel_firmado", informed: false } as any)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(store.consents).toHaveLength(0);
+  });
+
+  it("registra fecha y versión del texto mostrado; no se duplica", async () => {
+    await grant();
+    expect(store.consents[0]).toMatchObject({ module: "first_visit", textVersion: CONSENT_TEXTS.first_visit.version, method: "papel_firmado" });
+    expect(store.consents[0].grantedAt).toBeGreaterThan(NOW - 60_000);
+    await expect(grant()).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
   it("con consentimiento se guarda CIFRADO, se lee descifrado y se audita sin contenido", async () => {
-    await admin().consents.grant({ clientId: 1, module: "first_visit", method: "papel_firmado" });
-    expect(store.consents[0]).toMatchObject({ module: "first_visit", textVersion: "v-test", method: "papel_firmado" });
+    await grant();
     await admin().firstVisit.save({ clientId: 1, recordDate: NOW, data: { allergies: SECRET_HEALTH } });
     expect(store.sensitive[0].ciphertext).not.toContain(SECRET_HEALTH);
     expect(store.sensitive[0].ciphertext.startsWith("v1.")).toBe(true);
+    expect(store.sensitive[0].keyVersion).toBe("test1");
     const rows = await admin().firstVisit.list({ clientId: 1 });
     expect(rows[0].data).toMatchObject({ allergies: SECRET_HEALTH });
     expect(store.audit.map((a) => a.action)).toEqual(expect.arrayContaining(["consent_granted", "create", "read"]));
     expect(JSON.stringify(store.audit) + logged.join("\n")).not.toContain(SECRET_HEALTH);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(notifications.sendEmail).not.toHaveBeenCalled();
+    expect(notifications.notifyAdminWhatsApp).not.toHaveBeenCalled();
   });
 
-  it("acompañamiento: separa relato, observaciones y seguimiento; un consentimiento por módulo", async () => {
-    await admin().consents.grant({ clientId: 1, module: "first_visit", method: "papel_firmado" });
+  it("acompañamiento: consentimiento propio, separado del de primera visita", async () => {
+    await grant("first_visit");
     await expect(
       admin().emotional.save({ clientId: 1, recordDate: NOW, data: { clientAccount: { emotions: SECRET_EMOTION }, professionalObservations: {}, followUp: {} } }),
-    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" }); // el de primera visita no vale para acompañamiento
-    await admin().consents.grant({ clientId: 1, module: "emotional", method: "formulario_electronico" });
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    await grant("emotional");
+    expect(store.consents[1].textVersion).toBe(CONSENT_TEXTS.emotional.version);
     await admin().emotional.save({ clientId: 1, recordDate: NOW, data: { clientAccount: { emotions: SECRET_EMOTION }, professionalObservations: { observations: "obs" }, followUp: { goals: "obj" } } });
     const [row] = await admin().emotional.list({ clientId: 1 });
     expect(Object.keys(row.data)).toEqual(["clientAccount", "professionalObservations", "followUp"]);
   });
 
-  it("retirar el consentimiento bloquea nuevos registros y marca revisión", async () => {
-    const { id } = await admin().consents.grant({ clientId: 1, module: "first_visit", method: "papel_firmado" });
-    const r = await admin().consents.withdraw({ clientId: 1, consentId: id, module: "first_visit" });
-    expect(r.reviewRequired).toBe(true);
-    expect(store.consents[0]).toMatchObject({ reviewRequired: true });
-    await expect(admin().firstVisit.save({ clientId: 1, recordDate: NOW, data: { allergies: "x" } })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  it("los textos de consentimiento: voluntario, sin diagnósticos, retirable y el emocional no condiciona reservas", () => {
+    for (const t of Object.values(CONSENT_TEXTS)) {
+      expect(t.text).toMatch(/voluntario/);
+      expect(t.text).toMatch(/diagn[oó]stico/);
+      expect(t.text).toMatch(/retirar/);
+      expect(t.version).toBeTruthy();
+    }
+    expect(CONSENT_TEXTS.emotional.text).toMatch(/no es condición para reservar/);
   });
 
-  it("datos inválidos: el error no devuelve el contenido", async () => {
-    await admin().consents.grant({ clientId: 1, module: "first_visit", method: "papel_firmado" });
-    const err = await admin().firstVisit.save({ clientId: 1, recordDate: NOW, data: { allergies: SECRET_HEALTH + "x".repeat(3000) } }).catch((e) => e);
+  it("retirar el consentimiento suprime en el acto los datos del módulo (y solo de ese módulo)", async () => {
+    const { id } = await grant("first_visit");
+    await grant("emotional");
+    await admin().firstVisit.save({ clientId: 1, recordDate: NOW, data: { allergies: SECRET_HEALTH } });
+    await admin().emotional.save({ clientId: 1, recordDate: NOW, data: { clientAccount: { emotions: SECRET_EMOTION }, professionalObservations: {}, followUp: {} } });
+    const r = await admin().consents.withdraw({ clientId: 1, consentId: id, module: "first_visit" });
+    expect(r).toEqual({ erased: true, reviewRequired: false });
+    expect(store.sensitive.map((x) => x.module)).toEqual(["emotional"]);
+    expect(store.consents[0]).toMatchObject({ reviewRequired: false });
+    expect(store.consents[0].withdrawnAt).toBeTruthy(); // la retirada queda registrada
+    await expect(admin().firstVisit.save({ clientId: 1, recordDate: NOW, data: { allergies: "x" } })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    await expect(admin().consents.withdraw({ clientId: 1, consentId: id, module: "first_visit" })).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("si una obligación legal obliga a conservarlos, quedan marcados y aparecen en la revisión", async () => {
+    const { id } = await grant();
+    await admin().firstVisit.save({ clientId: 1, recordDate: NOW, data: { allergies: SECRET_HEALTH } });
+    const r = await admin().consents.withdraw({ clientId: 1, consentId: id, module: "first_visit", keepForLegalObligation: true });
+    expect(r).toEqual({ erased: false, reviewRequired: true });
+    expect(store.sensitive).toHaveLength(1);
+    expect(await admin().consents.reviewsDue()).toEqual([{ clientId: 1, name: "Lucía Ficticia Pérez", module: "first_visit", reason: "withdrawn" }]);
+    await admin().rights.eraseModule({ clientId: 1, module: "first_visit" });
+    expect(store.sensitive).toHaveLength(0);
+    expect(store.consents[0].reviewRequired).toBe(false);
+    expect(await admin().consents.reviewsDue()).toEqual([]);
+  });
+
+  it("revisión periódica: al cumplirse el plazo aparece; «siguen siendo necesarios» la aplaza", async () => {
+    await grant();
+    await admin().firstVisit.save({ clientId: 1, recordDate: NOW, data: { allergies: SECRET_HEALTH } });
+    expect(await admin().consents.reviewsDue()).toEqual([]);
+    store.consents[0].grantedAt = NOW - 400 * DAY;
+    const due = await admin().consents.reviewsDue();
+    expect(due).toEqual([{ clientId: 1, name: "Lucía Ficticia Pérez", module: "first_visit", reason: "periodic" }]);
+    expect(JSON.stringify(due)).not.toContain(SECRET_HEALTH);
+    await admin().consents.markReviewed({ clientId: 1, module: "first_visit" });
+    expect(await admin().consents.reviewsDue()).toEqual([]);
+    expect(store.audit).toContainEqual(expect.objectContaining({ action: "retention_reviewed", entityType: "first_visit" }));
+    await expect(admin().consents.markReviewed({ clientId: 1, module: "emotional" })).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  });
+
+  it("exportación de un módulo: datos descifrados + historial de consentimientos, auditada sin contenido", async () => {
+    await grant("emotional");
+    await admin().emotional.save({ clientId: 1, recordDate: NOW, data: { clientAccount: { emotions: SECRET_EMOTION }, professionalObservations: {}, followUp: {} } });
+    const out = await admin().rights.exportModule({ clientId: 1, module: "emotional" });
+    expect(out.records[0].data).toMatchObject({ clientAccount: { emotions: SECRET_EMOTION } });
+    expect(out.consents).toHaveLength(1);
+    const all = await admin().rights.export({ clientId: 1 });
+    expect((all.sensitive.emotional as any[])[0].data).toMatchObject({ clientAccount: { emotions: SECRET_EMOTION } });
+    expect(store.audit.filter((a) => a.action === "export").map((a) => a.entityType)).toEqual(["emotional", "client"]);
+    expect(JSON.stringify(store.audit) + logged.join("\n")).not.toContain(SECRET_EMOTION);
+  });
+
+  it("campos breves: el límite se valida en el servidor y el error no devuelve el contenido", async () => {
+    await grant();
+    const err = await admin().firstVisit.save({ clientId: 1, recordDate: NOW, data: { allergies: SECRET_HEALTH + "x".repeat(1000) } }).catch((e) => e);
     expect(err.code).toBe("BAD_REQUEST");
     expect(JSON.stringify(err) + String(err.message)).not.toContain(SECRET_HEALTH);
+  });
+
+  it("funciones puras de la revisión", () => {
+    expect(retentionReview(undefined, true)).toBeNull();
+    expect(retentionReview({ grantedAt: NOW }, false)).toBeNull();
+    expect(retentionReview({ grantedAt: NOW - 400 * DAY }, true, NOW)).toBe("periodic");
+    expect(retentionReview({ grantedAt: NOW - 400 * DAY, reviewedAt: NOW - 10 * DAY }, true, NOW)).toBeNull();
+    expect(retentionReview({ grantedAt: NOW, withdrawnAt: NOW }, true, NOW)).toBe("withdrawn");
   });
 });
 

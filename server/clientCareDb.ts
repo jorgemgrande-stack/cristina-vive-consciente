@@ -197,12 +197,63 @@ export async function insertConsent(data: { clientId: number; module: Module; te
   return (res as { insertId: number }).insertId;
 }
 
-/** Retirada: queda registrada (no se borra el consentimiento) y los datos pasan a revisión para su supresión. */
-export async function withdrawConsent(consentId: number, clientId: number, at: number) {
+/**
+ * Retirada: queda registrada (el consentimiento no se borra, sirve de prueba). Si los datos se conservan
+ * por una obligación legal, queda marcada para revisión (reviewRequired).
+ */
+export async function withdrawConsent(consentId: number, clientId: number, module: Module, at: number, reviewRequired: boolean) {
+  const [res] = await (await db())
+    .update(clientConsents)
+    .set({ withdrawnAt: at, reviewRequired })
+    .where(and(eq(clientConsents.id, consentId), eq(clientConsents.clientId, clientId), eq(clientConsents.module, module), isNull(clientConsents.withdrawnAt)));
+  return (res as { affectedRows: number }).affectedRows > 0;
+}
+
+/** Revisión periódica hecha: los datos del módulo siguen siendo necesarios. */
+export async function markConsentReviewed(consentId: number, clientId: number, at: number) {
   await (await db())
     .update(clientConsents)
-    .set({ withdrawnAt: at, reviewRequired: true })
-    .where(and(eq(clientConsents.id, consentId), eq(clientConsents.clientId, clientId), isNull(clientConsents.withdrawnAt)));
+    .set({ reviewedAt: at })
+    .where(and(eq(clientConsents.id, consentId), eq(clientConsents.clientId, clientId)));
+}
+
+/** Tras suprimir los datos de un módulo ya no queda nada que revisar. */
+export async function clearReviewRequired(clientId: number, module: Module) {
+  await (await db())
+    .update(clientConsents)
+    .set({ reviewRequired: false })
+    .where(and(eq(clientConsents.clientId, clientId), eq(clientConsents.module, module)));
+}
+
+/** Consentimientos de todos los clientes con datos sensibles guardados (para la revisión periódica). */
+export async function consentsWithData() {
+  const d = await db();
+  const withData = await d
+    .selectDistinct({ clientId: clientSensitiveRecords.clientId, module: clientSensitiveRecords.module })
+    .from(clientSensitiveRecords);
+  if (withData.length === 0) return [];
+  const has = new Set(withData.map((r) => `${r.clientId}:${r.module}`));
+  const rows = await d
+    .select({
+      clientId: clientConsents.clientId,
+      module: clientConsents.module,
+      id: clientConsents.id,
+      grantedAt: clientConsents.grantedAt,
+      withdrawnAt: clientConsents.withdrawnAt,
+      reviewedAt: clientConsents.reviewedAt,
+      firstName: clients.firstName,
+      lastName: clients.lastName,
+    })
+    .from(clientConsents)
+    .innerJoin(clients, eq(clients.id, clientConsents.clientId))
+    .orderBy(desc(clientConsents.grantedAt), desc(clientConsents.id));
+  // El consentimiento más reciente de cada cliente y módulo, solo donde quedan datos
+  const latest = new Map<string, (typeof rows)[number]>();
+  for (const r of rows) {
+    const k = `${r.clientId}:${r.module}`;
+    if (has.has(k) && !latest.has(k)) latest.set(k, r);
+  }
+  return Array.from(latest.values());
 }
 
 export async function deleteConsentsForClient(clientId: number) {
