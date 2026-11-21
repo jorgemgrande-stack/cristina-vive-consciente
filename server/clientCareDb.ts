@@ -76,6 +76,7 @@ export async function listSessions(clientId: number) {
       sessionTime: sessionHistory.sessionTime,
       serviceId: sessionHistory.serviceId,
       serviceName: services.name,
+      serviceLabel: sessionHistory.serviceLabel,
       durationMinutes: sessionHistory.durationMinutes,
       practicalNotes: sessionHistory.summary,
       clientPreferences: sessionHistory.clientPreferences,

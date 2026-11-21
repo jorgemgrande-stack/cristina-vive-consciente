@@ -229,6 +229,50 @@ export const clientPriorItems = mysqlTable("client_prior_items", {
 
 export type ClientPriorItem = typeof clientPriorItems.$inferSelect;
 
+// ─── CATÁLOGO DE SERVICIOS RECIBIDOS (0030) ───────────────────────────────────
+/** Árbol editable: categoría → (tipo) → artículo. Archivar oculta del desplegable sin perder el historial. */
+export const serviceCatalog = mysqlTable("service_catalog", {
+  id: int("id").autoincrement().primaryKey(),
+  parentId: int("parentId"),
+  kind: mysqlEnum("kind", ["category", "group", "item"]).notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  slug: varchar("slug", { length: 120 }).notNull().unique(),
+  /** Si el artículo es una guía de la web (ebooks.slug), los pedidos se enlazan por aquí */
+  ebookSlug: varchar("ebookSlug", { length: 100 }),
+  priceCents: int("priceCents"),
+  sortOrder: int("sortOrder").default(0).notNull(),
+  archived: int("archived").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => [index("service_catalog_parent_idx").on(t.parentId)]);
+
+export type ServiceCatalogNode = typeof serviceCatalog.$inferSelect;
+
+/** Servicios recibidos por una clienta (compras de la web y recursos registrados a mano). */
+export const clientServices = mysqlTable("client_services", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId").notNull(),
+  categoryId: int("categoryId"),
+  groupId: int("groupId"),
+  itemId: int("itemId"),
+  /** Ruta tal como estaba al registrar: «Productos → Ebooks → Guía Digital del Agua» */
+  pathLabel: varchar("pathLabel", { length: 400 }).notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  amountCents: int("amountCents"),
+  paymentStatus: mysqlEnum("paymentStatus", ["free", "paid", "pending"]).default("free").notNull(),
+  receivedAt: bigint("receivedAt", { mode: "number" }).notNull(),
+  notes: text("notes"),
+  source: mysqlEnum("source", ["manual", "order"]).default("manual").notNull(),
+  orderId: int("orderId"),
+  /** «order:123»: una compra se registra una sola vez por ficha */
+  sourceKey: varchar("sourceKey", { length: 80 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy"),
+}, (t) => [uniqueIndex("client_services_source_uq").on(t.clientId, t.sourceKey), index("client_services_client_idx").on(t.clientId)]);
+
+export type ClientService = typeof clientServices.$inferSelect;
+
 // ─── HISTORIAL DE SESIONES ────────────────────────────────────────────────────
 export const sessionHistory = mysqlTable("session_history", {
   id: int("id").autoincrement().primaryKey(),
@@ -246,6 +290,8 @@ export const sessionHistory = mysqlTable("session_history", {
   // ── Sesiones (0024). `summary` = observaciones prácticas; `nextSteps` = cuestiones pendientes. ──
   /** Servicio real del sistema (services.id); null en sesiones antiguas */
   serviceId: int("serviceId"),
+  /** Texto del servicio cuando la sesión viene de una cita que no se pudo enlazar a un servicio (0030) */
+  serviceLabel: varchar("serviceLabel", { length: 200 }),
   durationMinutes: int("durationMinutes"),
   /** Preferencias o comentarios relevantes del cliente (prácticos, no de salud) */
   clientPreferences: text("clientPreferences"),
@@ -773,6 +819,8 @@ export const orders = mysqlTable("orders", {
   deliveryEmailSentAt: bigint("deliveryEmailSentAt", { mode: "number" }),
   includesSession: int("includesSession").default(0).notNull(),
   clientId: int("clientId"),
+  /** Cómo se vinculó a la ficha (0030): linked = ficha existente, created = ficha nueva, review = varias coincidencias, a revisar */
+  clientLinkStatus: varchar("clientLinkStatus", { length: 20 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

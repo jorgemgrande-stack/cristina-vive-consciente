@@ -34,6 +34,7 @@ import EbookGracias from "./pages/EbookGracias";
 import EbookDescarga from "./pages/EbookDescarga";
 import Pedido from "./pages/Pedido";
 import CRMPedidos from "./pages/crm/Pedidos";
+import CRMCatalogoServicios from "./pages/crm/CatalogoServicios";
 
 // Water System Pages
 import SistemaAguaDetalle from "./pages/SistemaAguaDetalle";
@@ -158,6 +159,7 @@ function Router() {
 
       {/* Pedidos (Bizum) CRM */}
       <Route path="/crm/pedidos" component={CRMPedidos} />
+      <Route path="/crm/catalogo-servicios" component={CRMCatalogoServicios} />
 
       {/* Ebooks CRM */}
       <Route path="/crm/ebooks" component={CRMEbooks} />

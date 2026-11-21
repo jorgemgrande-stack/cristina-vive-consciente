@@ -156,7 +156,7 @@ export default function SesionesTab({ clientId, openNew, onNewHandled }: Props) 
       {isLoading ? (
         <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[oklch(0.52_0.08_148)]" size={20} /></div>
       ) : !sessions?.length ? (
-        editingId === null && <EmptyState icon={<ClipboardList size={28} />} title="Todavía no hay sesiones" text="Registra la primera con «Añadir nueva sesión». Fecha y servicio se rellenan solos." />
+        editingId === null && <EmptyState icon={<ClipboardList size={28} />} title="Todavía no hay sesiones realizadas" text="Al marcar una cita como realizada aparece aquí sola; también puedes registrar una con «Añadir nueva sesión»." />
       ) : (
         <ol className="space-y-3">
           {sessions.map((s) =>
@@ -168,7 +168,7 @@ export default function SesionesTab({ clientId, openNew, onNewHandled }: Props) 
                   <div>
                     <p className="text-[0.7rem] text-[oklch(0.52_0.08_148)] font-body uppercase tracking-wider">{formatSessionWhen(s.sessionDate, s.sessionTime)}</p>
                     <p className="text-sm text-[oklch(0.18_0.018_55)] font-body" style={{ fontWeight: 500 }}>
-                      {s.serviceName ?? "Sesión"}{s.durationMinutes ? ` · ${s.durationMinutes} min` : ""}
+                      {s.serviceName ?? s.serviceLabel ?? "Sesión"}{s.durationMinutes ? ` · ${s.durationMinutes} min` : ""}
                     </p>
                   </div>
                   <button

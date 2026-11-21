@@ -12,6 +12,7 @@ import {
 import { trpc } from "@/lib/trpc";
 import CRMLayout from "@/components/CRMLayout";
 import { CLIENT_CATEGORIES, clientCategoryLabel } from "@shared/clientCategories";
+import { childrenOf } from "@shared/serviceCatalog";
 
 const STATUS_CONFIG: Record<string, { label: string; dot: string; badge: string }> = {
   active: { label: "Activa", dot: "bg-green-500", badge: "bg-green-50 text-green-700" },
@@ -23,12 +24,15 @@ export default function CRMClientes() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [category, setCategory] = useState("all");
+  const [product, setProduct] = useState("all");
+  const { data: catalog = [] } = trpc.received.catalog.tree.useQuery();
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const { data: clients, isLoading, refetch } = trpc.crm.clients.list.useQuery({
     search: debouncedSearch || undefined,
     status: status !== "all" ? status : undefined,
     category: category !== "all" ? category : undefined,
+    serviceNodeId: product !== "all" ? Number(product) : undefined,
   });
 
   // Fichas con datos de Primera visita o Acompañamiento que toca revisar (solo nombre y motivo)
@@ -70,6 +74,28 @@ export default function CRMClientes() {
             >
               <option value="all">Todos</option>
               {CLIENT_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+            </select>
+            <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[oklch(0.52_0.02_60)] pointer-events-none" />
+          </div>
+          <div className="relative">
+            <select
+              value={product}
+              onChange={(e) => setProduct(e.target.value)}
+              aria-label="Filtrar por producto o servicio recibido"
+              className="appearance-none pl-3 pr-8 py-2.5 text-sm bg-white border border-[oklch(0.92_0.01_80)] text-[oklch(0.38_0.02_55)] focus:outline-none focus:border-[oklch(0.52_0.08_148)] transition-colors font-body cursor-pointer max-w-[14rem]"
+              style={{ borderRadius: 0 }}
+            >
+              <option value="all">Todos los productos</option>
+              {childrenOf(catalog, null, true).map((root) => (
+                <optgroup key={root.id} label={root.name}>
+                  <option value={root.id}>{root.name} (todo)</option>
+                  {childrenOf(catalog, root.id, true).flatMap((n) =>
+                    n.kind === "group"
+                      ? [<option key={n.id} value={n.id}>{n.name} (todo)</option>, ...childrenOf(catalog, n.id, true).map((i) => <option key={i.id} value={i.id}>   {n.name} → {i.name}{i.archived ? " (archivado)" : ""}</option>)]
+                      : [<option key={n.id} value={n.id}>{n.name}{n.archived ? " (archivado)" : ""}</option>],
+                  )}
+                </optgroup>
+              ))}
             </select>
             <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[oklch(0.52_0.02_60)] pointer-events-none" />
           </div>
@@ -137,7 +163,7 @@ export default function CRMClientes() {
           <div className="p-12 text-center">
             <Users size={32} className="mx-auto text-[oklch(0.88_0.015_75)] mb-3" />
             <p className="text-sm text-[oklch(0.52_0.02_60)] font-body" style={{ fontWeight: 300 }}>
-              {search || category !== "all" || status !== "all" ? "No se encontraron clientes con ese criterio" : "Aún no hay clientes registrados"}
+              {search || category !== "all" || status !== "all" || product !== "all" ? "No se encontraron clientes con ese criterio" : "Aún no hay clientes registrados"}
             </p>
             {!search && (
               <Link

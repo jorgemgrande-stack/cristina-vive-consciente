@@ -34,6 +34,7 @@ import {
   type InsertAppointmentEvent,
   clientCategories,
   clientPriorItems,
+  clientServices,
 } from "../drizzle/schema";
 import { isClientCategory } from "../shared/clientCategories";
 import { ENV } from './_core/env';
@@ -135,7 +136,7 @@ export function clientSearchTerms(search?: string): string[] {
     .map((t) => t.replace(/[\\%_]/g, (c) => `\\${c}`));
 }
 
-export async function getClients(search?: string, status?: string, category?: string) {
+export async function getClients(search?: string, status?: string, category?: string, serviceNodeId?: number) {
   const db = await getDb();
   if (!db) return [];
   const conditions: any[] = [];
@@ -153,6 +154,10 @@ export async function getClients(search?: string, status?: string, category?: st
   // Filtro por categoría con EXISTS (no con JOIN): una persona sale una sola vez aunque tenga varias categorías
   if (category && category !== "all" && isClientCategory(category)) {
     conditions.push(sql`EXISTS (SELECT 1 FROM ${clientCategories} cc WHERE cc.clientId = ${clients.id} AND cc.category = ${category})`);
+  }
+  // Filtro por producto o servicio recibido (artículo, tipo o categoría del catálogo): también con EXISTS
+  if (serviceNodeId) {
+    conditions.push(sql`EXISTS (SELECT 1 FROM ${clientServices} cs WHERE cs.clientId = ${clients.id} AND (cs.itemId = ${serviceNodeId} OR cs.groupId = ${serviceNodeId} OR cs.categoryId = ${serviceNodeId}))`);
   }
   let query = db.select().from(clients).$dynamic();
   if (conditions.length > 0) query = query.where(and(...conditions));
@@ -224,6 +229,7 @@ export async function deleteClient(id: number) {
   try {
     await db.delete(clientCategories).where(eq(clientCategories.clientId, id));
     await db.delete(clientPriorItems).where(eq(clientPriorItems.clientId, id));
+    await db.delete(clientServices).where(eq(clientServices.clientId, id));
   } catch { /* 0029 sin aplicar */ }
   await db.delete(clients).where(eq(clients.id, id));
 }

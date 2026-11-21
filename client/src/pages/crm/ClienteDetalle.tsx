@@ -16,11 +16,11 @@ import { trpc } from "@/lib/trpc";
 import CRMLayout from "@/components/CRMLayout";
 import ResumenTab from "@/components/crm/ficha/ResumenTab";
 import ClientCategoryEditor from "@/components/crm/ClientCategoryEditor";
-import SesionesTab from "@/components/crm/ficha/SesionesTab";
+import ServiciosRecibidosTab from "@/components/crm/ficha/ServiciosRecibidosTab";
 import PrimeraVisitaTab from "@/components/crm/ficha/PrimeraVisitaTab";
 import AcompanamientoTab from "@/components/crm/ficha/AcompanamientoTab";
 
-type Tab = "resumen" | "sesiones" | "citas" | "notas" | "primera" | "acompanamiento";
+type Tab = "resumen" | "servicios" | "citas" | "notas" | "primera" | "acompanamiento";
 
 const NOTE_TYPES: Record<string, { label: string; color: string }> = {
   general: { label: "General", color: "bg-gray-100 text-gray-600" },
@@ -78,6 +78,7 @@ export default function ClienteDetalle() {
   const { data: appointments, refetch: refetchAppts } = trpc.crm.appointments.list.useQuery({ clientId });
   const { data: notes, refetch: refetchNotes } = trpc.crm.notes.list.useQuery({ clientId });
   const { data: sessions } = trpc.care.sessions.list.useQuery({ clientId });
+  const { data: receivedRows } = trpc.received.list.useQuery({ clientId });
   const { data: priorItems } = trpc.crm.clients.priorItems.useQuery({ clientId });
 
   const acceptAppt = trpc.crm.appointments.accept.useMutation({
@@ -260,7 +261,7 @@ export default function ClienteDetalle() {
             </Link>
             <button
               onClick={() => {
-                setActiveTab("sesiones");
+                setActiveTab("servicios");
                 setOpenNewSession(true);
               }}
               className="flex items-center gap-2 w-full px-3 py-2 text-xs text-[oklch(0.38_0.02_55)] border border-[oklch(0.92_0.01_80)] hover:border-[oklch(0.52_0.08_148)] hover:text-[oklch(0.52_0.08_148)] transition-colors font-body"
@@ -289,7 +290,7 @@ export default function ClienteDetalle() {
             {(
               [
                 ["resumen", "Resumen"],
-                ["sesiones", `Sesiones (${sessions?.length ?? 0})`],
+                ["servicios", `Servicios recibidos (${(sessions?.length ?? 0) + (receivedRows?.length ?? 0)})`],
                 ["citas", `Citas (${appointments?.length ?? 0})`],
                 ["notas", `Notas (${notes?.length ?? 0})`],
                 ["primera", "Primera visita"],
@@ -317,18 +318,18 @@ export default function ClienteDetalle() {
             <ResumenTab
               clientId={clientId}
               onAddSession={() => {
-                setActiveTab("sesiones");
+                setActiveTab("servicios");
                 setOpenNewSession(true);
               }}
-              onOpenSessions={() => setActiveTab("sesiones")}
+              onOpenSessions={() => setActiveTab("servicios")}
               onAddNote={() => {
                 setActiveTab("notas");
                 setShowNoteForm(true);
               }}
             />
           )}
-          {activeTab === "sesiones" && (
-            <SesionesTab clientId={clientId} openNew={openNewSession} onNewHandled={() => setOpenNewSession(false)} />
+          {activeTab === "servicios" && (
+            <ServiciosRecibidosTab clientId={clientId} openNewSession={openNewSession} onNewSessionHandled={() => setOpenNewSession(false)} />
           )}
           {activeTab === "primera" && <PrimeraVisitaTab clientId={clientId} />}
           {activeTab === "acompanamiento" && <AcompanamientoTab clientId={clientId} />}
