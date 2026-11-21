@@ -144,7 +144,17 @@ function consolidate(records: SourceRecord[], groups: number[][]): { people: Pla
 }
 
 export function planImport(file: ImportFile, existing: ExistingClient[]): PlanItem[] {
-  const { people } = consolidate(file.records, file.rules.sourceDuplicateGroups);
+  // Filas resueltas a mano: la constancia vive en la BD (nota con clave «CLIENTAS-ES:F<fila>-resuelta»).
+  // Una marca excluye ÚNICAMENTE esa fila: si estaba agrupada con otras de la misma persona, las demás siguen su flujo normal.
+  const resolvedRows = new Map<number, number>();
+  for (const c of existing) for (const k of c.noteKeys) { const m = /^CLIENTAS-ES:F(\d+)-resuelta$/.exec(k); if (m) resolvedRows.set(Number(m[1]), c.id); }
+  const resolvedItems: PlanItem[] = file.records
+    .filter((r) => resolvedRows.has(r.sourceRow))
+    .flatMap((r) => consolidate([r], []).people.map((p): PlanItem => ({ ...p, action: "resolved", clientId: resolvedRows.get(r.sourceRow)! })));
+  const { people } = consolidate(
+    file.records.filter((r) => !resolvedRows.has(r.sourceRow)),
+    file.rules.sourceDuplicateGroups,
+  );
   const doubtful = new Set(file.rules.possibleDuplicateGroupsToReview.flat());
   const fallback = file.rules.fallbackForImportedClientsWithoutHistory.filter(isClientCategory);
 
@@ -161,13 +171,7 @@ export function planImport(file: ImportFile, existing: ExistingClient[]): PlanIt
   const seen = new Map<string, PlanPerson[]>();
   for (const p of people) for (const k of [p.email && `e:${p.email}`, p.phone && `p:${p.phone}`]) if (k) seen.set(k, [...(seen.get(k) ?? []), p]);
 
-  // Filas resueltas a mano: la constancia vive en la BD (nota con clave «CLIENTAS-ES:F<fila>-resuelta»)
-  const resolvedRows = new Map<number, number>();
-  for (const c of existing) for (const k of c.noteKeys) { const m = /^CLIENTAS-ES:F(\d+)-resuelta$/.exec(k); if (m) resolvedRows.set(Number(m[1]), c.id); }
-
-  return people.map((p): PlanItem => {
-    const done = p.rows.map((r) => resolvedRows.get(r)).find((id) => id !== undefined);
-    if (done !== undefined) return { ...p, action: "resolved", clientId: done };
+  const planned = people.map((p): PlanItem => {
     if (p.rows.some((r) => doubtful.has(r))) return { ...p, action: "pending", reason: "Posible persona repetida en otra fila: hay que confirmar la identidad antes de unirlas" };
     if (!p.email && !p.phone) return { ...p, action: "pending", reason: "Sin email ni teléfono utilizables: no se puede cruzar ni evitar duplicados" };
     const dup = [p.email && `e:${p.email}`, p.phone && `p:${p.phone}`].some((k) => k && (seen.get(k)?.length ?? 0) > 1);
@@ -209,6 +213,8 @@ export function planImport(file: ImportFile, existing: ExistingClient[]): PlanIt
       changed: add.categories.length + add.notes.length + add.prior.length + add.fields.length > 0,
     };
   });
+  // Las filas resueltas se listan aparte (no se importan); las demás, según su flujo
+  return [...planned, ...resolvedItems];
 }
 
 /** Lee del CRM lo necesario para el cruce (solo lectura). */

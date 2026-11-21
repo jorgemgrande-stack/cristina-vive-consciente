@@ -220,3 +220,55 @@ describe.runIf(!!URL2 && /(_test|test_)/.test(URL2 ?? ""))("markRowResolved con 
     }
   }, 60_000);
 });
+
+describe("fila resuelta dentro de un grupo de filas de la misma persona", () => {
+  const grupo = { sourceDuplicateGroups: [[10, 11]] };
+  const filas = () => [
+    rec({ sourceRow: 10, fullName: "Rocío N", email: "r@x.es", servicesAndPurchases: "Guia del agua 12 €", categories: ["guias"] }),
+    rec({ sourceRow: 11, fullName: "Rocío N", email: "r@x.es", categories: ["productos"], note: { sourceCell: "E11", type: "general", content: "Aceite Onguard 5ml", commercialExtract: false } }),
+  ];
+
+  it("excluye solo la fila marcada: la otra conserva su nota y su categoría en el plan", () => {
+    const plan = planImport(file(filas(), grupo), [
+      client({ id: 50, firstName: "Rocío", lastName: "N", email: "r@x.es", noteKeys: ["CLIENTAS-ES:F10-resuelta"] }),
+    ]);
+    const resuelta = plan.find((p) => p.rows.includes(10))!;
+    const otra = plan.find((p) => p.rows.includes(11))!;
+    expect(resuelta).toMatchObject({ action: "resolved", clientId: 50, rows: [10] });
+    // la fila 11 no queda arrastrada por la resuelta: se concilia con la ficha y añade su nota y su categoría
+    expect(otra).toMatchObject({ action: "update", clientId: 50, rows: [11] });
+    if (otra.action === "update") {
+      expect(otra.add.notes).toEqual(["CLIENTAS-ES:E11"]);
+      expect(otra.add.categories).toEqual(["productos"]);
+      expect(otra.prior).toEqual([]); // el historial de la fila 10 (resuelta) NO se importa
+    }
+    // lo que se aplicaría: nada de la fila 10 (los ítems «resolved» los salta applyPlan)
+    const aplicable = plan.filter((p) => p.action !== "resolved" && p.action !== "pending");
+    expect(aplicable.flatMap((p) => p.prior.map((h) => h.key))).not.toContain("CLIENTAS-ES:F10");
+    expect(aplicable.flatMap((p) => p.notes.map((n) => n.key))).toEqual(["CLIENTAS-ES:E11"]);
+  });
+
+  it("al revés: resuelta la fila 11, la 10 sigue su flujo con su historial", () => {
+    const plan = planImport(file(filas(), grupo), [
+      client({ id: 50, firstName: "Rocío", lastName: "N", email: "r@x.es", noteKeys: ["CLIENTAS-ES:F11-resuelta"] }),
+    ]);
+    const diez = plan.find((p) => p.rows.includes(10))!;
+    expect(diez).toMatchObject({ action: "update", rows: [10] });
+    expect(diez.prior.map((h) => h.key)).toEqual(["CLIENTAS-ES:F10"]);
+    expect(plan.find((p) => p.rows.includes(11))).toMatchObject({ action: "resolved" });
+  });
+
+  it("sin ninguna marca, el grupo sigue consolidándose en una sola persona", () => {
+    const plan = planImport(file(filas(), grupo), []);
+    expect(plan).toHaveLength(1);
+    expect(plan[0]).toMatchObject({ action: "create", rows: [10, 11] });
+  });
+
+  it("si la fila que queda no tiene contacto propio, queda pendiente (no se pierde ni se importa a ciegas)", () => {
+    const plan = planImport(
+      file([rec({ sourceRow: 10, fullName: "A", email: "a@x.es" }), rec({ sourceRow: 11, fullName: "A", note: { sourceCell: "E11", type: "general", content: "n", commercialExtract: false } })], grupo),
+      [client({ id: 50, noteKeys: ["CLIENTAS-ES:F10-resuelta"] })],
+    );
+    expect(plan.find((p) => p.rows.includes(11))).toMatchObject({ action: "pending" });
+  });
+});
