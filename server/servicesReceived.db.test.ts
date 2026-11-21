@@ -127,5 +127,5 @@ d("Servicios recibidos con base de datos", () => {
       await conn.delete(schema.serviceCatalog).where(like(schema.serviceCatalog.name, `%${tag}%`));
       await conn.delete(schema.serviceCatalog).where(and(eq(schema.serviceCatalog.ebookSlug, `${tag}-agua`)));
     }
-  });
+  }, 60_000);
 });

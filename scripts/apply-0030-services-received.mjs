@@ -79,7 +79,7 @@ try {
       await ensure(`ebook-${e.slug}`, "item", e.title, ebooksG, { ebookSlug: e.slug, priceCents: e.priceCents });
   }
   if (await hasTable("oil_products")) {
-    for (const o of await q("SELECT slug, name FROM oil_products WHERE status = 'active' ORDER BY name"))
+    for (const o of await q("SELECT slug, name FROM oil_products WHERE status = 'active' AND tipoProducto IN ('aceite','mezcla','base') ORDER BY name"))
       await ensure(`aceite-${o.slug}`.slice(0, 120), "item", o.name, aceites);
   }
   console.log(changes ? `${DRY ? "Pendiente" : "Aplicado"}: ${changes} cambio(s).` : "Nada que hacer: 0030 ya está aplicada.");
