@@ -429,7 +429,12 @@ function renderInner(block: PageBlock, ctx: ViewCtx, wrapper?: (b: PageBlock, no
           <div className={`grid grid-cols-1 ${GRID[d.columns]} gap-6`}>
             {d.items.map((it, i) => (
               <div key={i} className="card-natural bg-white overflow-hidden flex flex-col">
-                {it.imageUrl && <img src={it.imageUrl} alt={it.imageAlt || it.title} loading="lazy" className="w-full h-48 object-cover" />}
+                {it.imageUrl && (
+                  <div className="relative">
+                    <img src={it.imageUrl} alt={it.imageAlt || it.title} loading="lazy" className="w-full h-48 object-cover" />
+                    {it.badge && <span className="absolute top-3 left-3 px-3 py-1 bg-[oklch(0.985_0.006_85)]/90 text-[oklch(0.52_0.08_148)] text-[0.65rem] tracking-widest uppercase font-body" style={{ fontWeight: 500 }}>{it.badge}</span>}
+                  </div>
+                )}
                 <div className="p-6 flex flex-col flex-1">
                   <h3 className="font-display text-[oklch(0.18_0.018_55)] mb-2" style={{ fontWeight: 400, fontSize: "1.25rem" }}>{it.title}</h3>
                   {it.text && <p className="font-body text-sm text-[oklch(0.45_0.02_55)] leading-relaxed mb-4" style={{ fontWeight: 300 }}>{it.text}</p>}

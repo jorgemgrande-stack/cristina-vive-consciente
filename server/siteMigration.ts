@@ -34,10 +34,10 @@ const HOME: PageBlock[] = [
   B("home-servicios", "cards", {
     title: "", intro: "", columns: "2",
     items: [
-      { imageUrl: SITE_IMAGES.heroConsultas, imageAlt: "Consultas", title: "Consultas", text: "Sesiones personalizadas para guiarte hacia el equilibrio físico, emocional y espiritual.", buttonLabel: "Descubrir", buttonUrl: "/consultas" },
-      { imageUrl: SITE_IMAGES.heroMasajes, imageAlt: "Masaje y equilibrio energético", title: "Masaje y equilibrio energético", text: "Un espacio de reconexión y calma para el sistema nervioso, favoreciendo el equilibrio entre cuerpo, mente y espíritu.", buttonLabel: "Descubrir", buttonUrl: "/masajes" },
-      { imageUrl: SITE_IMAGES.heroAgua, imageAlt: "Sistemas de Agua", title: "Sistemas de Agua", text: "Asesoramiento en filtros. Soluciones para purificar y vitalizar el agua que bebes.", buttonLabel: "Descubrir", buttonUrl: "/sistemas-agua" },
-      { imageUrl: SITE_IMAGES.heroAceites, imageAlt: "Aceites Esenciales", title: "Aceites Esenciales", text: "Descubre sus propiedades, usos y diferentes formas de incorporarlos de manera consciente a tu día a día.", buttonLabel: "Descubrir", buttonUrl: "/aceites-esenciales" },
+      { imageUrl: SITE_IMAGES.heroConsultas, imageAlt: "Consultas", badge: "Bienestar integral", title: "Consultas", text: "Sesiones personalizadas para guiarte hacia el equilibrio físico, emocional y espiritual.", buttonLabel: "Descubrir", buttonUrl: "/consultas" },
+      { imageUrl: SITE_IMAGES.heroMasajes, imageAlt: "Masaje y equilibrio energético", badge: "Terapia corporal", title: "Masaje y equilibrio energético", text: "Un espacio de reconexión y calma para el sistema nervioso, favoreciendo el equilibrio entre cuerpo, mente y espíritu.", buttonLabel: "Descubrir", buttonUrl: "/masajes" },
+      { imageUrl: SITE_IMAGES.heroAgua, imageAlt: "Sistemas de Agua", badge: "Agua viva", title: "Sistemas de Agua", text: "Asesoramiento en filtros. Soluciones para purificar y vitalizar el agua que bebes.", buttonLabel: "Descubrir", buttonUrl: "/sistemas-agua" },
+      { imageUrl: SITE_IMAGES.heroAceites, imageAlt: "Aceites Esenciales", badge: "Aromaterapia", title: "Aceites Esenciales", text: "Descubre sus propiedades, usos y diferentes formas de incorporarlos de manera consciente a tu día a día.", buttonLabel: "Descubrir", buttonUrl: "/aceites-esenciales" },
     ],
   }, { padBottom: "m" }),
   B("home-btn-guias", "button", { label: "Guías Digitales", url: "/guias-digitales", variant: "outline", align: "left" }),
@@ -58,18 +58,20 @@ const HOME: PageBlock[] = [
   }, { padBottom: "l" }),
   conn("home-agua", "home_agua"),
   conn("home-blog", "home_blog"),
+  B("home-testimonios-intro", "heading", { eyebrow: "Testimonios", title: "Lo que dicen mis clientas", subtitle: "", level: "h2", align: "center" }, { background: "dark", padTop: "l" }),
   B("home-testimonios", "testimonials", {
-    title: "Lo que dicen mis clientas",
+    title: "",
     items: [
       { quote: "Cristina cambió mi relación con mi cuerpo. Sus consultas me dieron herramientas que uso cada día para sentirme mejor.", author: "María L.", role: "Clienta de consultas" },
       { quote: "Los masajes son una experiencia transformadora. Salgo completamente renovada, como si hubiera descansado días enteros.", author: "Ana G.", role: "Clienta de masajes" },
       { quote: "Gracias a los aceites esenciales y las guías de Cristina, mi familia vive de forma mucho más natural y consciente.", author: "Laura M.", role: "Clienta de aceites" },
     ],
-  }, { background: "dark", padTop: "l", padBottom: "l" }),
+  }, { background: "dark", padBottom: "l" }),
+  B("home-cta-intro", "heading", { eyebrow: "Empieza hoy", title: "", subtitle: "", level: "h2", align: "center" }, { background: "soft", padTop: "l" }),
   B("home-cta", "cta", {
     title: "¿Lista para vivir conscientemente?", text: "Da el primer paso hacia una vida más natural, equilibrada y plena. Estoy aquí para acompañarte en cada etapa de tu camino.",
     buttonLabel: "Reservar consulta", buttonUrl: "/consultas", secondaryLabel: "Escribirme", secondaryUrl: "/contacto",
-  }, { background: "soft", padTop: "l", padBottom: "l" }),
+  }, { background: "soft", padBottom: "l" }),
 ];
 
 /** Página legal: título, fecha opcional y cuerpo en texto con formato (los datos «Pendiente» van marcados). */

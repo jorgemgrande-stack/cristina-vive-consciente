@@ -18,6 +18,7 @@ import { BlockView, type DetailKey } from "@/components/site/PageBlocksView";
 import { FichaScope } from "@/components/site/detail";
 import { WhatsappContextProvider } from "@/components/site/whatsappContext";
 import { trpc } from "@/lib/trpc";
+import { FICHA_SECTIONS } from "@shared/fichaSections";
 import { ContentFields, DesignFields, catalogLabel } from "./blockFields";
 import { PublishControls, SaveBadge, StatusPill, inputCls, labelCls, useDocEditor } from "./shared";
 import { previewUrl } from "./WebPaginas";
@@ -58,8 +59,10 @@ const TEMPLATE_DATA: Record<string, { href: string; label: string }> = {
   "aceites-esenciales": { href: "/crm/aceites/productos", label: "Aceites → Productos" }, blog: { href: "/crm/blog/articulos", label: "Blog → Artículos" },
 };
 
+let currentKind: string | null = null;
 function blockSummary(b: PageBlock): string {
   const d = b.data as unknown as Record<string, unknown>;
+  if (b.type === "connected" && d.source === "ficha") return FICHA_SECTIONS[currentKind ?? ""]?.find((s) => s.key === d.section)?.label ?? String(d.section || "Sección sin elegir");
   const t = [d.title, d.label, d.eyebrow, d.buttonLabel].find((x) => typeof x === "string" && x) as string | undefined;
   return t ? t.slice(0, 40) : "";
 }
@@ -85,6 +88,7 @@ export default function WebEditor() {
   const route = sample.data ?? docKey;
   const def = systemPage(docKey);
 
+  currentKind = detailKeyOf(docKey);
   const blocks = content?.blocks ?? [];
   const selected = selectedId && content ? findBlock(blocks, selectedId) : null;
   const setBlocks = (fn: (b: PageBlock[]) => PageBlock[]) => editor.update((c) => ({ ...c, blocks: fn(c.blocks) }));

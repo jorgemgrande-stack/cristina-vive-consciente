@@ -28,7 +28,7 @@ export type BlockType = (typeof BLOCK_TYPES)[number];
 
 export interface GalleryImage { url: string; alt: string }
 export interface FeatureItem { icon: string; title: string; text: string }
-export interface CardItem { imageUrl: string; imageAlt: string; title: string; text: string; buttonLabel: string; buttonUrl: string }
+export interface CardItem { imageUrl: string; imageAlt: string; title: string; text: string; buttonLabel: string; buttonUrl: string; /** Etiqueta pequeña sobre la imagen (opcional) */ badge: string }
 export interface FaqItem { question: string; answer: string }
 export interface TestimonialItem { quote: string; author: string; role: string }
 export const FORM_FIELD_KINDS = ["text", "email", "phone", "textarea", "select", "checkbox"] as const;
@@ -209,7 +209,7 @@ export function defaultBlockData<K extends BlockType>(type: K): BlockDataMap[K] 
     columns: { title: "Título", html: "<p>Texto de la sección.</p>", imageUrl: "", imageAlt: "", imagePosition: "right", buttonLabel: "", buttonUrl: "", imageX: 50, imageY: 50 },
     section: { layout: "1-1", gap: "m", valign: "top", mobile: "stack", width: "normal", columns: [{ blocks: [] }, { blocks: [] }] },
     features: { title: "", intro: "", columns: "3", items: [{ icon: "leaf", title: "Ventaja", text: "Descripción breve." }] },
-    cards: { title: "", intro: "", columns: "3", items: [{ imageUrl: "", imageAlt: "", title: "Tarjeta", text: "", buttonLabel: "", buttonUrl: "" }] },
+    cards: { title: "", intro: "", columns: "3", items: [{ imageUrl: "", imageAlt: "", title: "Tarjeta", text: "", buttonLabel: "", buttonUrl: "", badge: "" }] },
     faq: { title: "Preguntas frecuentes", items: [{ question: "¿Pregunta?", answer: "Respuesta." }] },
     testimonials: { title: "Opiniones", items: [{ quote: "Una opinión.", author: "Nombre", role: "" }] },
     cta: { title: "¿Hablamos?", text: "", buttonLabel: "Contactar", buttonUrl: "/contacto", secondaryLabel: "", secondaryUrl: "" },

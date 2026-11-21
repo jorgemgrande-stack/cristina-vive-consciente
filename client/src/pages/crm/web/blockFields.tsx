@@ -103,7 +103,7 @@ export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
     { key: "title", label: "Título", kind: "text" },
     { key: "intro", label: "Introducción", kind: "textarea" },
     { key: "columns", label: "Columnas en escritorio", kind: "select", options: opt(["2", "2"], ["3", "3"], ["4", "4"]) },
-    { key: "items", label: "Tarjetas", kind: "list", itemLabel: "Tarjeta", max: 30, blank: { imageUrl: "", imageAlt: "", title: "Nueva tarjeta", text: "", buttonLabel: "", buttonUrl: "" }, fields: [{ key: "imageUrl", label: "Imagen", kind: "image" }, { key: "imageAlt", label: "Descripción de la imagen", kind: "text" }, { key: "title", label: "Título", kind: "text" }, { key: "text", label: "Texto", kind: "textarea" }, { key: "buttonLabel", label: "Texto del botón", kind: "text" }, { key: "buttonUrl", label: "Enlace del botón", kind: "url" }] },
+    { key: "items", label: "Tarjetas", kind: "list", itemLabel: "Tarjeta", max: 30, blank: { imageUrl: "", imageAlt: "", title: "Nueva tarjeta", text: "", buttonLabel: "", buttonUrl: "", badge: "" }, fields: [{ key: "imageUrl", label: "Imagen", kind: "image" }, { key: "badge", label: "Etiqueta sobre la imagen (opcional)", kind: "text" }, { key: "imageAlt", label: "Descripción de la imagen", kind: "text" }, { key: "title", label: "Título", kind: "text" }, { key: "text", label: "Texto", kind: "textarea" }, { key: "buttonLabel", label: "Texto del botón", kind: "text" }, { key: "buttonUrl", label: "Enlace del botón", kind: "url" }] },
   ],
   faq: [
     { key: "title", label: "Título", kind: "text" },

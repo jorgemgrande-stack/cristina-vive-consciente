@@ -144,7 +144,7 @@ function normalizeData(type: BlockType, d: Record<string, unknown>, depth: numbe
     case "cards":
       return {
         title: str(d.title, S.title), intro: str(d.intro, S.long), columns: oneOf(d.columns, ["2", "3", "4"] as const, "3"),
-        items: list(d.items, S.listItems, (x) => ({ imageUrl: safeImage(x.imageUrl), imageAlt: str(x.imageAlt), title: str(x.title, S.title), text: str(x.text, S.long), buttonLabel: str(x.buttonLabel, 80), buttonUrl: safeLink(x.buttonUrl) })),
+        items: list(d.items, S.listItems, (x) => ({ imageUrl: safeImage(x.imageUrl), imageAlt: str(x.imageAlt), title: str(x.title, S.title), text: str(x.text, S.long), buttonLabel: str(x.buttonLabel, 80), buttonUrl: safeLink(x.buttonUrl), badge: str(x.badge, 40) })),
       };
     case "faq":
       return { title: str(d.title, S.title), items: list(d.items, S.listItems, (x) => ({ question: str(x.question, S.title), answer: str(x.answer, S.long) })).filter((i) => i.question) };

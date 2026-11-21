@@ -123,7 +123,12 @@ export function MasajesProvider({ children, slug }: { children: ReactNode; slug:
 }
 
 /** Contenedor de las secciones de contenido (mismo ritmo vertical que la ficha original). */
+/** La página original compone las secciones en su cuadrícula (2/3 + columna fija): con `bare` no llevan contenedor propio. */
+const BareContext = createContext(false);
+
 function Block({ children, narrow = true }: { children: ReactNode; narrow?: boolean }) {
+  const bare = useContext(BareContext);
+  if (bare) return <div>{children}</div>;
   return (
     <section className="py-6 bg-white">
       <div className="container">
@@ -273,7 +278,15 @@ const STEPS = [
   { t: "Pagas en la cita", d: PAYMENT_NOTE },
 ];
 
-export function MasajesSection({ name }: { name: string }) {
+export function MasajesSection({ name, bare }: { name: string; bare?: boolean }) {
+  return (
+    <BareContext.Provider value={!!bare}>
+      <MasajesSectionInner name={name} />
+    </BareContext.Provider>
+  );
+}
+
+function MasajesSectionInner({ name }: { name: string }) {
   const c = useContext(MasajeCtx);
   if (!c) return null;
   const { masaje, includes, benefits, longDesc, contraindications, homeText, priceText } = c;

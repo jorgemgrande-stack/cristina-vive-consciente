@@ -1,68 +1,69 @@
 # Editar web — inventario y matriz de cobertura
 
-Rama `feat/editar-web`. Referencia de solo lectura: `nayade_experiences_platform@integration/elephant-source`, commit `8c29f8f0ea9ba96bebf78fda896b8d978c24dcb4` (coincide con el verificado en el encargo).
-De la referencia se tomó el **modelo** (bloques + diseño de lista cerrada + árbol de secciones + borrador/publicación), no el código multiempresa: persistencia, sesión, archivos y catálogo son los de Cristina.
+Rama `feat/editar-web` (PR en borrador). Referencia de solo lectura: `nayade_experiences_platform@integration/elephant-source`, commit `8c29f8f0ea9ba96bebf78fda896b8d978c24dcb4`. De la referencia se tomó el **modelo** (bloques, diseño de lista cerrada, árbol de secciones, borrador/publicación, biblioteca de imágenes, encuadre y reordenación por arrastre), no el código multiempresa: persistencia, sesión, archivos y catálogo son los de Cristina.
 
 ## Cómo funciona
 
-- Cada página/plantilla/ajuste global es un **documento** (`site_documents`) con **borrador** y **versión publicada** (`site_document_versions`). Migración **0028, aditiva** (3 tablas nuevas; reversión `drizzle/0028_site_editor.down.sql`; aplicar con `scripts/apply-0028-site-editor.mjs`).
-- `servedFrom = legacy` → la web sigue sirviendo la página de siempre en código. Solo **publicar** cambia a `cms`. «Volver a la original» deshace el cambio sin perder borrador ni historial.
-- Un único renderizador (`client/src/components/site/PageBlocksView.tsx`) pinta el lienzo, la vista previa y la web pública.
-- Los listados/fichas son bloques **conectados**: embeben la página de siempre sin su cabecera (que pasa a ser un bloque «Cabecera» editable) y siguen leyendo Servicios, Agua, Aceites, Ebooks, Afiliados y Blog. Precio, duración y condiciones **no se copian**.
-- Vista previa privada: `<ruta>?__preview=1` con sesión de administradora; envoltorio que bloquea clics y envíos. Los visitantes solo reciben lo publicado (los bloques ocultos ni se envían).
-- Migración repetible: `site.migrate` / botón «Preparar borrador» (`server/siteMigration.ts`). Solo crea borradores.
+- Cada página, plantilla de ficha y los ajustes globales son un **documento** con **borrador**, **versión publicada** e **historial** (`site_documents`, `site_document_versions`, `site_redirects`). Migración **0028, aditiva** (reversión `drizzle/0028_site_editor.down.sql`; aplicar con `scripts/apply-0028-site-editor.mjs --dry-run` primero).
+- `servedFrom = legacy`: la web sirve la página de siempre en código. **Solo «Publicar» cambia a la versión del editor.** «Volver a la original» lo deshace sin perder borrador ni historial.
+- Un único renderizador (`PageBlocksView`) pinta el lienzo, la vista previa y la web pública. La vista previa es la web real (`?__preview=1`, solo con sesión de administradora) con clics y envíos bloqueados.
+- Los listados y catálogos son bloques **conectados** a sus datos de siempre. Las **fichas** se dividen en **secciones** conectadas a la ficha del elemento: precio, duración y condiciones se leen de su única fuente (Servicios, Agua, Aceites, Blog); los servicios marcados como internos siguen excluidos (la ficha responde «no encontrado» y no aparecen en listados ni sitemap).
+- Acciones de botón (`action:…`): abrir la reserva, la reserva de masaje, el asesoramiento de agua, mostrar «Cómo funciona» o abrir las preferencias de cookies. Se eligen con un selector.
+- Textos internos: 199 textos editables (reserva, Mi consulta, pedido, guías, Masajes, Sistemas de agua, Aceites, Contacto y comunidad) en «Textos».
+- Textos legales: se preparan, previsualizan y publican como el resto. Cada versión publicada lleva su número y fecha, que se muestran en la página y se guardan junto al consentimiento de cookies (`policyVersion`). El comportamiento del consentimiento no cambia. Los datos «Pendiente» van resaltados y el editor avisa antes de publicar.
+- Imágenes: biblioteca de archivos ya subidos (los de Galería) además de subir nuevos; encuadre por punto focal (en la cabecera, distinto en móvil); la Galería protege de borrado las imágenes usadas por páginas del editor.
+- Bloques: reordenación por **arrastre** (lienzo y «Estructura», también hacia columnas) y botones **subir/bajar** (teclado y pantallas táctiles).
 
 ## Matriz por URL / plantilla
 
-| URL / plantilla | Sección visible | Fuente actual | Dónde se edita |
-|---|---|---|---|
-| `/` Portada | Presentación de imágenes + texto y botones | Imágenes: **Hero Inicio**; textos: bloque conectado `home_slideshow` | Editar web → Portada (textos); imágenes en Hero Inicio |
-| | Banda verde, servicios, Sobre mí, pilares, testimonios, CTA final | Código (antes fijo) | Bloques (Texto, Tarjetas, Texto e imagen, Ventajas, Opiniones, CTA) |
-| | Masajes destacados, sistemas de agua, últimas entradas | Servicios / Agua / Blog | Bloques conectados (posición y orden editables; datos en su sección) |
-| `/consultas` | Cabecera | Código | Bloque Cabecera (título, texto, imagen, botón) |
-| | Listado | Servicios | Bloque conectado (posición/diseño); ficha de cada servicio en Servicios |
-| `/masajes` | Cabecera (incl. botones «Reservar sesión» / «Cómo funciona») | Código | Bloque Cabecera. **Limitación:** los dos botones de la cabecera original (abrir reserva / desplegar explicación) no existen como bloque; la migración los omite |
-| | Listado y explicación técnica | Servicios + código | Bloque conectado. **Texto «Cómo funciona» y textos del listado: en código** |
-| `/sistemas-agua` | Cabecera | Código | Bloque Cabecera (botón «Solicitar asesoramiento» pasa a enlace a /contacto; el original abre una ventana) |
-| | Catálogo, autoridad, secciones | Agua + código | Bloque conectado; **textos internos del catálogo en código** |
-| `/aceites-esenciales` | Cabecera, aviso, filtros, catálogo, bloque final | Aceites + código | Cabecera editable; resto en bloque conectado (**aviso terapéutico y textos del catálogo en código**) |
-| `/guias-digitales` | Cabecera + guías | Ebooks | Cabecera editable; guías conectadas |
-| `/recomendados` | Cabecera + productos | Afiliados | Cabecera editable; productos conectados |
-| `/contacto` | Cabecera + formulario + datos + comunidad | Código + automatizaciones | Cabecera editable; formulario en bloque conectado (**textos del formulario en código**) |
-| `/blog` | Cabecera + listado | Blog | Cabecera editable; artículos en Blog |
-| `/privacidad`, `/politica-de-cookies` | Texto legal | Código (versiones de consentimiento de `shared/clientCare`, datos «Pendiente») | **Cabecera/bloques alrededor editables; el cuerpo del texto legal sigue en código** (decisión deliberada: no copiar a HTML libre un texto legal enlazado a versiones de consentimiento) |
-| `tpl:/consultas/:slug`, `/masajes/:slug`, `/sistemas-agua/:slug`, `/aceites-esenciales/:slug`, `/blog/:slug` | Ficha | Servicios / Agua / Aceites / Blog | Plantilla: bloques antes/después de la ficha. Datos y reserva de la ficha: su sección y su código |
-| Páginas nuevas `/<dirección>` | Lo que Cristina cree | Editor | Editar web → Nueva página (borrador → publicar; cambio de dirección con 301 automático) |
-| Cabecera global | Logo, menú escritorio/móvil, enlace contacto, botón destacado, aviso | Código | Editar web → Ajustes del sitio |
-| Pie global | Texto, columnas, contacto, redes, copyright, enlaces legales | Código | Ajustes del sitio. «Gestionar cookies» siempre visible |
-| Botón WhatsApp | Visibilidad, número, saludo | `shared/booking` | Ajustes del sitio (el número solo cambia el globo; avisos a Cristina no cambian) |
-| Estados vacíos y textos de reserva/compra | Éxito de cita, botón enviar, Mi consulta vacía, pedido pagado, gracias de guía, 404, aviso de contacto | Código | Editar web → Textos de reserva y compra (15 textos) |
-| SEO | Título, descripción, imagen social, noindex | Código / `usePageMeta` | Por página en «Página y SEO» (aplica a páginas publicadas desde el editor) |
-| Redirecciones | 221 reglas heredadas + nuevas | `redirects.json` + `site_redirects` | Editar web → Redirecciones (las editables mandan sobre el JSON) |
-| Sitemap | Páginas + fichas | `server/sitemap.ts` | Incluye páginas nuevas publicadas; respeta `noindex` |
+| URL / plantilla | Qué se edita desde `/crm/web` | Datos (siguen en su módulo) |
+|---|---|---|
+| `/` Portada | Textos y botones de la presentación; banda, servicios (tarjetas con etiqueta), Sobre mí, pilares, testimonios, CTA; orden/visibilidad/diseño de todo | Imágenes: **Hero Inicio**; masajes: Servicios; agua: Agua; blog: Blog |
+| `/consultas` | Cabecera (título, texto, imagen, encuadre, 2 botones); posición/diseño del listado; textos de reserva | Servicios (precio, duración, condiciones); acceso «Editar servicio» desde la tarjeta |
+| `/masajes` | Cabecera con **«Reservar sesión»** (abre la reserva de masaje) y **«Cómo funciona»** (muestra/oculta la explicación), con texto y destino editables; 37 textos internos | Servicios |
+| `/sistemas-agua` | Cabecera con «Solicitar asesoramiento» (abre la ventana) y «Ver sistemas»; 69 textos internos (catálogo, confianza, formulario de presupuesto) | Agua → Productos |
+| `/aceites-esenciales` | Cabecera con «Reservar consulta…» y «Mi consulta (n)» (solo si hay aceites); bloque de la experta como texto; 27 textos internos (aviso, filtros, tarjeta) | Aceites → Productos |
+| `/guias-digitales`, `/recomendados`, `/blog` | Cabecera y posición del listado | Ebooks / Afiliados / Blog |
+| `/contacto` | Cabecera; 54 textos del formulario, avisos, información y bloque «comunidad» | Automatizaciones (envío y secuencias) |
+| `/privacidad`, `/politica-de-cookies` | Texto completo (preparar, previsualizar, publicar), con datos «Pendiente» marcados y versión trazable | — |
+| Fichas de consulta, masaje, agua, aceite y artículo | Orden, visibilidad y diseño de cada sección; bloques antes/después; recorte por sección | Ficha del elemento (Servicios, Agua, Aceites, Blog) |
+| Páginas nuevas | Todo; dirección con redirección 301 automática al cambiarla | — |
+| Cabecera, pie, WhatsApp, aviso | Ajustes del sitio | — |
+| SEO, redirecciones, sitemap | Página y SEO; Redirecciones; sitemap con las páginas publicadas y `noindex` | `redirects.json` (base heredada) |
 
-## Lo que sigue exigiendo código (identificado)
+## Paridad de las 11 páginas y 5 plantillas (original frente a vista previa del borrador)
 
-1. `/privacidad` y `/politica-de-cookies`: cuerpo del texto legal.
-2. `/masajes`: botones «Reservar sesión» y «Cómo funciona» de la cabecera; bloque «Cómo funciona» y textos del listado.
-3. `/sistemas-agua`, `/aceites-esenciales`: textos internos del catálogo, filtros y avisos; ventana de asesoramiento.
-4. `/contacto`: textos del formulario y del bloque «comunidad».
-5. Fichas `/consultas/:slug`, `/masajes/:slug`, `/sistemas-agua/:slug`, `/aceites-esenciales/:slug`, `/blog/:slug`: estructura interna de la ficha (la plantilla permite añadir bloques antes y después).
-6. Textos internos de la ventana de reserva (campos, ayudas, avisos de masaje) más allá de los 3 textos editables.
-7. Biblioteca de medios: se usa el subidor existente (`/api/upload`); no hay selector de archivos ya subidos.
-8. SEO por página en servidor: el SPA sigue fijando título/meta en el navegador (igual que antes); los rastreadores sin JavaScript ven los de `index.html`.
-9. Reordenar bloques: botones subir/bajar (sin arrastrar y soltar).
+Comprobada en el navegador a 1280 px y 390 px: texto, enlaces, imágenes, botones y formularios. Resultado: textos 99–100 %, **enlaces, imágenes y botones sin diferencias**, formularios y campos iguales (`/contacto` 1/8, ficha de blog 1/2). Diferencias conocidas: la banda verde de la portada es texto en negrita (antes mayúsculas con puntos) y las etiquetas de las tarjetas y «Testimonios»/«Empieza hoy» se recuperaron como etiquetas y encabezados.
+
+## Lo que sigue exigiendo código (URL, elemento y motivo)
+
+| URL | Elemento | Motivo |
+|---|---|---|
+| `/contacto` | Opciones del desplegable «Motivo de consulta» (p. ej. «Consulta Express 10€») | Son nombres de producto con precio y el texto es también el valor que se envía; se gestionan con los servicios |
+| `/contacto`, pie | Correo `hola@cristinaviveconsciente.es` del cuerpo de contacto e Instagram de la página | Dato, no texto; en el pie sí es editable. Pendiente unificar los tres correos |
+| `/masajes` | Nombres de los 8 aceites del bloque «Cómo funciona» | Nombres de producto |
+| Fichas (`/consultas/:slug`, `/masajes/:slug`, `/sistemas-agua/:slug`, `/aceites-esenciales/:slug`, `/blog/:slug`) | Títulos internos fijos de cada sección («Qué ofrece», pasos de «Cómo reservar») y preguntas frecuentes | Texto fijo en el componente de la sección (no es dato del elemento); el orden, visibilidad y diseño sí son editables |
+| Fichas | Cabecera (galería + título + precio + reserva) y, en agua, «Instalación/mantenimiento/garantía» y «Por qué elegirlo/para quién» | Comparten una cuadrícula y no se pueden partir sin romper el diseño; se mueven como una sola sección |
+| `/sistemas-agua` y `/aceites-esenciales` | Resumen de filtros (« · categoría», « · "búsqueda"») | Lo que escribe la persona |
+| Todas | Ventana de reserva: campos, ayudas y avisos más allá de 3 textos | Lógica de citas (no se toca) |
+| Todas | SEO en el servidor | El título/meta se fijan en el navegador (igual que antes); los rastreadores sin JavaScript ven los de `index.html` |
+
+## Pendientes de Cristina (no son código)
+
+- Completar en `/privacidad` los 8 datos «Pendiente» (NIF, domicilio, garantías de Railway/Brevo/CallMeBot, plazos, base de los emails de seguimiento) con información confirmada; el editor los lista y avisa antes de publicar.
+- Decidir las secuencias comerciales de los días 3 y 7 (los formularios del editor **no** inscriben en ellas) y el cambio del pie.
+
+## Cambios visibles del pie (para que Cristina decida)
+
+1. El botón «Reservar consulta» del pie mostraba «Próximamente»; ahora lleva a `/consultas` (editable).
+2. Se retira el enlace «Términos» (solo mostraba «Próximamente»).
+3. Los iconos de redes sin URL no se muestran hasta que se configuren (antes eran botones que decían «Próximamente»).
 
 ## No cambia (reglas y registros actuales)
 
-Citas y calendario, carrito «Mi consulta», cobros/Bizum/Stripe, pedidos, facturación, descargas, afiliados y automatizaciones no pasan por «Editar web». Los formularios del editor crean un contacto en el CRM (si hay correo) y avisan a Cristina; **no** inscriben en la secuencia de emails comerciales de los días 3 y 7 (decisión de marketing pendiente de Cristina).
-
-## Cambios visibles respecto a la web anterior
-
-- Pie: el botón «Reservar consulta» enlazaba a un aviso «Próximamente»; ahora lleva a `/consultas` (editable). El enlace «Términos» (aviso «Próximamente») y los iconos sociales vacíos se retiran hasta que haya URL real.
-- Cada página pública hace una consulta breve (`site.page`) antes de pintar para decidir entre la versión publicada y la de siempre.
+Citas y calendario, carrito «Mi consulta», cobros/Bizum/Stripe, pedidos, facturación, descargas, afiliados y automatizaciones no pasan por «Editar web». Los formularios del editor crean un contacto en el CRM (si hay correo) y avisan a Cristina.
 
 ## Verificación
 
-- `pnpm check` (tsc) y `pnpm test`: 308 pruebas, incluidas `server/siteEditor.test.ts` (saneado, árbol, direcciones) y `server/siteEditor.db.test.ts` (borrador → publicar → historial → restaurar, páginas nuevas, redirecciones, plantillas) contra MySQL de pruebas (`SITE_TEST_DATABASE_URL`).
-- Navegador (sesión de administradora, BD de desarrollo): hero de `/consultas` editado, guardado en borrador (el visitante seguía viendo lo anterior), vista previa móvil a 390 px, publicado, restaurado; enlace global cambiado y publicado; página nueva creada, publicada, renombrada (301 desde la antigua, sitemap actualizado); cambio de precio en Servicios (140 € → 147 €) reflejado en `/consultas` publicada.
+- `pnpm check`, `pnpm build` y `pnpm test` (317 pruebas con las nuevas de acciones, migración, plantillas y textos legales; y de flujo con MySQL con `SITE_TEST_DATABASE_URL`).
+- Navegador (sesión de administradora, BD de desarrollo): edición del hero de `/consultas`, borrador, vista previa móvil, publicar y restaurar; enlace global; página nueva con redirección y sitemap; precio 140 → 147 € reflejado; botones de Masajes; ficha de masaje con secciones reordenadas y ocultas; servicio interno → «no encontrado»; textos legales publicados con sello de versión y `policyVersion` en el consentimiento; arrastre; biblioteca (177 imágenes) y encuadre de móvil; textos internos editados llegando a `/contacto`.

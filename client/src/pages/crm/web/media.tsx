@@ -79,7 +79,7 @@ export function FocusPicker({ label, url, x, y, onChange }: { label: string; url
         aria-label={`${label}: punto de la imagen que se mantiene visible`}
         aria-valuetext={`${x} % horizontal, ${y} % vertical`}
         className="relative cursor-crosshair touch-none select-none border border-[oklch(0.88_0.015_75)] focus:outline-2 focus:outline-[oklch(0.52_0.08_148)]"
-        onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture?.(e.pointerId); setDragging(true); set(e); }}
+        onPointerDown={(e) => { try { (e.target as HTMLElement).setPointerCapture?.(e.pointerId); } catch { /* sin captura */ } setDragging(true); set(e); }}
         onPointerMove={(e) => { if (dragging) set(e); }}
         onPointerUp={() => setDragging(false)}
         onKeyDown={(e) => {
