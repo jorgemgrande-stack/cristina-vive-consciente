@@ -27,13 +27,15 @@ console.log(`CRM: ${existing.length} fichas · archivo: ${data.records.length} f
 console.log(`\nALTAS (${by("create").length}): filas ${rows(by("create"))}`);
 console.log(`\nCOINCIDEN CON UNA FICHA (${upd.length}) — con cambios: ${upd.filter((u) => u.changed).length}, sin cambios: ${upd.filter((u) => !u.changed).length}`);
 for (const u of upd) console.log(`  fila ${u.rows.join("+")} ↔ ficha #${u.clientId} por ${u.matchedBy}` + (u.changed ? ` · añade: ${[u.add.categories.length && `categorías ${u.add.categories.join("/")}`, u.add.notes.length && `${u.add.notes.length} nota(s)`, u.add.prior.length && `${u.add.prior.length} historial`, u.add.fields.length && `campos ${u.add.fields.join("/")}`].filter(Boolean).join("; ")}` : " · sin cambios") + (u.warnings.length ? ` · AVISO: ${u.warnings.join("; ")}` : ""));
+const resolved = plan.filter((p) => p.action === "resolved") as Extract<(typeof plan)[number], { action: "resolved" }>[];
+if (resolved.length) console.log(`\nRESUELTAS A MANO (${resolved.length}): ${resolved.map((r) => `fila ${r.rows.join("+")} → ficha #${r.clientId}`).join("; ")} (no se importan)`);
 console.log(`\nPENDIENTES (${by("pending").length}):`);
 for (const p of by("pending") as Extract<(typeof plan)[number], { action: "pending" }>[]) console.log(`  fila ${p.rows.join("+")}: ${p.reason}${p.candidates ? ` (fichas ${p.candidates.join(", ")})` : ""}`);
 const warn = plan.filter((p) => p.action !== "update" && p.warnings.length);
 if (warn.length) { console.log("\nAVISOS:"); for (const w of warn) console.log(`  filas ${w.rows.join("+")}: ${w.warnings.join("; ")}`); }
 const totals = {
-  notas: plan.filter((p) => p.action !== "pending").reduce((n, p) => n + p.notes.length, 0),
-  historial: plan.filter((p) => p.action !== "pending").reduce((n, p) => n + p.prior.length, 0),
+  notas: plan.filter((p) => p.action !== "pending" && p.action !== "resolved").reduce((n, p) => n + p.notes.length, 0),
+  historial: plan.filter((p) => p.action !== "pending" && p.action !== "resolved").reduce((n, p) => n + p.prior.length, 0),
 };
 console.log(`\nPrevisto (casos claros): ${totals.notas} notas y ${totals.historial} elementos de historial en total (las ya existentes no se repiten).`);
 
@@ -46,6 +48,6 @@ if (apply) {
     console.log(`Copia previa de ${touched.length} fichas en ${dir}`);
   }
   const rep = await applyPlan(plan);
-  console.log("\nIMPORTADO:", JSON.stringify({ altas: rep.created, fichasActualizadas: rep.updated, fichasSinCambios: rep.unchanged, notasAñadidas: rep.notesAdded, historialAñadido: rep.priorAdded, categoríasAñadidas: rep.categoriesAdded, pendientes: rep.pending.length }));
+  console.log("\nIMPORTADO:", JSON.stringify({ altas: rep.created, fichasActualizadas: rep.updated, fichasSinCambios: rep.unchanged, notasAñadidas: rep.notesAdded, historialAñadido: rep.priorAdded, categoríasAñadidas: rep.categoriesAdded, pendientes: rep.pending.length, resueltasAMano: rep.resolved.length }));
 }
 process.exit(0);
