@@ -71,7 +71,11 @@ export default function WebPaginas() {
   const del = trpc.site.deletePage.useMutation({ onSuccess: () => utils.site.documents.invalidate(), onError: (e) => toast.error(e.message) });
   const legacy = trpc.site.serveLegacy.useMutation({ onSuccess: () => { void utils.site.documents.invalidate(); void utils.site.page.invalidate(); toast.success("La web vuelve a servir la página original"); }, onError: (e) => toast.error(e.message) });
   const migrate = trpc.site.migrate.useMutation({
-    onSuccess: (r) => { void utils.site.documents.invalidate(); toast.success(r.created ? "Borrador preparado desde la web actual. Revísalo y pulsa «Publicar» cuando esté bien." : "Ya había un borrador con cambios: no se ha tocado."); },
+    onSuccess: (r) => { void utils.site.documents.invalidate(); toast.success(r.created ? "Borrador completado con lo que faltaba de la web actual. Tus cambios se han respetado." : "El borrador ya tenía todo lo de la web actual."); },
+    onError: (e) => toast.error(e.message),
+  });
+  const loadAll = trpc.site.loadAll.useMutation({
+    onSuccess: (r) => { void utils.site.documents.invalidate(); const n = r.filter((x) => x.action !== "unchanged").length; toast.success(n ? `Cargadas o completadas ${n} páginas con la web actual. Nada se ha publicado.` : "Todas las páginas ya estaban cargadas."); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -85,9 +89,9 @@ export default function WebPaginas() {
       <td className="py-3 pr-3"><StatusPill published={d.published} changed={d.draftChanged} served={d.servedFrom} /><div className="text-[0.7rem] text-[oklch(0.55_0.02_60)] mt-1 font-body">{d.publishedAt ? `Publicada: ${dateTime(d.publishedAt)}` : d.draftUpdatedAt ? `Borrador: ${dateTime(d.draftUpdatedAt)}` : ""}</div></td>
       <td className="py-3 text-right whitespace-nowrap">
         <div className="inline-flex flex-wrap justify-end gap-1.5">
-          {!d.custom && !d.published && !d.draftChanged && (
-            <button onClick={() => migrate.mutate({ docKey: d.docKey })} disabled={migrate.isPending} className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs border border-[oklch(0.85_0.015_75)] hover:bg-[oklch(0.97_0.006_85)]" title="Crea el borrador con los textos, imágenes y enlaces de la web actual">
-              <Wand2 size={12} /> Preparar borrador
+          {!d.custom && !d.published && (
+            <button onClick={() => migrate.mutate({ docKey: d.docKey })} disabled={migrate.isPending} className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs border border-[oklch(0.85_0.015_75)] hover:bg-[oklch(0.97_0.006_85)]" title="Añade al borrador lo que falte de la web actual, sin tocar lo que ya hayas editado">
+              <Wand2 size={12} /> Completar desde la web
             </button>
           )}
           <Link href={editUrl(d.docKey)} className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs bg-[oklch(0.52_0.08_148)] text-white no-underline"><Pencil size={12} /> Editar</Link>
@@ -109,7 +113,10 @@ export default function WebPaginas() {
             <h1 className="font-display text-2xl" style={{ fontWeight: 400 }}>Editar web</h1>
             <p className="text-sm font-body text-[oklch(0.45_0.02_55)]" style={{ fontWeight: 300 }}>Cambia textos, imágenes, menús y páginas sin tocar código. Los cambios son borradores hasta que pulsas «Publicar».</p>
           </div>
-          <button onClick={() => setCreating(true)} className="inline-flex items-center gap-2 px-4 py-2.5 text-sm bg-[oklch(0.52_0.08_148)] text-white"><FilePlus2 size={15} /> Nueva página</button>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => { if (window.confirm("Se cargará en el editor la web actual de todas las páginas que falten o estén vacías. No se publica nada y se respetan tus cambios. ¿Continuar?")) loadAll.mutate(); }} disabled={loadAll.isPending} className="inline-flex items-center gap-2 px-4 py-2.5 text-sm border border-[oklch(0.85_0.015_75)] bg-white"><Wand2 size={15} /> Cargar la web actual en todas</button>
+            <button onClick={() => setCreating(true)} className="inline-flex items-center gap-2 px-4 py-2.5 text-sm bg-[oklch(0.52_0.08_148)] text-white"><FilePlus2 size={15} /> Nueva página</button>
+          </div>
         </div>
 
         <div className="grid sm:grid-cols-3 gap-3 mb-8">
@@ -129,7 +136,7 @@ export default function WebPaginas() {
           <>
             <section className="bg-white border border-[oklch(0.9_0.012_75)] p-5 mb-6">
               <h2 className="font-display text-lg mb-1 flex items-center gap-2" style={{ fontWeight: 400 }}><Globe size={16} /> Páginas de la web</h2>
-              <p className="text-xs font-body text-[oklch(0.5_0.02_60)] mb-2">Mientras una página figure como «Original», la web sigue mostrando la de siempre. «Preparar borrador» copia su contenido actual al editor; la web no cambia hasta que publiques.</p>
+              <p className="text-xs font-body text-[oklch(0.5_0.02_60)] mb-2">Las páginas ya están cargadas con su contenido actual. Mientras una figure como «Original», la web sigue mostrando la de siempre; no cambia hasta que publiques.</p>
               <Table rows={pages} />
             </section>
             <section className="bg-white border border-[oklch(0.9_0.012_75)] p-5 mb-6">

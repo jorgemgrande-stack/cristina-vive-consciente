@@ -10,6 +10,7 @@ import {
   type GlobalContent, type PageBlock, type PageContent, type SiteGlobal,
 } from "../shared/siteEditor";
 import { normalizeGlobal, normalizePageContent } from "./siteContent";
+import { migratedContent } from "./siteMigration";
 
 export class SiteEditorError extends Error {}
 
@@ -26,8 +27,11 @@ const parse = (json: string | null | undefined): unknown => {
 export const contentOf = (doc: Pick<SiteDocument, "kind" | "draftJson">): PageContent | GlobalContent =>
   doc.kind === "global" ? { v: 1, global: normalizeGlobal((parse(doc.draftJson) as GlobalContent | null)?.global) } : normalizePageContent(parse(doc.draftJson));
 
+/** Borrador inicial: los ajustes con los valores actuales; una página original, ya cargada con la web actual. */
 function initialJson(docKey: string): string {
-  return JSON.stringify(docKey === GLOBAL_KEY ? ({ v: 1, global: DEFAULT_GLOBAL } satisfies GlobalContent) : emptyPageContent());
+  if (docKey === GLOBAL_KEY) return JSON.stringify({ v: 1, global: DEFAULT_GLOBAL } satisfies GlobalContent);
+  const migrated = migratedContent(docKey);
+  return JSON.stringify(migrated ? { ...migrated, seed: migrated.blocks.map((b) => b.id) } : emptyPageContent());
 }
 const kindOf = (docKey: string): "page" | "template" | "global" =>
   docKey === GLOBAL_KEY ? "global" : docKey.startsWith("tpl:") ? "template" : "page";

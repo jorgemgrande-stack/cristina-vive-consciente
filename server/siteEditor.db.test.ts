@@ -145,3 +145,44 @@ d("Editar web con base de datos", () => {
     expect(await site.readPublishedPage("/masajes/lo-que-sea")).toBeNull();
   });
 });
+
+d("Carga inicial de la web actual con base de datos", () => {
+  it("carga todo como borrador, copia lo previo, no publica y es repetible", async () => {
+    process.env.DATABASE_URL = URL;
+    const site = await import("./siteDb");
+    const { loadInitialDrafts } = await import("./siteSeedRun");
+    const content = await import("../shared/siteEditor");
+    const schema = await import("../drizzle/schema");
+    const db = (await (await import("./db")).getDb())!;
+    await db.delete(schema.siteDocumentVersions);
+    await db.delete(schema.siteDocuments);
+    await db.delete(schema.siteRedirects);
+    // Estado de producción: /masajes con dos cabeceras de ejemplo
+    await site.saveDraft("/masajes", { v: 1, seo: {}, blocks: [content.createBlock("hero"), content.createBlock("hero")] }, 1);
+    const saved: string[] = [];
+    const dry = await loadInitialDrafts({ dryRun: true });
+    expect(dry.find((r) => r.docKey === "/masajes")?.action).toBe("replaced-examples");
+    expect(((await site.readDraft("/masajes")).content as { blocks: unknown[] }).blocks).toHaveLength(2);
+    const run = await loadInitialDrafts({ backup: (doc) => { saved.push(doc.docKey + ":" + doc.draftJson); } });
+    expect(run.length).toBe(content.SYSTEM_PAGES.length + 1);
+    expect(saved).toHaveLength(1);
+    expect(saved[0]).toContain("Título de la página");
+    const m = (await site.readDraft("/masajes")).content as { blocks: { type: string; data: Record<string, string> }[] };
+    expect(m.blocks.map((b) => b.type)).toEqual(["hero", "connected"]);
+    expect(m.blocks[0].data.title).toBe("Masajes Terapéuticos");
+    site.invalidateSiteCache();
+    for (const p of content.SYSTEM_PAGES) {
+      const doc = await site.getDocument(p.docKey);
+      expect(doc?.servedFrom, p.docKey).toBe("legacy");
+      expect(doc?.publishedVersionId, p.docKey).toBeNull();
+    }
+    expect(await site.readPublishedPage("/masajes")).toBeNull();
+    expect((await site.readPublishedGlobal()).header.nav[0].url).toBe("/");
+    expect(await site.getDocument(content.GLOBAL_KEY)).not.toBeNull();
+    const again = await loadInitialDrafts({ backup: () => { throw new Error("no debe haber copias"); } });
+    expect(again.every((r) => r.action === "unchanged")).toBe(true);
+    expect((await site.listDocuments()).filter((x) => x.draftChanged && !x.custom)).toHaveLength(0);
+    await db.delete(schema.siteDocumentVersions);
+    await db.delete(schema.siteDocuments);
+  });
+});

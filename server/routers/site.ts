@@ -19,6 +19,8 @@ import { createClient, findClientByEmail, getDb } from "../db";
 import { and, eq } from "drizzle-orm";
 import { blogPosts, oilProducts, services, waterProducts } from "../../drizzle/schema";
 import { migratedContent } from "../siteMigration";
+import { mergeSeed } from "../siteSeed";
+import { loadInitialDrafts } from "../siteSeedRun";
 import { sendAdminLeadNotificationEmail } from "../email";
 import { notifyAdminNewLead } from "../whatsapp";
 
@@ -178,18 +180,20 @@ export const siteRouter = router({
     return slug ? `${base}/${slug}` : base;
   }),
 
-  /** Prepara el borrador de una página original con sus textos, imágenes y enlaces actuales. No publica nada. */
+  /** Completa el borrador de una página original con la web actual SIN perder lo que ya has editado. No publica nada. */
   migrate: adminProcedure
-    .input(z.object({ docKey: docKeyInput, overwrite: z.boolean().default(false) }))
+    .input(z.object({ docKey: docKeyInput }))
     .mutation(({ input, ctx }) => run(async () => {
-      const content = migratedContent(input.docKey);
-      if (!content) throw new SiteEditorError("Esa página no se puede preparar automáticamente.");
+      const migrated = migratedContent(input.docKey);
+      if (!migrated) throw new SiteEditorError("Esa página no se puede preparar automáticamente.");
       const { content: current } = await readDraft(input.docKey);
-      const hasWork = (current as PageContent).blocks?.length > 0;
-      if (hasWork && !input.overwrite) return { created: false as const };
-      await saveDraft(input.docKey, content, ctx.user.id);
-      return { created: true as const, blocks: content.blocks.length };
+      const { content, report } = mergeSeed(current as PageContent, migrated);
+      if (report.action !== "unchanged") await saveDraft(input.docKey, content, ctx.user.id);
+      return { created: report.action !== "unchanged", report };
     })),
+
+  /** Carga (o completa) los borradores de todas las páginas, plantillas y ajustes con la web actual. No publica nada. */
+  loadAll: adminProcedure.mutation(() => run(() => loadInitialDrafts())),
 });
 
 function findPublishedForm(blocks: PageBlock[], id: string): Extract<PageBlock, { type: "form" }> | null {

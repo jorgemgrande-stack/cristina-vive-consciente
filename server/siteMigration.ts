@@ -22,6 +22,8 @@ function B<K extends BlockType>(id: string, type: K, data: Partial<BlockDataMap[
 const conn = (id: string, source: BlockDataMap["connected"]["source"], extra: Partial<BlockDataMap["connected"]> = {}) => B(id, "connected", { source, ...extra });
 const hero = (id: string, d: Partial<BlockDataMap["hero"]>) => B(id, "hero", { breadcrumb: "on", ...d });
 const seo = (title: string, description: string) => ({ title, description, ogImage: "", noindex: false });
+/** SEO de la web actual: el de client/index.html, igual para todas las páginas (las fichas lo calculan por elemento y quedan vacías). */
+const SITE_SEO = seo("Cristina Vive Consciente — Bienestar Holístico Natural", "Consultas holísticas, masajes terapéuticos, sistemas de agua, aceites esenciales y guías digitales para tu bienestar consciente.");
 
 const HOME: PageBlock[] = [
   conn("home-slideshow", "home_slideshow", {
@@ -90,42 +92,42 @@ function ficha(kind: string): PageBlock[] {
 }
 
 const PAGES: Record<string, { seo: ReturnType<typeof seo>; blocks: PageBlock[] }> = {
-  "/": { seo: seo("", ""), blocks: HOME },
-  "/consultas": { seo: seo("", ""), blocks: [
+  "/": { seo: SITE_SEO, blocks: HOME },
+  "/consultas": { seo: SITE_SEO, blocks: [
     hero("hero", { eyebrow: "Salud consciente", title: "Consultas", subtitle: "Regularmente visita esta sección para descubrir nuevas consultas y asesorías dentro del marco de la salud consciente.", imageUrl: SITE_IMAGES.heroConsultas, imageAlt: "Consultas" }),
     conn("listado", "consultas"),
   ] },
-  "/masajes": { seo: seo("", ""), blocks: [
+  "/masajes": { seo: SITE_SEO, blocks: [
     hero("hero", { eyebrow: "Terapia corporal", title: "Masajes Terapéuticos", subtitle: "Técnica combinada de equilibrio energético y masaje Aromatouch con 8 aceites esenciales de grado terapéutico.", imageUrl: SITE_IMAGES.heroMasajes, imageAlt: "Masajes terapéuticos", buttonLabel: "Reservar sesión", buttonUrl: "action:booking-masaje", secondaryLabel: "Cómo funciona", secondaryUrl: "action:toggle-technique" }),
     conn("listado", "masajes"),
   ] },
-  "/sistemas-agua": { seo: seo("", ""), blocks: [
+  "/sistemas-agua": { seo: SITE_SEO, blocks: [
     hero("hero", { eyebrow: "Sistemas de Agua", title: "El agua que bebes define tu salud", subtitle: "No todos los sistemas de agua son iguales. Cristina Battistelli te ayuda a elegir el sistema ideal para tu hogar, tu agua y tu estilo de vida, con acompañamiento experto desde la elección hasta la instalación.", imageUrl: SITE_IMAGES.heroSistemasAgua, buttonLabel: "Solicitar asesoramiento", buttonUrl: "action:water-advice", secondaryLabel: "Ver sistemas", secondaryUrl: "#productos", height: "l" }),
     conn("catalogo", "sistemas_agua"),
   ] },
-  "/aceites-esenciales": { seo: seo("", ""), blocks: [
+  "/aceites-esenciales": { seo: SITE_SEO, blocks: [
     hero("hero", { eyebrow: "Aromaterapia terapéutica", title: "Aceites Esenciales con propósito", subtitle: "Los aceites esenciales son herramientas terapéuticas potentes. Su uso correcto requiere personalización profesional.", imageUrl: SITE_IMAGES.heroAceites, buttonLabel: "Reservar consulta con Cristina", buttonUrl: "/consultas", secondaryLabel: "Mi consulta ({n})", secondaryUrl: "/mi-consulta", height: "l" }),
     B("autoridad", "text", { title: "", html: "<blockquote>Cada aceite tiene su momento, su dosis y su persona.</blockquote><p>Como terapeuta holística certificada, acompaño a cada persona en el uso consciente y seguro de los aceites esenciales. No existe una fórmula universal: existe la tuya.</p><p><strong>Cristina</strong> · Terapeuta holística · Aromaterapia</p>", align: "center" }, { background: "dark", padTop: "m", padBottom: "m", contentWidth: "medium" }),
     conn("catalogo", "aceites"),
   ] },
-  "/guias-digitales": { seo: seo("", ""), blocks: [
+  "/guias-digitales": { seo: SITE_SEO, blocks: [
     hero("hero", { eyebrow: "Recursos digitales", title: "Guías Digitales", subtitle: "Conocimiento práctico y profundo para transformar tu vida desde casa.", imageUrl: SITE_IMAGES.heroConsultas }),
     conn("guias", "guias"),
   ] },
-  "/recomendados": { seo: seo("", ""), blocks: [
+  "/recomendados": { seo: SITE_SEO, blocks: [
     hero("hero", { eyebrow: "Selección personal", title: "Productos Recomendados", subtitle: "Solo recomiendo lo que uso o usaría yo personalmente. Cada producto ha pasado por mi propio filtro de confianza.", imageUrl: SITE_IMAGES.heroAceites }),
     conn("productos", "recomendados"),
   ] },
-  "/contacto": { seo: seo("", ""), blocks: [
+  "/contacto": { seo: SITE_SEO, blocks: [
     hero("hero", { eyebrow: "Hablemos", title: "Contacto", subtitle: "Estoy aquí para acompañarte. Escríbeme y encontraremos el mejor camino juntas.", imageUrl: SITE_IMAGES.heroConsultas }),
     conn("contacto", "contacto"),
   ] },
-  "/blog": { seo: seo("", ""), blocks: [
+  "/blog": { seo: SITE_SEO, blocks: [
     hero("hero", { title: "Blog", subtitle: "Reflexiones, guías y conocimiento para vivir con más consciencia y bienestar", imageUrl: SITE_IMAGES.heroMain, breadcrumb: "off" }),
     conn("articulos", "blog"),
   ] },
-  "/privacidad": { seo: seo("", ""), blocks: legal("Política de privacidad", "Última actualización: 25 de octubre de 2026", privacyHtml()) },
-  "/politica-de-cookies": { seo: seo("", ""), blocks: legal("Política de cookies", "", cookiesHtml()) },
+  "/privacidad": { seo: SITE_SEO, blocks: legal("Política de privacidad", "Última actualización: 25 de octubre de 2026", privacyHtml()) },
+  "/politica-de-cookies": { seo: SITE_SEO, blocks: legal("Política de cookies", "", cookiesHtml()) },
   "tpl:/consultas/:slug": { seo: seo("", ""), blocks: ficha("consultas") },
   "tpl:/masajes/:slug": { seo: seo("", ""), blocks: ficha("masajes") },
   "tpl:/sistemas-agua/:slug": { seo: seo("", ""), blocks: ficha("sistemas-agua") },

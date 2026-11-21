@@ -342,7 +342,7 @@ export function relayoutColumns(columns: SectionColumn[], layout: string): Secti
 export interface PageSeo { title: string; description: string; ogImage: string; noindex: boolean }
 export const DEFAULT_SEO: PageSeo = { title: "", description: "", ogImage: "", noindex: false };
 
-export interface PageContent { v: 1; seo: PageSeo; blocks: PageBlock[] }
+export interface PageContent { v: 1; seo: PageSeo; blocks: PageBlock[]; /** Ids de bloques ya cargados desde la web actual (la carga inicial no los repite ni los resucita si se borran) */ seed?: string[] }
 export const emptyPageContent = (): PageContent => ({ v: 1, seo: { ...DEFAULT_SEO }, blocks: [] });
 
 // ─── Ajustes globales ───────────────────────────────────────────────────────

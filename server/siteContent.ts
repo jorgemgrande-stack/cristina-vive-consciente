@@ -201,7 +201,8 @@ export function normalizeSeo(v: unknown): PageSeo {
 
 export function normalizePageContent(raw: unknown): PageContent {
   const o = isObj(raw) ? raw : {};
-  return { v: 1, seo: normalizeSeo(o.seo), blocks: normalizeBlocks(o.blocks) };
+  const seed = Array.isArray(o.seed) ? o.seed.filter((x): x is string => typeof x === "string").map((x) => x.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40)).filter(Boolean).slice(0, 200) : undefined;
+  return { v: 1, seo: normalizeSeo(o.seo), blocks: normalizeBlocks(o.blocks), ...(seed ? { seed } : {}) };
 }
 
 // ─── Ajustes globales ───────────────────────────────────────────────────────
