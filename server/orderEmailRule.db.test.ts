@@ -85,6 +85,49 @@ d("Pedido por email: crear → confirmar pago", () => {
       expect(created0.clientId).not.toBeNull();
       clientIds.push(created0.clientId!);
       expect(await purchases([created0.clientId!])).toBe(1);
+
+      // ── El correo de la ficha cambia ENTRE crear el pedido y pagarlo (la ficha del pedido es provisional) ──
+      const setEmail = (id: number, email: string) => conn.update(schema.clients).set({ email }).where(eq(schema.clients.id, id));
+
+      // (a) la ficha provisional ya no tiene ese email y no hay otra → se crea la ficha; la compra no va a la antigua
+      const pa = await newClient("Cambia", mail("cambiaA"));
+      const ca = await pub.create({ productSlug: "agua", name: "Cambia Correo", email: mail("cambiaA") });
+      expect((await orderRow(ca.reference)).clientId).toBe(pa); // provisional
+      await setEmail(pa, mail("otro-a"));
+      expect(((await admin.confirmPayment({ id: (await orderRow(ca.reference)).id })) as any).clientLink).toBe("created");
+      const oa = await orderRow(ca.reference);
+      expect(oa.clientId).not.toBe(pa);
+      clientIds.push(oa.clientId!);
+      expect(await purchases([pa])).toBe(0);
+      expect(await purchases([oa.clientId!])).toBe(1);
+
+      // (b) la provisional cambió de email y OTRA ficha tiene ahora ese email → se usa la coincidencia actual
+      const pb = await newClient("CambiaB", mail("cambiaB"));
+      const cb = await pub.create({ productSlug: "agua", name: "Cambia B", email: mail("cambiaB") });
+      expect((await orderRow(cb.reference)).clientId).toBe(pb);
+      await setEmail(pb, mail("otro-b"));
+      const actual = await newClient("Actual", mail("cambiaB"));
+      expect(((await admin.confirmPayment({ id: (await orderRow(cb.reference)).id })) as any).clientLink).toBe("linked");
+      expect((await orderRow(cb.reference)).clientId).toBe(actual);
+      expect(await purchases([pb])).toBe(0);
+      expect(await purchases([actual])).toBe(1);
+
+      // (c) la provisional conserva el email pero aparece otra ficha con el mismo → varias: revisión, sin asignar
+      const pc = await newClient("CambiaC", mail("cambiaC"));
+      const cc = await pub.create({ productSlug: "agua", name: "Cambia C", email: mail("cambiaC") });
+      expect((await orderRow(cc.reference)).clientId).toBe(pc);
+      const intruso = await newClient("Intruso", mail("cambiaC"));
+      expect(((await admin.confirmPayment({ id: (await orderRow(cc.reference)).id })) as any).clientLink).toBe("review");
+      expect(await orderRow(cc.reference)).toMatchObject({ clientId: null, clientLinkStatus: "review" });
+      expect(await purchases([pc, intruso])).toBe(0);
+
+      // (d) una resolución ya confirmada se conserva aunque cambie el email de la ficha
+      const ocId = (await orderRow(cc.reference)).id;
+      await sr.resolveOrderReview(ocId, intruso);
+      await setEmail(intruso, mail("ya-no-coincide"));
+      expect(await sr.linkOrderToClient(ocId)).toMatchObject({ status: "linked", clientId: intruso, recorded: false });
+      expect((await orderRow(cc.reference)).clientId).toBe(intruso);
+      expect(await purchases([intruso])).toBe(1);
     } finally {
       if (clientIds.length) {
         await conn.delete(schema.clientServices).where(inArray(schema.clientServices.clientId, clientIds));

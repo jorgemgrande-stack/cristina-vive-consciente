@@ -219,37 +219,30 @@ export async function linkOrderToClient(orderId: number): Promise<LinkResult> {
   if (!order) throw new Error("Pedido no encontrado");
   if (order.status !== "paid") throw new Error("Solo se vinculan pedidos pagados");
 
-  let clientId = order.clientId;
-  let status: LinkResult["status"] = "linked";
+  // Solo se conserva una resolución confirmada («linked» / «created» con ficha). Una ficha puesta al crear el pedido
+  // (sin estado) es PROVISIONAL: se ignora y se decide con el email actual, aunque la ficha haya cambiado de correo.
+  const resolved = !!order.clientId && (order.clientLinkStatus === "linked" || order.clientLinkStatus === "created");
+  let clientId: number | null = resolved ? order.clientId : null;
+  let status: LinkResult["status"] = order.clientLinkStatus === "created" ? "created" : "linked";
   let candidates: number[] = [];
-  // Una ficha puesta al crear el pedido (sin estado) no es de fiar: se vuelve a comprobar el email. Solo se respeta
-  // sin comprobar lo que ya resolvió este proceso o Cristina («linked» / «created»).
-  if (clientId && !order.clientLinkStatus) {
-    const found = await clientsByEmail(order.customerEmail);
-    if (found.length > 1) {
-      await db.update(orders).set({ clientId: null, clientLinkStatus: "review" }).where(eq(orders.id, orderId));
-      return { status: "review", clientId: null, recorded: false, candidates: found.map((c) => c.id) };
-    }
-  }
   if (!clientId) {
     const found = await clientsByEmail(order.customerEmail);
     candidates = found.map((c) => c.id);
     if (found.length > 1) {
-      await db.update(orders).set({ clientLinkStatus: "review" }).where(eq(orders.id, orderId));
+      // Varias: ninguna se asigna (se limpia también la ficha provisional) y queda para revisión
+      await db.update(orders).set({ clientId: null, clientLinkStatus: "review" }).where(eq(orders.id, orderId));
       return { status: "review", clientId: null, recorded: false, candidates };
     }
-    if (found.length === 1) clientId = found[0].id;
-    else {
+    if (found.length === 1) {
+      clientId = found[0].id;
+      status = "linked";
+    } else {
       const { firstName, lastName } = splitCustomerName(order.customerName);
       const [r] = await db.insert(clients).values({ firstName, lastName, email: norm(order.customerEmail), phone: order.customerPhone ?? null, status: "active" });
       clientId = (r as any).insertId as number;
       status = "created";
     }
     await db.update(orders).set({ clientId, clientLinkStatus: status }).where(eq(orders.id, orderId));
-  } else if (!order.clientLinkStatus) {
-    await db.update(orders).set({ clientLinkStatus: "linked" }).where(eq(orders.id, orderId));
-  } else {
-    status = order.clientLinkStatus === "created" ? "created" : "linked";
   }
   const { created } = await recordOrderPurchase(order, clientId!);
   return { status, clientId, recorded: created, candidates };
