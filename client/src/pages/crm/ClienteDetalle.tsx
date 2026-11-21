@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import CRMLayout from "@/components/CRMLayout";
 import ResumenTab from "@/components/crm/ficha/ResumenTab";
+import ClientCategoryEditor from "@/components/crm/ClientCategoryEditor";
 import SesionesTab from "@/components/crm/ficha/SesionesTab";
 import PrimeraVisitaTab from "@/components/crm/ficha/PrimeraVisitaTab";
 import AcompanamientoTab from "@/components/crm/ficha/AcompanamientoTab";
@@ -77,6 +78,7 @@ export default function ClienteDetalle() {
   const { data: appointments, refetch: refetchAppts } = trpc.crm.appointments.list.useQuery({ clientId });
   const { data: notes, refetch: refetchNotes } = trpc.crm.notes.list.useQuery({ clientId });
   const { data: sessions } = trpc.care.sessions.list.useQuery({ clientId });
+  const { data: priorItems } = trpc.crm.clients.priorItems.useQuery({ clientId });
 
   const acceptAppt = trpc.crm.appointments.accept.useMutation({
     onSuccess: () => { refetchAppts(); toast.success("Cita confirmada y email enviado"); },
@@ -183,6 +185,8 @@ export default function ClienteDetalle() {
               <Edit size={15} />
             </Link>
           </div>
+
+          <ClientCategoryEditor clientId={clientId} />
 
           {/* Contacto (en móvil ya está en Resumen) */}
           <div className="hidden lg:block bg-white border border-[oklch(0.92_0.01_80)] p-5 space-y-3">
@@ -490,6 +494,22 @@ export default function ClienteDetalle() {
                 </div>
               )}
 
+              {!!priorItems?.length && (
+                <div className="bg-white border border-[oklch(0.92_0.01_80)] p-4">
+                  <p className="text-[0.65rem] text-[oklch(0.52_0.02_60)] font-body uppercase tracking-widest mb-2" style={{ fontWeight: 500 }}>
+                    Servicios y compras anteriores
+                  </p>
+                  <p className="text-[0.65rem] text-[oklch(0.65_0.01_60)] font-body mb-2">Historial informativo importado: no genera pedidos, facturas ni citas.</p>
+                  <ul className="space-y-1.5">
+                    {priorItems.map((it) => (
+                      <li key={it.id} className="text-sm text-[oklch(0.28_0.025_55)] font-body" style={{ fontWeight: 300 }}>
+                        {it.content} <span className="text-[0.62rem] text-[oklch(0.65_0.01_60)]">· {it.source}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {!notes || notes.length === 0 ? (
                 <div className="bg-white border border-[oklch(0.92_0.01_80)] p-10 text-center">
                   <StickyNote size={28} className="mx-auto text-[oklch(0.88_0.015_75)] mb-2" />
@@ -516,9 +536,10 @@ export default function ClienteDetalle() {
                         </button>
                       </div>
                     </div>
-                    <p className="text-sm text-[oklch(0.28_0.025_55)] font-body leading-relaxed" style={{ fontWeight: 300 }}>
+                    <p className="text-sm text-[oklch(0.28_0.025_55)] font-body leading-relaxed whitespace-pre-line" style={{ fontWeight: 300 }}>
                       {note.content}
                     </p>
+                    {note.source && <p className="mt-2 text-[0.62rem] text-[oklch(0.65_0.01_60)] font-body">{note.source}</p>}
                   </div>
                 ))
               )}

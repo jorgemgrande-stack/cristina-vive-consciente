@@ -34,6 +34,9 @@ import {
 } from "../bookingRules";
 import {
   getClients,
+  getClientCategoryList,
+  setClientCategoryList,
+  getClientPriorItems,
   getClientById,
   createClient,
   updateClient,
@@ -80,8 +83,20 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 // ─── CLIENTS ──────────────────────────────────────────────────────────────────
 const clientsRouter = router({
   list: adminProcedure
-    .input(z.object({ search: z.string().optional(), status: z.string().optional() }))
-    .query(({ input }) => getClients(input.search, input.status)),
+    .input(z.object({ search: z.string().optional(), status: z.string().optional(), category: z.string().optional() }))
+    .query(({ input }) => getClients(input.search, input.status, input.category)),
+
+  categories: adminProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(({ input }) => getClientCategoryList(input.clientId)),
+
+  setCategories: adminProcedure
+    .input(z.object({ clientId: z.number(), categories: z.array(z.string()).max(10) }))
+    .mutation(async ({ input }) => ({ categories: await setClientCategoryList(input.clientId, input.categories) })),
+
+  priorItems: adminProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(({ input }) => getClientPriorItems(input.clientId)),
 
   get: adminProcedure
     .input(z.object({ id: z.number() }))
