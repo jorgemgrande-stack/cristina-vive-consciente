@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
-import { buildExport, exportFileName, registerClientsExport, toCsv, toPdf, toXlsx, type ExportTable } from "./clientsExport";
+import { buildExport, exportFileName, neutralizeFormula, registerClientsExport, toCsv, toPdf, toXlsx, type ExportTable } from "./clientsExport";
 import { CLIENT_LIST_ACTIONS_COLUMN, CLIENT_LIST_COLUMNS, clientExportRow } from "../shared/clientsExport";
 
 /** Lector CSV (RFC 4180, separador «;») para comprobar que lo escrito se lee igual. */
@@ -65,6 +65,38 @@ describe("CSV", () => {
   });
 });
 
+describe("CSV: protección contra fórmulas", () => {
+  const EVIL: ExportTable = {
+    headers: CLIENT_LIST_COLUMNS,
+    rows: [
+      clientExportRow({ firstName: "=HYPERLINK(\"http://x.test\",\"clic\")", lastName: "", email: "+cmd|' /C calc'!A0", phone: "+34 600 111 222", city: "@SUMA(1;1)", status: "active" }),
+      clientExportRow({ firstName: "-2+3", lastName: "Pérez", email: "ok@mail.es", phone: "+34600111222", city: "\t=1+1", status: "lead" }),
+      clientExportRow({ firstName: "Normal", lastName: "", email: "n@mail.es", phone: "(+34) 600-111-222", city: "Cádiz", status: "active" }),
+    ],
+  };
+  it("lo que Excel interpretaría como fórmula se antepone con «'» (texto), en cada línea de la celda", () => {
+    const rows = parseCsv(toCsv(EVIL)).slice(1);
+    expect(rows[0][0]).toBe("'=HYPERLINK(\"http://x.test\",\"clic\")");
+    expect(rows[0][1]).toBe("'+cmd|' /C calc'!A0\n+34 600 111 222"); // email neutralizado, teléfono intacto
+    expect(rows[0][2]).toBe("'@SUMA(1;1)");
+    expect(rows[1][0]).toBe("'-2+3 Pérez");
+    expect(rows[1][2]).toBe("'\t=1+1");
+    // ninguna celda ni línea del CSV queda empezando por = + - @ salvo teléfonos
+    for (const r of rows) for (const cell of r) for (const line of cell.split("\n")) {
+      if (/^[=+\-@\t\r]/.test(line)) expect(line).toMatch(/^\+?[\d\s().-]*\d[\d\s().-]*$/);
+    }
+  });
+  it("los teléfonos con +34, espacios, paréntesis y guiones se leen igual que en la ficha", () => {
+    for (const p of ["+34 600 111 222", "+34600111222", "(+34) 600-111-222", "0034 600 111 222", "0012345", "600.111.222"]) expect(neutralizeFormula(p)).toBe(p);
+    const rows = parseCsv(toCsv(EVIL)).slice(1);
+    expect(rows[1][1]).toBe("ok@mail.es\n+34600111222");
+    expect(rows[2][1]).toBe("n@mail.es\n(+34) 600-111-222");
+  });
+  it("textos normales y con tildes no se tocan; «-» o «=» en medio del texto tampoco", () => {
+    for (const t of ["Peñalver", "a-b", "x=y", "Línea @ casa", "—"]) expect(neutralizeFormula(t)).toBe(t);
+  });
+});
+
 describe("Excel (.xlsx)", () => {
   it("es un xlsx real y conserva teléfonos con prefijo y ceros iniciales como texto", async () => {
     const buf = await toXlsx(SAMPLE);
@@ -82,8 +114,25 @@ describe("Excel (.xlsx)", () => {
         expect(cell.numFmt).toBe("@");
       }
     }
-    expect(ws.getRow(4).getCell(2).value).toBe("0012345");
+    expect(ws.getRow(4).getCell(2).value).toBe("0012345"); // ceros iniciales conservados (texto, no número)
+    expect(ws.getRow(4).getCell(2).type).toBe(ExcelJS.ValueType.String);
     expect(ws.getRow(2).getCell(2).value).toBe("pe@mail.es\n+34 0600 123 456");
+  });
+});
+
+describe("Excel: valores de clientes que parecen fórmulas", () => {
+  it("quedan como texto literal (no como fórmula) y los teléfonos con +34 y ceros se conservan", async () => {
+    const t: ExportTable = { headers: CLIENT_LIST_COLUMNS, rows: [["=1+1", "+34 600 111 222\n0012345", "@x", "-5"]] };
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load((await toXlsx(t)) as any);
+    const row = wb.getWorksheet("Clientes")!.getRow(2);
+    for (let c = 1; c <= 4; c++) {
+      expect(row.getCell(c).type).toBe(ExcelJS.ValueType.String); // no ValueType.Formula
+      expect(row.getCell(c).formula).toBeUndefined();
+      expect(row.getCell(c).numFmt).toBe("@");
+    }
+    expect(row.getCell(1).value).toBe("=1+1");
+    expect(row.getCell(2).value).toBe("+34 600 111 222\n0012345");
   });
 });
 

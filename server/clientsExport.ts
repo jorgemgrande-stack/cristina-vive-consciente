@@ -22,7 +22,20 @@ export async function loadClientsTable(): Promise<ExportTable> {
 
 // ─── CSV ─────────────────────────────────────────────────────────────────────
 
-const csvCell = (v: string) => (/[",\r\n;]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+/**
+ * Inyección de fórmulas: un valor escrito por un cliente que empiece por = + - @ (o tabulador / retorno) lo
+ * ejecutaría Excel al abrir el CSV. Se antepone «'» para que se trate como texto. Se salvan los teléfonos
+ * (solo dígitos, espacios, paréntesis, puntos y guiones, con «+» inicial opcional): no pueden contener una
+ * fórmula y así «+34 600 111 222» se lee igual. Se comprueba cada línea de la celda (email y teléfono van en líneas).
+ */
+const PHONE = /^\+?[\d\s().-]*\d[\d\s().-]*$/;
+export const neutralizeFormula = (v: string) =>
+  v.split("\n").map((line) => (/^[=+\-@\t\r]/.test(line) && !PHONE.test(line.trim()) ? `'${line}` : line)).join("\n");
+
+const csvCell = (raw: string) => {
+  const v = neutralizeFormula(raw);
+  return /[",\r\n;]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+};
 
 /**
  * UTF-8 con BOM (Excel lo abre con tildes y ñ), separador «;» (Excel en español), saltos CRLF y campos con
