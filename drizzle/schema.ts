@@ -9,6 +9,7 @@ import {
   bigint,
   boolean,
   index,
+  uniqueIndex,
   mediumtext,
 } from "drizzle-orm/mysql-core";
 
@@ -192,13 +193,41 @@ export const clientNotes = mysqlTable("client_notes", {
   appointmentId: int("appointmentId"),
   type: mysqlEnum("type", ["general", "sesion", "seguimiento", "observacion", "alerta"]).default("general").notNull(),
   content: text("content").notNull(),
+  /** Origen visible de la nota importada, p. ej. «Importada de CLIENTAS-ES · celda E51» (0029). Vacío en las notas escritas a mano. */
+  source: varchar("source", { length: 120 }),
+  /** Clave estable del origen («CLIENTAS-ES:E51»): permite repetir la importación sin duplicar notas. */
+  sourceKey: varchar("sourceKey", { length: 80 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy"),
-});
+}, (t) => [uniqueIndex("client_notes_source_uq").on(t.clientId, t.sourceKey)]);
 
 export type ClientNote = typeof clientNotes.$inferSelect;
 export type InsertClientNote = typeof clientNotes.$inferInsert;
+
+// ─── CATEGORÍAS DE CLIENTE (0029) ─────────────────────────────────────────────
+/** Una persona puede tener varias categorías (catálogo en shared/clientCategories.ts). */
+export const clientCategories = mysqlTable("client_categories", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId").notNull(),
+  category: varchar("category", { length: 40 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (t) => [uniqueIndex("client_categories_uq").on(t.clientId, t.category), index("client_categories_cat_idx").on(t.category)]);
+
+export type ClientCategory = typeof clientCategories.$inferSelect;
+
+// ─── SERVICIOS Y COMPRAS ANTERIORES (0029) ────────────────────────────────────
+/** Historial informativo importado de hojas anteriores. No genera pedidos, facturas ni citas. */
+export const clientPriorItems = mysqlTable("client_prior_items", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId").notNull(),
+  content: text("content").notNull(),
+  source: varchar("source", { length: 120 }).notNull(),
+  sourceKey: varchar("sourceKey", { length: 80 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (t) => [uniqueIndex("client_prior_items_uq").on(t.clientId, t.sourceKey)]);
+
+export type ClientPriorItem = typeof clientPriorItems.$inferSelect;
 
 // ─── HISTORIAL DE SESIONES ────────────────────────────────────────────────────
 export const sessionHistory = mysqlTable("session_history", {

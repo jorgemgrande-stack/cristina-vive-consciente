@@ -1,4 +1,4 @@
-import { eq, ne, desc, and, gte, lte, like, or, sql, asc } from "drizzle-orm";
+import { eq, ne, desc, and, gte, lte, like, or, sql, asc, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -32,7 +32,10 @@ import {
   appointmentEvents,
   serviceImages,
   type InsertAppointmentEvent,
+  clientCategories,
+  clientPriorItems,
 } from "../drizzle/schema";
+import { isClientCategory } from "../shared/clientCategories";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -132,7 +135,7 @@ export function clientSearchTerms(search?: string): string[] {
     .map((t) => t.replace(/[\\%_]/g, (c) => `\\${c}`));
 }
 
-export async function getClients(search?: string, status?: string) {
+export async function getClients(search?: string, status?: string, category?: string) {
   const db = await getDb();
   if (!db) return [];
   const conditions: any[] = [];
@@ -147,9 +150,50 @@ export async function getClients(search?: string, status?: string) {
       like(clients.phone, pattern)
     ));
   }
+  // Filtro por categoría con EXISTS (no con JOIN): una persona sale una sola vez aunque tenga varias categorías
+  if (category && category !== "all" && isClientCategory(category)) {
+    conditions.push(sql`EXISTS (SELECT 1 FROM ${clientCategories} cc WHERE cc.clientId = ${clients.id} AND cc.category = ${category})`);
+  }
   let query = db.select().from(clients).$dynamic();
   if (conditions.length > 0) query = query.where(and(...conditions));
-  return query.orderBy(desc(clients.createdAt));
+  const rows = await query.orderBy(desc(clients.createdAt));
+  const cats = await getCategoriesForClients(rows.map((r) => r.id));
+  return rows.map((r) => ({ ...r, categories: cats.get(r.id) ?? [] }));
+}
+
+async function getCategoriesForClients(ids: number[]): Promise<Map<number, string[]>> {
+  const out = new Map<number, string[]>();
+  const db = await getDb();
+  if (!db || ids.length === 0) return out;
+  try {
+    for (let i = 0; i < ids.length; i += 500) {
+      const rows = await db.select().from(clientCategories).where(inArray(clientCategories.clientId, ids.slice(i, i + 500)));
+      for (const r of rows) out.set(r.clientId, [...(out.get(r.clientId) ?? []), r.category]);
+    }
+  } catch { /* la tabla puede no existir todavía (0029 sin aplicar) */ }
+  return out;
+}
+
+export async function getClientCategoryList(clientId: number): Promise<string[]> {
+  return (await getCategoriesForClients([clientId])).get(clientId) ?? [];
+}
+
+/** Sustituye las categorías de una ficha por las indicadas (solo claves del catálogo). */
+export async function setClientCategoryList(clientId: number, categories: string[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const wanted = Array.from(new Set(categories.filter(isClientCategory)));
+  await db.delete(clientCategories).where(eq(clientCategories.clientId, clientId));
+  for (const category of wanted) await db.insert(clientCategories).values({ clientId, category });
+  return wanted;
+}
+
+export async function getClientPriorItems(clientId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(clientPriorItems).where(eq(clientPriorItems.clientId, clientId)).orderBy(asc(clientPriorItems.id));
+  } catch { return []; }
 }
 
 export async function getClientById(id: number) {
@@ -177,6 +221,10 @@ export async function updateClient(id: number, data: Partial<InsertClient>) {
 export async function deleteClient(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  try {
+    await db.delete(clientCategories).where(eq(clientCategories.clientId, id));
+    await db.delete(clientPriorItems).where(eq(clientPriorItems.clientId, id));
+  } catch { /* 0029 sin aplicar */ }
   await db.delete(clients).where(eq(clients.id, id));
 }
 
