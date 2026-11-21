@@ -9,6 +9,7 @@ import { X, MessageCircle } from "lucide-react";
 import { CRISTINA_WHATSAPP_NUMBER, whatsappContactMessage } from "@shared/booking";
 import { BOOKING_EVENTS } from "@shared/bookingAnalytics";
 import { trackBookingEvent } from "@/lib/analytics";
+import { useSiteGlobal } from "@/lib/siteGlobal";
 
 /** Servicio de la página en la que está el globo (solo en las fichas de servicio). */
 export type WhatsAppContext = { serviceName: string; serviceSlug: string };
@@ -16,10 +17,11 @@ export type WhatsAppContext = { serviceName: string; serviceSlug: string };
 export default function WhatsAppButton({ context }: { context?: WhatsAppContext }) {
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const { whatsapp } = useSiteGlobal();
 
-  if (dismissed) return null;
+  if (dismissed || whatsapp.enabled !== "on") return null;
 
-  const whatsappUrl = `https://wa.me/${CRISTINA_WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappContactMessage(context?.serviceName))}`;
+  const whatsappUrl = `https://wa.me/${whatsapp.number || CRISTINA_WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappContactMessage(context?.serviceName))}`;
   // Señal secundaria: un clic no es una conversación ni una reserva (y sin consentimiento no se envía)
   const trackClick = () =>
     trackBookingEvent(BOOKING_EVENTS.WHATSAPP_CONTACT_CLICKED, {
@@ -55,10 +57,10 @@ export default function WhatsAppButton({ context }: { context?: WhatsAppContext 
 
           {/* Contenido del tooltip */}
           <p className="text-xs font-semibold text-[oklch(0.35_0.06_60)] mb-0.5">
-            ¡Hola! Soy Cristina 🌿
+            {whatsapp.tooltipTitle}
           </p>
           <p className="text-xs text-[oklch(0.45_0.04_60)] leading-relaxed">
-            ¿Tienes alguna pregunta? Escríbeme por WhatsApp y te respondo encantada.
+            {whatsapp.tooltipText}
           </p>
 
           {/* Flecha del tooltip apuntando al botón */}

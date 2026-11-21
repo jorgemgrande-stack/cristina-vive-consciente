@@ -5,36 +5,37 @@
  */
 
 import { SITE_IMAGES } from "@/lib/siteImages";
+import AdminEditLink from "@/components/site/AdminEditLink";
 import { formatEuros, getHomePrice, massagePlaceLabel } from "@shared/booking";
 import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, MapPin, Clock, Euro, Star, Loader2, ChevronDown, ChevronUp, Leaf, CheckCircle, Eye } from "lucide-react";
 import Layout from "@/components/Layout";
+import { LegacyHero } from "@/components/site/embed";
 import BookingModal from "@/components/BookingModal";
 import { trpc } from "@/lib/trpc";
+import { useLabels } from "@/lib/siteGlobal";
+import { useSiteAction } from "@/lib/siteActions";
 
 const HERO = SITE_IMAGES.heroMasajes;
 
 const ACEITES = [
-  { nombre: "Balance", accion: "Enraizamiento" },
-  { nombre: "Lavanda", accion: "Calmante" },
-  { nombre: "Tea Tree", accion: "Purificante" },
-  { nombre: "AromaTouch", accion: "Relajante muscular" },
-  { nombre: "Deep Blue", accion: "Alivio del dolor" },
-  { nombre: "Wild Orange", accion: "Energizante" },
-  { nombre: "Peppermint", accion: "Estimulante" },
-  { nombre: "Onguard", accion: "Inmunológico" },
+  { nombre: "Balance", accion: "masajes.tech.oil.balance" },
+  { nombre: "Lavanda", accion: "masajes.tech.oil.lavanda" },
+  { nombre: "Tea Tree", accion: "masajes.tech.oil.teatree" },
+  { nombre: "AromaTouch", accion: "masajes.tech.oil.aromatouch" },
+  { nombre: "Deep Blue", accion: "masajes.tech.oil.deepblue" },
+  { nombre: "Wild Orange", accion: "masajes.tech.oil.wildorange" },
+  { nombre: "Peppermint", accion: "masajes.tech.oil.peppermint" },
+  { nombre: "Onguard", accion: "masajes.tech.oil.onguard" },
 ];
 
-// Beneficios por defecto cuando no hay datos en BD
-const DEFAULT_BENEFITS = [
-  "Reduce el estrés y la tensión acumulada",
-  "Mejora la circulación y el drenaje linfático",
-  "Equilibra el sistema nervioso",
-  "Potencia el sistema inmunológico",
-];
+// Claves de los beneficios por defecto cuando no hay datos en BD
+const DEFAULT_BENEFIT_KEYS = ["masajes.benefit.1", "masajes.benefit.2", "masajes.benefit.3", "masajes.benefit.4"];
 
 export default function Masajes() {
+  const L = useLabels();
+  const DEFAULT_BENEFITS = DEFAULT_BENEFIT_KEYS.map((k) => L(k));
   const [bookingOpen, setBookingOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<string>("masaje");
   const [tecnicaOpen, setTecnicaOpen] = useState(false);
@@ -45,6 +46,9 @@ export default function Masajes() {
     setSelectedService(slug);
     setBookingOpen(true);
   }
+
+  useSiteAction("booking-masaje", () => handleReservar("masaje"));
+  useSiteAction("toggle-technique", () => setTecnicaOpen((o) => !o));
 
   // Parsear beneficios del JSON almacenado en BD
   function parseBenefits(raw: string | null | undefined): string[] {
@@ -80,6 +84,7 @@ export default function Masajes() {
       <Layout>
 
         {/* ── HERO compacto con intro integrada ── */}
+        <LegacyHero>
         <section className="relative min-h-[52vh] flex items-end overflow-hidden">
           <div className="absolute inset-0">
             <img
@@ -122,6 +127,7 @@ export default function Masajes() {
             </div>
           </div>
         </section>
+        </LegacyHero>
 
         {/* ── Sección técnica colapsable ── */}
         {tecnicaOpen && (
@@ -131,37 +137,37 @@ export default function Masajes() {
                 <div className="space-y-6">
                   <div>
                     <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-2 font-body" style={{ fontWeight: 500 }}>
-                      Primera parte
+                      {L("masajes.tech.part1.kicker")}
                     </p>
                     <h3 className="font-display text-[oklch(0.18_0.018_55)] mb-2" style={{ fontWeight: 400, fontSize: "1.1rem" }}>
-                      Equilibrio energético
+                      {L("masajes.tech.part1.title")}
                     </h3>
                     <p className="text-[oklch(0.42_0.02_55)] text-sm leading-relaxed font-body" style={{ fontWeight: 300 }}>
-                      Recuperamos el equilibrio del campo electromagnético, reconectando cuerpo, mente y espíritu. La sanación energética restaura el flujo de energía primordial.
+                      {L("masajes.tech.part1.text")}
                     </p>
                   </div>
                   <div>
                     <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-2 font-body" style={{ fontWeight: 500 }}>
-                      Segunda parte
+                      {L("masajes.tech.part2.kicker")}
                     </p>
                     <h3 className="font-display text-[oklch(0.18_0.018_55)] mb-2" style={{ fontWeight: 400, fontSize: "1.1rem" }}>
-                      Técnica Aromatouch
+                      {L("masajes.tech.part2.title")}
                     </h3>
                     <p className="text-[oklch(0.42_0.02_55)] text-sm leading-relaxed font-body" style={{ fontWeight: 300 }}>
-                      Aplicada a través de los meridianos. Contrarresta el estrés, apoya el sistema inmunológico, para la inflamación, el dolor y el desequilibrio de los sistemas del organismo.
+                      {L("masajes.tech.part2.text")}
                     </p>
                   </div>
                   <div className="flex items-start gap-2 p-3 bg-[oklch(0.52_0.08_148)]/8 border-l-2 border-[oklch(0.52_0.08_148)]">
                     <MapPin size={13} className="text-[oklch(0.52_0.08_148)] mt-0.5 flex-shrink-0" />
                     <p className="text-[oklch(0.42_0.07_148)] text-xs font-body" style={{ fontWeight: 300 }}>
-                      Presencial en <strong>Navas de Río Frío (Segovia)</strong> o a domicilio. Para domicilio consultar tarifas.
+                      {L("masajes.tech.place.pre")} <strong>{L("masajes.tech.place.name")}</strong> {L("masajes.tech.place.post")}
                     </p>
                   </div>
                 </div>
 
                 <div>
                   <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-3 font-body" style={{ fontWeight: 500 }}>
-                    Los 8 aceites esenciales
+                    {L("masajes.tech.oils.title")}
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     {ACEITES.map((aceite, i) => (
@@ -171,13 +177,13 @@ export default function Masajes() {
                         </span>
                         <div className="min-w-0">
                           <p className="text-[oklch(0.18_0.018_55)] text-xs font-body truncate" style={{ fontWeight: 500 }}>{aceite.nombre}</p>
-                          <p className="text-[oklch(0.52_0.02_60)] text-[10px] font-body truncate" style={{ fontWeight: 300 }}>{aceite.accion}</p>
+                          <p className="text-[oklch(0.52_0.02_60)] text-[10px] font-body truncate" style={{ fontWeight: 300 }}>{L(aceite.accion)}</p>
                         </div>
                       </div>
                     ))}
                   </div>
                   <p className="text-[oklch(0.52_0.02_60)] text-xs font-body italic mt-3" style={{ fontWeight: 300 }}>
-                    Todos los aceites son de grado terapéutico certificado.
+                    {L("masajes.tech.oils.note")}
                   </p>
                 </div>
               </div>
@@ -193,10 +199,10 @@ export default function Masajes() {
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
               <div>
                 <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-2 font-body" style={{ fontWeight: 500 }}>
-                  Nuestros servicios
+                  {L("masajes.list.kicker")}
                 </p>
                 <h2 className="font-display text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 400, fontSize: "1.5rem" }}>
-                  Elige tu sesión
+                  {L("masajes.list.title")}
                 </h2>
               </div>
               <button
@@ -204,7 +210,7 @@ export default function Masajes() {
                 className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 border border-[oklch(0.52_0.08_148)] text-[oklch(0.52_0.08_148)] text-xs tracking-widest uppercase font-body hover:bg-[oklch(0.52_0.08_148)] hover:text-white transition-all duration-300"
                 style={{ borderRadius: 0, letterSpacing: "0.1em" }}
               >
-                Reservar
+                {L("masajes.list.reserve")}
                 <ArrowRight size={12} />
               </button>
             </div>
@@ -212,13 +218,13 @@ export default function Masajes() {
             {isLoading ? (
               <div className="flex items-center justify-center py-16 text-stone-400">
                 <Loader2 size={22} className="animate-spin mr-3" />
-                <span className="font-body text-sm">Cargando servicios...</span>
+                <span className="font-body text-sm">{L("masajes.list.loading")}</span>
               </div>
             ) : masajes.length === 0 ? (
               <div className="text-center py-16">
                 <Leaf size={28} className="text-[oklch(0.52_0.08_148)]/40 mx-auto mb-4" />
                 <p className="text-[oklch(0.52_0.02_60)] font-body text-sm" style={{ fontWeight: 300 }}>
-                  Próximamente disponibles. Contacta para más información.
+                  {L("masajes.list.empty")}
                 </p>
               </div>
             ) : (
@@ -245,12 +251,13 @@ export default function Masajes() {
                         masaje.featured ? "border-[oklch(0.52_0.08_148)]" : "border-[oklch(0.88_0.015_75)]"
                       }`}
                     >
+                      <AdminEditLink href={`/crm/servicios/${masaje.id}/editar`} label="Editar servicio" />
                       {/* Badge destacado */}
                       {masaje.featured === 1 && (
                         <div className="absolute top-3 left-3 z-10">
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[oklch(0.52_0.08_148)] text-white text-[10px] font-body tracking-wider uppercase" style={{ fontWeight: 500 }}>
                             <Star size={9} fill="currentColor" />
-                            Más popular
+                            {L("masajes.card.featured")}
                           </span>
                         </div>
                       )}
@@ -312,12 +319,12 @@ export default function Masajes() {
                               {formatEuros(masaje.price)}
                             </span>
                             <span className="text-xs font-body text-[oklch(0.52_0.02_60)]" style={{ fontWeight: 400 }}>
-                              en consulta
+                              {L("masajes.card.inConsultation")}
                               {getHomePrice(masaje) !== null && (
                                 <>
                                   {" · "}
                                   <strong className="text-[oklch(0.32_0.04_148)]" style={{ fontWeight: 600 }}>{formatEuros(getHomePrice(masaje))}</strong>
-                                  {" a domicilio (por WhatsApp)"}
+                                  {" "}{L("masajes.card.atHome")}
                                 </>
                               )}
                             </span>
@@ -347,7 +354,7 @@ export default function Masajes() {
                         {includes.length > 0 && (
                           <div className="mb-4 p-3 bg-[oklch(0.96_0.008_80)] border-l-2 border-[oklch(0.52_0.08_148)]">
                             <p className="text-[oklch(0.52_0.08_148)] text-[10px] tracking-widest uppercase font-body mb-1.5" style={{ fontWeight: 500 }}>
-                              Incluye
+                              {L("masajes.card.includes")}
                             </p>
                             <ul className="space-y-1">
                               {includes.slice(0, 3).map((item, i) => (
@@ -370,14 +377,14 @@ export default function Masajes() {
                             style={{ borderRadius: 0, letterSpacing: "0.08em" }}
                           >
                             <Eye size={11} />
-                            Ver detalle
+                            {L("masajes.card.detail")}
                           </Link>
                           <button
                             onClick={() => handleReservar(masaje.slug)}
                             className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-[oklch(0.52_0.08_148)] text-white text-[10px] tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body"
                             style={{ borderRadius: 0, letterSpacing: "0.08em" }}
                           >
-                            Reservar
+                            {L("masajes.card.reserve")}
                             <ArrowRight size={11} />
                           </button>
                         </div>
@@ -396,10 +403,10 @@ export default function Masajes() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
               <div>
                 <h2 className="font-display text-white mb-1" style={{ fontWeight: 400, fontSize: "1.3rem" }}>
-                  ¿Tienes alguna duda?
+                  {L("masajes.cta.title")}
                 </h2>
                 <p className="text-white/60 font-body text-sm" style={{ fontWeight: 300 }}>
-                  Escríbeme y te ayudo a elegir la sesión que mejor se adapta a ti.
+                  {L("masajes.cta.text")}
                 </p>
               </div>
               <button
@@ -407,7 +414,7 @@ export default function Masajes() {
                 className="flex-shrink-0 inline-flex items-center gap-2 px-8 py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body"
                 style={{ borderRadius: 0, letterSpacing: "0.1em" }}
               >
-                Reservar masaje
+                {L("masajes.cta.button")}
                 <ArrowRight size={13} />
               </button>
             </div>

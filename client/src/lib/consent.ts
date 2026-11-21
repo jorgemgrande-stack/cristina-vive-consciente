@@ -19,9 +19,10 @@ export function getConsent(): ConsentState | null {
   }
 }
 
-export function setConsent(consent: ConsentState): void {
+/** `policyVersion`: versiones publicadas de la política de cookies y de privacidad que se mostraban al decidir (null = texto original). */
+export function setConsent(consent: ConsentState, policyVersion?: { cookies: number | null; privacy: number | null }): void {
   try {
-    localStorage.setItem(CONSENT_KEY, JSON.stringify({ ...consent, savedAt: new Date().toISOString() }));
+    localStorage.setItem(CONSENT_KEY, JSON.stringify({ ...consent, savedAt: new Date().toISOString(), ...(policyVersion ? { policyVersion } : {}) }));
   } catch {
     /* almacenamiento no disponible: se queda sin consentimiento */
   }

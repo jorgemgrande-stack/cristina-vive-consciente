@@ -9,6 +9,7 @@
 import { Router } from "express";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "./db";
+import { publishedCustomPaths, noindexSystemPaths } from "./siteDb";
 import { services, waterProducts, oilProducts, blogPosts } from "../drizzle/schema";
 
 const SITE_URL = (process.env.SITE_URL ?? "https://cristinaviveconsciente.es").replace(/\/+$/, "");
@@ -94,10 +95,18 @@ sitemapRouter.get("/sitemap.xml", async (_req, res) => {
     // Si la BD falla, servimos al menos las páginas estáticas
     console.error("[sitemap] Error loading dynamic entries:", err);
   }
+  let extra: SitemapEntry[] = [];
+  let hidden = new Set<string>();
+  try {
+    extra = (await publishedCustomPaths()).map((p) => ({ path: p.path, lastmod: p.lastmod, changefreq: "monthly" as const, priority: 0.6 }));
+    hidden = await noindexSystemPaths();
+  } catch (err) {
+    console.error("[sitemap] Error loading editable pages:", err);
+  }
   const xml =
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    [...STATIC_PAGES, ...dynamic].map(renderUrl).join("\n") +
+    [...STATIC_PAGES.filter((p) => !hidden.has(p.path)), ...extra, ...dynamic].map(renderUrl).join("\n") +
     `\n</urlset>\n`;
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
   res.setHeader("Cache-Control", "public, max-age=3600");

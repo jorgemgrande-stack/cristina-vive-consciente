@@ -7,21 +7,24 @@
  */
 
 import { useState, useMemo } from "react";
+import AdminEditLink from "@/components/site/AdminEditLink";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import Layout from "@/components/Layout";
+import { LegacyHero } from "@/components/site/embed";
 import { useConsultaCart } from "@/contexts/ConsultaCartContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useLabels } from "@/lib/siteGlobal";
 import { Search, ShoppingBag, Check, Leaf, ArrowRight, Loader2, Star } from "lucide-react";
 
 const TIPO_LABELS: Record<string, string> = {
-  aceite: "Aceite esencial",
-  mezcla: "Mezcla terapéutica",
-  base: "Base y dilución",
-  pack: "Pack y guía",
-  accesorio: "Accesorio",
+  aceite: "aceites.type.aceite",
+  mezcla: "aceites.type.mezcla",
+  base: "aceites.type.base",
+  pack: "aceites.type.pack",
+  accesorio: "aceites.type.accesorio",
 };
 
 const TIPO_COLORS: Record<string, string> = {
@@ -43,6 +46,7 @@ function ProductCard({ product }: {
     imagen: string | null; destacado: number;
   }
 }) {
+  const L = useLabels();
   const { addItem, removeItem, isInCart } = useConsultaCart();
   const inCart = isInCart(product.id);
   const beneficios = parseJsonArray(product.beneficios).slice(0, 3);
@@ -51,7 +55,7 @@ function ProductCard({ product }: {
     e.preventDefault();
     if (inCart) {
       removeItem(product.id);
-      toast.success(`"${product.name}" eliminado de tu consulta`);
+      toast.success(L("aceites.toast.removed", { name: product.name }));
     } else {
       addItem({
         id: product.id,
@@ -60,14 +64,15 @@ function ProductCard({ product }: {
         tipoProducto: product.tipoProducto,
         imagen: product.imagen,
       });
-      toast.success(`"${product.name}" añadido a tu consulta`, {
-        action: { label: "Ver consulta", onClick: () => window.location.href = "/mi-consulta" },
+      toast.success(L("aceites.toast.added", { name: product.name }), {
+        action: { label: L("aceites.toast.view"), onClick: () => window.location.href = "/mi-consulta" },
       });
     }
   }
 
   return (
-    <div className="group bg-white border border-[oklch(0.92_0.01_80)] hover:border-[oklch(0.72_0.06_148)] hover:shadow-md transition-all duration-300 flex flex-col">
+    <div className="relative group bg-white border border-[oklch(0.92_0.01_80)] hover:border-[oklch(0.72_0.06_148)] hover:shadow-md transition-all duration-300 flex flex-col">
+      <AdminEditLink href="/crm/aceites/productos" label="Editar producto" />
       {/* Imagen */}
       <Link href={`/aceites-esenciales/${product.slug}`}>
         <div className="relative overflow-hidden aspect-square bg-[oklch(0.97_0.006_85)]">
@@ -84,11 +89,11 @@ function ProductCard({ product }: {
           )}
           {product.destacado === 1 && (
             <div className="absolute top-3 left-3 bg-[oklch(0.52_0.08_148)] text-white text-[0.6rem] font-body uppercase tracking-widest px-2 py-0.5 flex items-center gap-1">
-              <Star size={9} fill="currentColor" /> Destacado
+              <Star size={9} fill="currentColor" /> {L("aceites.card.featured")}
             </div>
           )}
           <div className={`absolute top-3 right-3 text-[0.6rem] font-body uppercase tracking-wider px-2 py-0.5 ${TIPO_COLORS[product.tipoProducto] ?? TIPO_COLORS.aceite}`}>
-            {TIPO_LABELS[product.tipoProducto] ?? product.tipoProducto}
+            {TIPO_LABELS[product.tipoProducto] ? L(TIPO_LABELS[product.tipoProducto]) : product.tipoProducto}
           </div>
         </div>
       </Link>
@@ -117,7 +122,7 @@ function ProductCard({ product }: {
         <div className="flex gap-2 pt-1">
           <Link href={`/aceites-esenciales/${product.slug}`} className="flex-1">
             <button className="w-full text-xs font-body uppercase tracking-wider border border-[oklch(0.72_0.06_148)] text-[oklch(0.42_0.08_148)] hover:bg-[oklch(0.95_0.02_148)] transition-colors px-3 py-2">
-              Ver detalle
+              {L("aceites.card.detail")}
             </button>
           </Link>
           <button
@@ -129,7 +134,7 @@ function ProductCard({ product }: {
             }`}
           >
             {inCart ? <Check size={12} /> : <ShoppingBag size={12} />}
-            {inCart ? "Añadido" : "Consultar"}
+            {inCart ? L("aceites.card.added") : L("aceites.card.consult")}
           </button>
         </div>
       </div>
@@ -138,6 +143,7 @@ function ProductCard({ product }: {
 }
 
 export default function AceitesEsenciales() {
+  const L = useLabels();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("");
   const { count } = useConsultaCart();
@@ -161,6 +167,7 @@ export default function AceitesEsenciales() {
   return (
     <Layout>
       {/* ─── HERO ─────────────────────────────────────────────────────────── */}
+      <LegacyHero>
       <section className="relative bg-[oklch(0.14_0.018_55)] text-white overflow-hidden">
         <div
           className="absolute inset-0 opacity-10"
@@ -217,13 +224,14 @@ export default function AceitesEsenciales() {
           </div>
         </div>
       </section>
+      </LegacyHero>
 
       {/* ─── AVISO TERAPÉUTICO ────────────────────────────────────────────── */}
       <div className="bg-[oklch(0.96_0.02_148)] border-y border-[oklch(0.88_0.04_148)]">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-3">
           <Leaf size={14} className="text-[oklch(0.42_0.08_148)] flex-shrink-0" />
           <p className="font-body text-xs text-[oklch(0.38_0.06_148)]">
-            <strong>Catálogo educativo:</strong> Este espacio no permite compra directa. Los aceites esenciales son herramientas terapéuticas que requieren orientación profesional. Añade los que te interesen a tu consulta y Cristina te guiará personalmente.
+            <strong>{L("aceites.notice.title")}</strong> {L("aceites.notice.text")}
           </p>
         </div>
       </div>
@@ -236,7 +244,7 @@ export default function AceitesEsenciales() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nombre o uso (ej: ansiedad, sueño, digestivo...)"
+              placeholder={L("aceites.search.ph")}
               className="pl-9 font-body text-sm bg-white border-[oklch(0.88_0.01_80)]"
               style={{ borderRadius: 0 }}
             />
@@ -253,7 +261,7 @@ export default function AceitesEsenciales() {
                 }`}
                 style={{ borderRadius: 0 }}
               >
-                Todos ({products.length})
+                {L("aceites.filter.all", { n: products.length })}
               </button>
               {categories.map((cat) => (
                 <button
@@ -281,11 +289,11 @@ export default function AceitesEsenciales() {
           <div className="mb-8 bg-[oklch(0.96_0.02_148)] border border-[oklch(0.88_0.04_148)] px-5 py-3 flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-2 text-sm font-body text-[oklch(0.38_0.06_148)]">
               <ShoppingBag size={16} className="text-[oklch(0.52_0.08_148)]" />
-              <span>Tienes <strong>{count} producto{count !== 1 ? "s" : ""}</strong> en tu consulta personalizada</span>
+              <span>{L("aceites.cartBar.pre")} <strong>{L(count !== 1 ? "aceites.count.many" : "aceites.count.one", { n: count })}</strong> {L("aceites.cartBar.post")}</span>
             </div>
             <Link href="/mi-consulta">
               <button className="text-xs font-body uppercase tracking-wider bg-[oklch(0.52_0.08_148)] text-white px-4 py-2 hover:bg-[oklch(0.42_0.08_148)] transition-colors flex items-center gap-1.5" style={{ borderRadius: 0 }}>
-                Solicitar consulta <ArrowRight size={12} />
+                {L("aceites.cartBar.button")} <ArrowRight size={12} />
               </button>
             </Link>
           </div>
@@ -299,19 +307,19 @@ export default function AceitesEsenciales() {
           <div className="text-center py-24 space-y-4">
             <Leaf size={40} className="mx-auto text-[oklch(0.72_0.06_148)] opacity-40" />
             <p className="font-body text-[oklch(0.52_0.04_80)]">
-              No hay productos con esa búsqueda. Prueba con otro término.
+              {L("aceites.empty.text")}
             </p>
             <button
               onClick={() => { setSearch(""); setActiveCategory(""); }}
               className="text-xs font-body uppercase tracking-wider text-[oklch(0.52_0.08_148)] underline"
             >
-              Ver todos los productos
+              {L("aceites.empty.button")}
             </button>
           </div>
         ) : (
           <>
             <p className="text-xs font-body text-[oklch(0.52_0.04_80)] mb-6 uppercase tracking-wider">
-              {filtered.length} producto{filtered.length !== 1 ? "s" : ""}
+              {L(filtered.length !== 1 ? "aceites.count.many" : "aceites.count.one", { n: filtered.length })}
               {activeCategory && ` · ${categories.find((c) => c.slug === activeCategory)?.name}`}
               {search && ` · "${search}"`}
             </p>
@@ -328,21 +336,21 @@ export default function AceitesEsenciales() {
       <section className="bg-[oklch(0.14_0.018_55)] text-white py-16">
         <div className="max-w-3xl mx-auto px-6 text-center space-y-6">
           <Leaf size={32} className="mx-auto text-[oklch(0.72_0.06_148)]" />
-          <h2 className="font-display text-3xl">¿No sabes por dónde empezar?</h2>
+          <h2 className="font-display text-3xl">{L("aceites.cta.title")}</h2>
           <p className="font-body text-[oklch(0.78_0.01_80)] text-lg leading-relaxed">
-            Añade los aceites que te llaman la atención a tu consulta y Cristina te orientará sobre cuáles son los más adecuados para ti, cómo usarlos y en qué orden.
+            {L("aceites.cta.text")}
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/consultas">
               <Button className="bg-[oklch(0.52_0.08_148)] hover:bg-[oklch(0.42_0.08_148)] text-white font-body text-xs uppercase tracking-wider px-8 py-3 h-auto gap-2" style={{ borderRadius: 0 }}>
-                Reservar consulta con Cristina <ArrowRight size={14} />
+                {L("aceites.cta.book")} <ArrowRight size={14} />
               </Button>
             </Link>
             {count > 0 && (
               <Link href="/mi-consulta">
                 <Button variant="outline" className="border-white/30 text-white hover:bg-white/10 font-body text-xs uppercase tracking-wider px-8 py-3 h-auto gap-2" style={{ borderRadius: 0 }}>
                   <ShoppingBag size={14} />
-                  Ver mi consulta ({count})
+                  {L("aceites.cta.cart", { n: count })}
                 </Button>
               </Link>
             )}

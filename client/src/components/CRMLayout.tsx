@@ -33,6 +33,10 @@ import {
   Images,
   List,
   ShoppingBag,
+  PencilRuler,
+  Settings2,
+  Type,
+  ArrowRightLeft,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -76,6 +80,13 @@ const BLOG_SUBITEMS = [
   { href: "/crm/blog/comentarios", label: "Comentarios", icon: MessageSquare },
 ];
 
+const WEB_SUBITEMS = [
+  { href: "/crm/web", label: "Páginas", icon: FileText },
+  { href: "/crm/web/ajustes", label: "Ajustes del sitio", icon: Settings2 },
+  { href: "/crm/web/textos", label: "Textos de reserva y compra", icon: Type },
+  { href: "/crm/web/redirecciones", label: "Redirecciones", icon: ArrowRightLeft },
+];
+
 interface CRMLayoutProps {
   children: React.ReactNode;
   title?: string;
@@ -92,6 +103,8 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
   const [oilsExpanded, setOilsExpanded] = useState(isOilsSection);
   const isBlogSection = location.startsWith("/crm/blog");
   const [blogExpanded, setBlogExpanded] = useState(isBlogSection);
+  const isWebSection = location.startsWith("/crm/web");
+  const [webExpanded, setWebExpanded] = useState(isWebSection);
 
   const { data: user, isLoading } = trpc.auth.me.useQuery();
   const { data: pendingOrders } = trpc.orders.pendingCount.useQuery(undefined, {
@@ -258,6 +271,40 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
                           ? "text-white bg-white/15"
                           : "text-white/50 hover:text-white hover:bg-white/8"
                       }`}
+                      style={{ borderRadius: 0, fontWeight: isSubActive ? 500 : 400 }}
+                    >
+                      <Icon size={13} className={isSubActive ? "text-white" : "text-white/40 group-hover:text-white/70"} />
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Editar web — con submenú */}
+          <div>
+            <button
+              onClick={() => setWebExpanded(!webExpanded)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-body transition-all duration-200 group ${
+                isWebSection ? "bg-[oklch(0.52_0.08_148)] text-white" : "text-white/60 hover:text-white hover:bg-white/8"
+              }`}
+              style={{ borderRadius: 0, fontWeight: isWebSection ? 500 : 400 }}
+            >
+              <PencilRuler size={16} className={isWebSection ? "text-white" : "text-white/50 group-hover:text-white/80"} />
+              Editar web
+              <span className="ml-auto">{webExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}</span>
+            </button>
+            {webExpanded && (
+              <div className="ml-4 mt-1 space-y-0.5">
+                {WEB_SUBITEMS.map(({ href, label, icon: Icon }) => {
+                  const isSubActive = href === "/crm/web" ? location === "/crm/web" || location.startsWith("/crm/web/editar") : location.startsWith(href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2 text-xs font-body transition-all duration-200 no-underline group ${isSubActive ? "text-white bg-white/15" : "text-white/50 hover:text-white hover:bg-white/8"}`}
                       style={{ borderRadius: 0, fontWeight: isSubActive ? 500 : 400 }}
                     >
                       <Icon size={13} className={isSubActive ? "text-white" : "text-white/40 group-hover:text-white/70"} />

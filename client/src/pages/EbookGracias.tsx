@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useLabels } from "@/lib/siteGlobal";
 import { useLocation } from "wouter";
 import { CheckCircle, Download, Mail, Clock, ArrowLeft, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -12,6 +13,7 @@ import Layout from "@/components/Layout";
 import { Link } from "wouter";
 
 export default function EbookGracias() {
+  const L = useLabels();
   const [location] = useLocation();
   const sessionId = new URLSearchParams(window.location.search).get("session_id") ?? "";
 
@@ -76,7 +78,7 @@ export default function EbookGracias() {
                 className="font-display text-[oklch(0.18_0.018_55)] mb-4"
                 style={{ fontWeight: 400, fontSize: "clamp(1.5rem, 3vw, 2rem)" }}
               >
-                ¡Gracias por tu compra!
+                {L("ebook.thanksTitle")}
               </h1>
               <p
                 className="font-body text-sm leading-relaxed mb-8"

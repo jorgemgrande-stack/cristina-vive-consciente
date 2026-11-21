@@ -6,11 +6,15 @@
  */
 
 import { SITE_IMAGES } from "@/lib/siteImages";
+import AdminEditLink from "@/components/site/AdminEditLink";
 import { useState } from "react";
 import { Link } from "wouter";
 import Layout from "@/components/Layout";
+import { LegacyHero } from "@/components/site/embed";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useLabels } from "@/lib/siteGlobal";
+import { useSiteAction } from "@/lib/siteActions";
 import {
   Droplets,
   CheckCircle,
@@ -34,6 +38,7 @@ interface ReservaModalProps {
 }
 
 export function ReservaModal({ productId, productName, onClose }: ReservaModalProps) {
+  const L = useLabels();
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -51,7 +56,7 @@ export function ReservaModal({ productId, productName, onClose }: ReservaModalPr
     onSuccess: () => {
       setSubmitted(true);
     },
-    onError: (err) => toast.error(`Error: ${err.message}`),
+    onError: (err) => toast.error(L("agua.modal.error", { msg: err.message })),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -69,16 +74,16 @@ export function ReservaModal({ productId, productName, onClose }: ReservaModalPr
           <div className="w-16 h-16 bg-[#F0F4F0] rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle size={32} className="text-[#3A5A3A]" />
           </div>
-          <h3 className="text-xl font-serif text-[#1A1208] mb-2">¡Solicitud recibida!</h3>
+          <h3 className="text-xl font-serif text-[#1A1208] mb-2">{L("agua.modal.done.title")}</h3>
           <p className="text-[#5A4E3E] text-sm leading-relaxed mb-6">
-            Hemos recibido tu solicitud. Cristina te contactará en las próximas{" "}
-            <strong>24–48 horas</strong> para orientarte en la elección del sistema ideal para tu hogar.
+            {L("agua.modal.done.pre")}{" "}
+            <strong>{L("agua.modal.done.bold")}</strong> {L("agua.modal.done.post")}
           </p>
           <button
             onClick={onClose}
             className="px-6 py-2.5 bg-[#3A5A3A] text-white rounded-xl text-sm hover:bg-[#2E4A2E] transition-colors"
           >
-            Cerrar
+            {L("agua.modal.done.close")}
           </button>
         </div>
       </div>
@@ -90,12 +95,12 @@ export function ReservaModal({ productId, productName, onClose }: ReservaModalPr
       <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white px-6 pt-6 pb-4 border-b border-[#E8E4DC] flex items-start justify-between">
           <div>
-            <h3 className="text-xl font-serif text-[#1A1208]">Solicitar presupuesto</h3>
+            <h3 className="text-xl font-serif text-[#1A1208]">{L("agua.modal.title")}</h3>
             {productName && (
               <p className="text-sm text-[#3A5A3A] font-medium mt-0.5">{productName}</p>
             )}
             <p className="text-xs text-[#7A6E5E] mt-1">
-              Cristina te contactará para orientarte sin compromiso
+              {L("agua.modal.subtitle")}
             </p>
           </div>
           <button
@@ -109,98 +114,98 @@ export function ReservaModal({ productId, productName, onClose }: ReservaModalPr
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-[#7A6E5E] mb-1">Nombre *</label>
+              <label className="block text-xs text-[#7A6E5E] mb-1">{L("agua.form.firstName")}</label>
               <input
                 type="text"
                 required
                 value={form.firstName}
                 onChange={(e) => set("firstName", e.target.value)}
                 className="w-full border border-[#E8E4DC] rounded-lg px-3 py-2 text-sm text-[#1A1208] focus:outline-none focus:ring-1 focus:ring-[#3A5A3A]"
-                placeholder="Tu nombre"
+                placeholder={L("agua.form.firstName.ph")}
               />
             </div>
             <div>
-              <label className="block text-xs text-[#7A6E5E] mb-1">Apellidos *</label>
+              <label className="block text-xs text-[#7A6E5E] mb-1">{L("agua.form.lastName")}</label>
               <input
                 type="text"
                 required
                 value={form.lastName}
                 onChange={(e) => set("lastName", e.target.value)}
                 className="w-full border border-[#E8E4DC] rounded-lg px-3 py-2 text-sm text-[#1A1208] focus:outline-none focus:ring-1 focus:ring-[#3A5A3A]"
-                placeholder="Tus apellidos"
+                placeholder={L("agua.form.lastName.ph")}
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-[#7A6E5E] mb-1">Teléfono *</label>
+              <label className="block text-xs text-[#7A6E5E] mb-1">{L("agua.form.phone")}</label>
               <input
                 type="tel"
                 required
                 value={form.phone}
                 onChange={(e) => set("phone", e.target.value)}
                 className="w-full border border-[#E8E4DC] rounded-lg px-3 py-2 text-sm text-[#1A1208] focus:outline-none focus:ring-1 focus:ring-[#3A5A3A]"
-                placeholder="+34 600 000 000"
+                placeholder={L("agua.form.phone.ph")}
               />
             </div>
             <div>
-              <label className="block text-xs text-[#7A6E5E] mb-1">Email *</label>
+              <label className="block text-xs text-[#7A6E5E] mb-1">{L("agua.form.email")}</label>
               <input
                 type="email"
                 required
                 value={form.email}
                 onChange={(e) => set("email", e.target.value)}
                 className="w-full border border-[#E8E4DC] rounded-lg px-3 py-2 text-sm text-[#1A1208] focus:outline-none focus:ring-1 focus:ring-[#3A5A3A]"
-                placeholder="tu@email.com"
+                placeholder={L("agua.form.email.ph")}
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-[#7A6E5E] mb-1">Provincia</label>
+              <label className="block text-xs text-[#7A6E5E] mb-1">{L("agua.form.province")}</label>
               <input
                 type="text"
                 value={form.province}
                 onChange={(e) => set("province", e.target.value)}
                 className="w-full border border-[#E8E4DC] rounded-lg px-3 py-2 text-sm text-[#1A1208] focus:outline-none focus:ring-1 focus:ring-[#3A5A3A]"
-                placeholder="Madrid"
+                placeholder={L("agua.form.province.ph")}
               />
             </div>
             <div>
-              <label className="block text-xs text-[#7A6E5E] mb-1">Ciudad</label>
+              <label className="block text-xs text-[#7A6E5E] mb-1">{L("agua.form.city")}</label>
               <input
                 type="text"
                 value={form.city}
                 onChange={(e) => set("city", e.target.value)}
                 className="w-full border border-[#E8E4DC] rounded-lg px-3 py-2 text-sm text-[#1A1208] focus:outline-none focus:ring-1 focus:ring-[#3A5A3A]"
-                placeholder="Tu ciudad"
+                placeholder={L("agua.form.city.ph")}
               />
             </div>
           </div>
           <div>
-            <label className="block text-xs text-[#7A6E5E] mb-1">Tipo de vivienda</label>
+            <label className="block text-xs text-[#7A6E5E] mb-1">{L("agua.form.housing")}</label>
             <select
               value={form.housingType}
               onChange={(e) => set("housingType", e.target.value)}
               className="w-full border border-[#E8E4DC] rounded-lg px-3 py-2 text-sm text-[#1A1208] focus:outline-none focus:ring-1 focus:ring-[#3A5A3A]"
             >
-              <option value="">Selecciona tipo de vivienda</option>
-              <option value="Piso">Piso</option>
-              <option value="Casa">Casa</option>
-              <option value="Chalet">Chalet</option>
-              <option value="Ático">Ático</option>
-              <option value="Local comercial">Local comercial</option>
-              <option value="Otro">Otro</option>
+              <option value="">{L("agua.form.housing.ph")}</option>
+              <option value="Piso">{L("agua.form.housing.piso")}</option>
+              <option value="Casa">{L("agua.form.housing.casa")}</option>
+              <option value="Chalet">{L("agua.form.housing.chalet")}</option>
+              <option value="Ático">{L("agua.form.housing.atico")}</option>
+              <option value="Local comercial">{L("agua.form.housing.local")}</option>
+              <option value="Otro">{L("agua.form.housing.otro")}</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs text-[#7A6E5E] mb-1">Observaciones o preguntas</label>
+            <label className="block text-xs text-[#7A6E5E] mb-1">{L("agua.form.notes")}</label>
             <textarea
               value={form.observations}
               onChange={(e) => set("observations", e.target.value)}
               rows={3}
               className="w-full border border-[#E8E4DC] rounded-lg px-3 py-2 text-sm text-[#1A1208] focus:outline-none focus:ring-1 focus:ring-[#3A5A3A] resize-none"
-              placeholder="Cuéntanos brevemente tu situación o cualquier pregunta..."
+              placeholder={L("agua.form.notes.ph")}
             />
           </div>
           <label className="flex items-start gap-3 cursor-pointer">
@@ -212,11 +217,11 @@ export function ReservaModal({ productId, productName, onClose }: ReservaModalPr
               className="mt-0.5 rounded border-[#E8E4DC]"
             />
             <span className="text-xs text-[#7A6E5E] leading-relaxed">
-              He leído y acepto la{" "}
+              {L("agua.form.privacy.pre")}{" "}
               <Link href="/privacidad">
-                <a className="text-[#3A5A3A] underline hover:no-underline">política de privacidad</a>
+                <a className="text-[#3A5A3A] underline hover:no-underline">{L("agua.form.privacy.link")}</a>
               </Link>
-              . Mis datos serán tratados para gestionar esta solicitud y no serán cedidos a terceros.
+              {L("agua.form.privacy.post")}
             </span>
           </label>
           <button
@@ -229,10 +234,10 @@ export function ReservaModal({ productId, productName, onClose }: ReservaModalPr
             ) : (
               <Send size={16} />
             )}
-            Enviar solicitud
+            {L("agua.form.submit")}
           </button>
           <p className="text-xs text-center text-[#A09080]">
-            Sin compromiso. Cristina te contactará personalmente para orientarte.
+            {L("agua.form.footnote")}
           </p>
         </form>
       </div>
@@ -265,6 +270,7 @@ function ProductCard({
   product: WaterProduct;
   onReservar: (id: number, name: string) => void;
 }) {
+  const L = useLabels();
   const benefits: string[] = (() => {
     try {
       return JSON.parse(product.benefits ?? "[]");
@@ -274,7 +280,8 @@ function ProductCard({
   })();
 
   return (
-    <div className="bg-white rounded-2xl overflow-hidden border border-[#E8E4DC] hover:border-[#B8D4B8] hover:shadow-xl transition-all duration-300 group flex flex-col">
+    <div className="relative bg-white rounded-2xl overflow-hidden border border-[#E8E4DC] hover:border-[#B8D4B8] hover:shadow-xl transition-all duration-300 group flex flex-col">
+      <AdminEditLink href="/crm/agua/productos" label="Editar producto" />
       {/* Imagen */}
       <Link
         href={`/sistemas-agua/${product.slug}`}
@@ -329,7 +336,7 @@ function ProductCard({
               ))}
               {benefits.length > 4 && (
                 <li className="text-xs text-[#A09080] pl-5">
-                  + {benefits.length - 4} beneficios más
+                  {L("agua.card.moreBenefits", { n: benefits.length - 4 })}
                 </li>
               )}
             </ul>
@@ -357,11 +364,11 @@ function ProductCard({
             className="w-full flex items-center justify-center gap-2 py-3 bg-[#3A5A3A] text-white rounded-xl font-medium hover:bg-[#2E4A2E] transition-colors"
           >
             <Droplets size={16} />
-            {product.ctaPrimaryLabel ?? "Solicitar presupuesto"}
+            {product.ctaPrimaryLabel ?? L("agua.card.cta.primary")}
           </button>
           <Link href={`/sistemas-agua/${product.slug}`}>
             <a className="w-full flex items-center justify-center gap-2 py-2.5 border border-[#3A5A3A] text-[#3A5A3A] rounded-xl text-sm font-medium hover:bg-[#F0F4F0] transition-colors">
-              {product.ctaSecondaryLabel ?? "Conocer más detalles"}
+              {product.ctaSecondaryLabel ?? L("agua.card.cta.secondary")}
               <ChevronRight size={14} />
             </a>
           </Link>
@@ -374,7 +381,9 @@ function ProductCard({
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 
 export default function SistemasAgua() {
+  const L = useLabels();
   const [reservaModal, setReservaModal] = useState<{ id: number; name: string } | null>(null);
+  useSiteAction("water-advice", () => setReservaModal({ id: 0, name: "" }));
   const [filterCategory, setFilterCategory] = useState<number | null>(null);
 
   const { data: categories } = trpc.water.listCategories.useQuery();
@@ -389,6 +398,7 @@ export default function SistemasAgua() {
   return (
     <Layout>
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
+      <LegacyHero>
       <section className="relative text-white overflow-hidden">
         <div className="absolute inset-0">
           <img
@@ -435,6 +445,7 @@ export default function SistemasAgua() {
           </div>
         </div>
       </section>
+      </LegacyHero>
 
       {/* ── BLOQUE DE AUTORIDAD ──────────────────────────────────────────────── */}
       <section className="bg-[#F5F2EC] py-12 border-y border-[#E8E4DC]">
@@ -443,18 +454,18 @@ export default function SistemasAgua() {
             {[
               {
                 icon: <Shield size={24} className="text-[#3A5A3A]" />,
-                title: "Asesoramiento experto",
-                text: "Cristina analiza la calidad del agua de tu zona y las necesidades de tu hogar antes de recomendarte cualquier sistema.",
+                title: L("agua.auth.1.title"),
+                text: L("agua.auth.1.text"),
               },
               {
                 icon: <Droplets size={24} className="text-[#3A5A3A]" />,
-                title: "Selección personalizada",
-                text: "No todos los sistemas sirven para todas las casas. Te orientamos hacia la solución que realmente necesitas.",
+                title: L("agua.auth.2.title"),
+                text: L("agua.auth.2.text"),
               },
               {
                 icon: <Star size={24} className="text-[#3A5A3A]" />,
-                title: "Acompañamiento completo",
-                text: "Desde la elección hasta la instalación y el mantenimiento. Cristina está contigo en cada paso del proceso.",
+                title: L("agua.auth.3.title"),
+                text: L("agua.auth.3.text"),
               },
             ].map((item, i) => (
               <div key={i} className="flex gap-4">
@@ -476,11 +487,10 @@ export default function SistemasAgua() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-serif text-[#1A1208] mb-4">
-              Sistemas de agua seleccionados
+              {L("agua.catalog.title")}
             </h2>
             <p className="text-[#5A4E3E] max-w-2xl mx-auto leading-relaxed">
-              Cada sistema ha sido evaluado y seleccionado personalmente por Cristina Battistelli por
-              su calidad, fiabilidad y resultados reales en el bienestar de las familias.
+              {L("agua.catalog.text")}
             </p>
           </div>
 
@@ -495,7 +505,7 @@ export default function SistemasAgua() {
                     : "bg-white border border-[#E8E4DC] text-[#5A4E3E] hover:border-[#3A5A3A]"
                 }`}
               >
-                Todos
+                {L("agua.catalog.all")}
               </button>
               {categories.map((cat) => (
                 <button
@@ -534,7 +544,7 @@ export default function SistemasAgua() {
           ) : !products || products.length === 0 ? (
             <div className="text-center py-16">
               <Droplets size={48} className="mx-auto text-[#C0B8A8] mb-4" />
-              <p className="text-[#7A6E5E]">No hay productos disponibles en esta categoría</p>
+              <p className="text-[#7A6E5E]">{L("agua.catalog.empty")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -553,54 +563,47 @@ export default function SistemasAgua() {
             <div className="lg:col-span-3 space-y-5">
               <div>
                 <p className="text-[#3A5A3A] text-xs tracking-[0.2em] uppercase mb-3 font-medium">
-                  ¿Qué es el agua estructurada?
+                  {L("agua.struct.kicker")}
                 </p>
                 <h2 className="text-3xl font-serif text-[#1A1208] mb-4">
-                  Más que filtrar, <em>transformar</em>
+                  {L("agua.struct.title.pre")} <em>{L("agua.struct.title.em")}</em>
                 </h2>
               </div>
               <p className="text-[#5A4E3E] leading-relaxed">
-                Somos un 70% agua. El agua contenida en tu cuerpo es el principal transportador de
-                nutrientes y oxígeno, además de ser fundamental para la eliminación de toxinas del
-                organismo.
+                {L("agua.struct.p1")}
               </p>
               <p className="text-[#5A4E3E] leading-relaxed">
-                Varias líneas de investigación sugieren que el agua no es un agente pasivo de salud.
-                El agua de manantial, viva y en movimiento, tiene una estructura molecular que el agua
-                del grifo ha perdido debido a la manipulación, los tratamientos químicos y los
-                materiales de las tuberías.
+                {L("agua.struct.p2")}
               </p>
               <p className="text-[#5A4E3E] leading-relaxed">
-                Los sistemas que seleccionamos no solo filtran: purifican, remineralizan y devuelven
-                al agua su vitalidad natural, para que cada sorbo sea realmente nutritivo.
+                {L("agua.struct.p3")}
               </p>
               <div className="flex items-start gap-3 p-5 bg-[#F5F2EC] rounded-xl border border-[#E8E4DC]">
                 <BookOpen size={16} className="text-[#3A5A3A] mt-0.5 flex-shrink-0" />
                 <p className="text-[#5A4E3E] text-sm italic">
-                  Como referencia científica, recomiendo las investigaciones de{" "}
-                  <strong>Masaru Emoto</strong> sobre la estructura del agua y su respuesta a los
-                  estímulos del entorno.
+                  {L("agua.struct.ref.pre")}{" "}
+                  <strong>{L("agua.struct.ref.name")}</strong> {L("agua.struct.ref.post")}
                 </p>
               </div>
             </div>
             <div className="lg:col-span-2 space-y-5">
               <div className="p-8 bg-[#3A5A3A] text-center rounded-2xl">
                 <p className="text-white font-serif mb-2" style={{ fontSize: "4rem", lineHeight: 1 }}>
-                  70%
+                  {L("agua.struct.stat.value")}
                 </p>
-                <p className="text-white/80 text-sm">de tu cuerpo es agua</p>
+                <p className="text-white/80 text-sm">{L("agua.struct.stat.label")}</p>
               </div>
               <div className="p-6 bg-[#F5F2EC] rounded-2xl border border-[#E8E4DC]">
                 <p className="text-[#5A4E3E] text-xs tracking-widest uppercase mb-4 font-medium">
-                  El agua estructurada puede
+                  {L("agua.struct.can.title")}
                 </p>
                 <ul className="space-y-2.5">
                   {[
-                    "Mejorar la hidratación celular",
-                    "Facilitar la eliminación de toxinas",
-                    "Mejorar la absorción de nutrientes",
-                    "Reducir la inflamación",
-                    "Reforzar el sistema inmune",
+                    L("agua.struct.can.1"),
+                    L("agua.struct.can.2"),
+                    L("agua.struct.can.3"),
+                    L("agua.struct.can.4"),
+                    L("agua.struct.can.5"),
                   ].map((item) => (
                     <li key={item} className="flex items-center gap-2.5">
                       <CheckCircle size={13} className="text-[#3A5A3A] flex-shrink-0" />
@@ -623,22 +626,20 @@ export default function SistemasAgua() {
                 <Droplets size={28} className="text-white" />
               </div>
               <h2 className="text-2xl md:text-3xl font-serif text-[#1A1208] mb-4">
-                "No todos los sistemas sirven para todas las casas"
+                {L("agua.advisor.quote")}
               </h2>
               <p className="text-[#5A4E3E] leading-relaxed mb-6 text-lg">
-                La calidad del agua varía enormemente según la zona, la instalación y las necesidades
-                de cada familia. Antes de elegir un sistema, es fundamental conocer qué hay en tu agua
-                y qué quieres conseguir. Eso es exactamente lo que hacemos juntos.
+                {L("agua.advisor.text")}
               </p>
               <p className="text-sm font-semibold text-[#3A5A3A] mb-8">
-                — Cristina Battistelli, consultora de bienestar y calidad del agua
+                {L("agua.advisor.signature")}
               </p>
               <button
                 onClick={() => setReservaModal({ id: 0, name: "" })}
                 className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#3A5A3A] text-white rounded-xl font-medium hover:bg-[#2E4A2E] transition-colors"
               >
                 <Phone size={16} />
-                Recibe orientación profesional gratuita
+                {L("agua.advisor.button")}
               </button>
             </div>
           </div>

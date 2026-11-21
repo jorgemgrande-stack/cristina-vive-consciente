@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { Cookie } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 import { getConsent, setConsent, OPEN_COOKIE_SETTINGS_EVENT } from "@/lib/consent";
 
 export default function CookieBanner() {
@@ -31,8 +32,9 @@ export default function CookieBanner() {
     return () => window.removeEventListener(OPEN_COOKIE_SETTINGS_EVENT, reopen);
   }, []);
 
+  const legal = trpc.site.legalVersions.useQuery(undefined, { staleTime: 60_000 });
   const decide = (a: boolean, p: boolean) => {
-    setConsent({ analytics: a, ads: p });
+    setConsent({ analytics: a, ads: p }, legal.data);
     setOpen(false);
     setConfiguring(false);
   };
