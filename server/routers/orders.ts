@@ -18,6 +18,7 @@ import { orders, type Order } from "../../drizzle/schema";
 import { getEbook } from "../ebooks/products";
 import { sendEbookDeliveryEmail, sendOrderAdminEmail, sendOrderReceivedEmail } from "../email";
 import { notifyAdminNewOrder } from "../whatsapp";
+import { linkOrderToClient } from "../servicesReceivedDb";
 import { normalizePhone } from "../../shared/phone";
 import {
   BIZUM_PHONE,
@@ -336,9 +337,16 @@ export const ordersRouter = router({
         console.warn("[Orders] No se pudo etiquetar al cliente:", err);
       }
     }
+    // Vincula el pedido a la ficha (por email) y lo registra en «Servicios recibidos». Si falla, el pago y la entrega siguen.
+    let clientLink: string | null = null;
+    try {
+      clientLink = (await linkOrderToClient(order.id)).status;
+    } catch (err) {
+      console.warn("[Orders] No se pudo vincular el pedido a la ficha:", err);
+    }
     const [fresh] = await db.select().from(orders).where(eq(orders.id, order.id)).limit(1);
     const out = await deliver(fresh ?? order, ebook);
-    return { alreadyPaid: false, ...out };
+    return { alreadyPaid: false, ...out, clientLink };
   }),
 
   /** Reenvía la guía (nuevo plazo de descarga) de un pedido ya pagado. */

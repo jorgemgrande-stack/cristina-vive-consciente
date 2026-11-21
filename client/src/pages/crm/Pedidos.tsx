@@ -5,6 +5,7 @@
  */
 
 import { useState } from "react";
+import { Link } from "wouter";
 import { CheckCircle2, Mail, RefreshCw, ShoppingBag, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -32,8 +33,30 @@ function fmtDate(ms: number | Date | null | undefined): string {
   return new Date(ms).toLocaleString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" });
 }
 
+/** Pedido pagado con varias fichas con el mismo email: Cristina elige la correcta. No toca el pago ni envía nada. */
+function ReviewLink({ orderId, onDone }: { orderId: number; onDone: () => void }) {
+  const { data: candidates = [] } = trpc.received.orderCandidates.useQuery({ orderId });
+  const [pick, setPick] = useState("");
+  const link = trpc.received.linkOrder.useMutation({
+    onSuccess: () => { toast.success("Pedido vinculado a la ficha y registrado en Servicios recibidos."); onDone(); },
+    onError: (e) => toast.error(e.message),
+  });
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-2">
+      <span className="text-xs text-amber-900">Hay varias fichas con este email. Elige la correcta:</span>
+      <select value={pick} onChange={(e) => setPick(e.target.value)} className="text-xs border border-amber-300 bg-white px-2 py-1.5">
+        <option value="">— Elige la ficha —</option>
+        {candidates.map((c) => <option key={c.id} value={c.id}>{c.firstName} {c.lastName} (#{c.id}){c.phone ? ` · ${c.phone}` : ""}</option>)}
+      </select>
+      <Button size="sm" disabled={!pick || link.isPending} onClick={() => link.mutate({ orderId, clientId: Number(pick) })}>Vincular</Button>
+    </div>
+  );
+}
+
 export default function Pedidos() {
-  const [filter, setFilter] = useState<Filter>("pending");
+  // /crm/pedidos?id=123 abre la lista completa y resalta ese pedido (enlace desde «Servicios recibidos»)
+  const focusId = Number(new URLSearchParams(typeof window !== "undefined" ? window.location.search : "").get("id")) || null;
+  const [filter, setFilter] = useState<Filter>(focusId ? "all" : "pending");
   const utils = trpc.useUtils();
   const { data: rows = [], isLoading } = trpc.orders.list.useQuery(
     filter === "all" ? undefined : { status: filter },
@@ -50,7 +73,7 @@ export default function Pedidos() {
       refresh();
       if (r.alreadyPaid) toast.info("Este pedido ya estaba confirmado.");
       else if (r.emailSent) toast.success("Pago confirmado y guía enviada al cliente.");
-      else toast.warning(`Pago confirmado, pero la guía NO se envió: ${r.error ?? "error de email"}. Usa «Enviar guía» cuando esté resuelto.`);
+      else toast.warning(`Pago confirmado, pero la guía NO se envió: ${"error" in r ? r.error : "error de email"}. Usa «Enviar guía» cuando esté resuelto.`);
     },
     onError: (e) => toast.error(e.message || "No se pudo confirmar el pago."),
   });
@@ -99,11 +122,12 @@ export default function Pedidos() {
           ) : (
             <div className="divide-y divide-gray-50">
               {rows.map((o) => (
-                <div key={o.id} className="p-4 flex flex-col md:flex-row md:items-center gap-3">
+                <div key={o.id} className={`p-4 flex flex-col md:flex-row md:items-center gap-3 ${o.id === focusId ? "bg-green-50 ring-1 ring-green-300" : ""}`}>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <span className="font-mono text-sm font-semibold text-gray-900">{o.reference}</span>
                       <Badge className={STATUS_STYLE[o.status as OrderStatus]}>{ORDER_STATUS_LABELS[o.status as OrderStatus]}</Badge>
+                      {o.clientLinkStatus === "review" ? <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Ficha por revisar</Badge> : null}
                       {o.status === "pending" && o.customerClaimedAt ? (
                         <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Dice que ya pagó</Badge>
                       ) : null}
@@ -120,6 +144,10 @@ export default function Pedidos() {
                       {o.paidAt ? ` · Pagado: ${fmtDate(o.paidAt)}` : ""}
                       {o.status === "paid" ? (o.deliveryEmailSentAt ? " · Guía enviada" : " · ⚠ Guía NO enviada") : ""}
                     </p>
+                    {o.clientId ? (
+                      <Link href={`/crm/clientes/${o.clientId}`} className="text-xs text-[oklch(0.52_0.08_148)] hover:underline no-underline">Ver la ficha de la clienta</Link>
+                    ) : null}
+                    {o.clientLinkStatus === "review" && !o.clientId ? <ReviewLink orderId={o.id} onDone={refresh} /> : null}
                   </div>
 
                   <div className="flex flex-wrap gap-2">

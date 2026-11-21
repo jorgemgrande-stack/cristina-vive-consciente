@@ -22,6 +22,7 @@ import {
   selectProposedSlot,
   trackNotification,
 } from "../bookingActions";
+import { ensureSessionForAppointment } from "../servicesReceivedDb";
 import {
   ACCEPTABLE_FROM,
   APPOINTMENT_SERVICE_TYPES,
@@ -83,8 +84,8 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 // ─── CLIENTS ──────────────────────────────────────────────────────────────────
 const clientsRouter = router({
   list: adminProcedure
-    .input(z.object({ search: z.string().optional(), status: z.string().optional(), category: z.string().optional() }))
-    .query(({ input }) => getClients(input.search, input.status, input.category)),
+    .input(z.object({ search: z.string().optional(), status: z.string().optional(), category: z.string().optional(), serviceNodeId: z.number().int().optional() }))
+    .query(({ input }) => getClients(input.search, input.status, input.category, input.serviceNodeId)),
 
   categories: adminProcedure
     .input(z.object({ clientId: z.number() }))
@@ -218,7 +219,9 @@ const appointmentsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      await createAppointment({ ...input, createdBy: ctx.user.id });
+      const created: any = await createAppointment({ ...input, createdBy: ctx.user.id });
+      const id = created?.insertId as number | undefined;
+      if (input.status === "completed" && id) await ensureSessionForAppointment(id, ctx.user.id);
       return { success: true };
     }),
 
@@ -241,6 +244,8 @@ const appointmentsRouter = router({
       // Cambio manual de estado (desplegable del listado): no envía emails, pero queda registrado.
       const before = data.status ? await getAppointmentById(id) : undefined;
       await updateAppointment(id, data);
+      // Cita realizada → UNA sola sesión en el historial de la clienta (no se duplica si se repite)
+      if (data.status === "completed") await ensureSessionForAppointment(id, ctx.user.id);
       if (data.status && before && before.appointment.status !== data.status) {
         await logAppointmentEvent({
           appointmentId: id,
