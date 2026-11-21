@@ -222,6 +222,15 @@ export async function linkOrderToClient(orderId: number): Promise<LinkResult> {
   let clientId = order.clientId;
   let status: LinkResult["status"] = "linked";
   let candidates: number[] = [];
+  // Una ficha puesta al crear el pedido (sin estado) no es de fiar: se vuelve a comprobar el email. Solo se respeta
+  // sin comprobar lo que ya resolvió este proceso o Cristina («linked» / «created»).
+  if (clientId && !order.clientLinkStatus) {
+    const found = await clientsByEmail(order.customerEmail);
+    if (found.length > 1) {
+      await db.update(orders).set({ clientId: null, clientLinkStatus: "review" }).where(eq(orders.id, orderId));
+      return { status: "review", clientId: null, recorded: false, candidates: found.map((c) => c.id) };
+    }
+  }
   if (!clientId) {
     const found = await clientsByEmail(order.customerEmail);
     candidates = found.map((c) => c.id);

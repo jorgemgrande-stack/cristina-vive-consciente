@@ -13,12 +13,12 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
-import { findClientByEmail, getDb, getEbookBySlug, updateClientTag } from "../db";
+import { getDb, getEbookBySlug, updateClientTag } from "../db";
 import { orders, type Order } from "../../drizzle/schema";
 import { getEbook } from "../ebooks/products";
 import { sendEbookDeliveryEmail, sendOrderAdminEmail, sendOrderReceivedEmail } from "../email";
 import { notifyAdminNewOrder } from "../whatsapp";
-import { linkOrderToClient } from "../servicesReceivedDb";
+import { clientsByEmail, linkOrderToClient } from "../servicesReceivedDb";
 import { normalizePhone } from "../../shared/phone";
 import {
   BIZUM_PHONE,
@@ -202,7 +202,9 @@ export const ordersRouter = router({
 
       let clientId: number | null = null;
       try {
-        clientId = (await findClientByEmail(input.email))?.id ?? null;
+        // Solo se asigna la ficha si hay UNA coincidencia por email. Con varias, el pedido queda sin ficha y se revisa al confirmar el pago.
+        const found = await clientsByEmail(input.email);
+        clientId = found.length === 1 ? found[0].id : null;
       } catch {
         /* no crítico */
       }
@@ -326,21 +328,14 @@ export const ordersRouter = router({
     if ((res?.affectedRows ?? 0) === 0) return { alreadyPaid: true, emailSent: !!order.deliveryEmailSentAt };
 
     const ebook = await resolveEbook(order.productSlug).catch(() => null);
-    if (ebook?.crmTag) {
-      try {
-        const client = await findClientByEmail(order.customerEmail);
-        if (client) {
-          await updateClientTag(client.id, ebook.crmTag);
-          if (!order.clientId) await db.update(orders).set({ clientId: client.id }).where(eq(orders.id, order.id));
-        }
-      } catch (err) {
-        console.warn("[Orders] No se pudo etiquetar al cliente:", err);
-      }
-    }
-    // Vincula el pedido a la ficha (por email) y lo registra en «Servicios recibidos». Si falla, el pago y la entrega siguen.
+    // Vincula el pedido a la ficha (por email) y lo registra en «Servicios recibidos». Con varias fichas con el mismo email
+    // queda «por revisar» y no se asigna a ninguna. Si falla, el pago y la entrega siguen.
     let clientLink: string | null = null;
     try {
-      clientLink = (await linkOrderToClient(order.id)).status;
+      const link = await linkOrderToClient(order.id);
+      clientLink = link.status;
+      // Etiqueta CRM solo en la ficha ya vinculada con certeza
+      if (ebook?.crmTag && link.clientId && link.status !== "review") await updateClientTag(link.clientId, ebook.crmTag);
     } catch (err) {
       console.warn("[Orders] No se pudo vincular el pedido a la ficha:", err);
     }
