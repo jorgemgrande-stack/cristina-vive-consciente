@@ -7,12 +7,14 @@ import { useState } from "react";
 import { Link } from "wouter";
 import {
   Search, Plus, MessageCircle, Phone, Mail, ArrowRight,
-  Users, Filter, ChevronDown,
+  Users, Filter, ChevronDown, Download,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import CRMLayout from "@/components/CRMLayout";
 import { CLIENT_CATEGORIES, clientCategoryLabel } from "@shared/clientCategories";
 import { childrenOf } from "@shared/serviceCatalog";
+import { CLIENT_LIST_ACTIONS_COLUMN, CLIENT_LIST_COLUMNS, clientStatusLabel } from "@shared/clientsExport";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const STATUS_CONFIG: Record<string, { label: string; dot: string; badge: string }> = {
   active: { label: "Activa", dot: "bg-green-500", badge: "bg-green-50 text-green-700" },
@@ -114,6 +116,27 @@ export default function CRMClientes() {
             </select>
             <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[oklch(0.52_0.02_60)] pointer-events-none" />
           </div>
+          {/* Exporta TODOS los clientes (no solo los del filtro activo), con las columnas del listado */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-[oklch(0.92_0.01_80)] text-[oklch(0.38_0.02_55)] text-xs tracking-widest uppercase font-body hover:border-[oklch(0.52_0.08_148)] transition-colors flex-shrink-0"
+                style={{ borderRadius: 0, letterSpacing: "0.08em" }}
+                aria-label="Exportar clientes"
+              >
+                <Download size={14} />
+                Exportar clientes
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {([["xlsx", "Excel (.xlsx)"], ["csv", "CSV (.csv)"], ["pdf", "PDF (.pdf)"]] as const).map(([fmt, label]) => (
+                <DropdownMenuItem key={fmt} asChild>
+                  <a href={`/api/crm/clientes/export?format=${fmt}`} download className="cursor-pointer no-underline" data-export-format={fmt}>{label}</a>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Link
             href="/crm/clientes/nuevo"
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-body hover:bg-[oklch(0.38_0.07_148)] transition-colors no-underline flex-shrink-0"
@@ -147,7 +170,7 @@ export default function CRMClientes() {
       <div className="bg-white border border-[oklch(0.92_0.01_80)] overflow-hidden">
         {/* Header */}
         <div className="hidden md:grid grid-cols-[2fr_1.5fr_1fr_1fr_auto] gap-4 px-5 py-3 border-b border-[oklch(0.92_0.01_80)] bg-[oklch(0.97_0.006_85)]">
-          {["Cliente", "Contacto", "Ciudad", "Estado", "Acciones"].map((h) => (
+          {[...CLIENT_LIST_COLUMNS, CLIENT_LIST_ACTIONS_COLUMN].map((h) => (
             <p key={h} className="text-[0.65rem] text-[oklch(0.52_0.02_60)] font-body uppercase tracking-widest" style={{ fontWeight: 500 }}>
               {h}
             </p>
@@ -228,7 +251,7 @@ export default function CRMClientes() {
                   <div className="hidden md:flex items-center gap-1.5">
                     <div className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
                     <span className={`text-[0.6rem] px-2 py-0.5 font-body uppercase tracking-wider ${sc.badge}`}>
-                      {sc.label}
+                      {clientStatusLabel(client.status)}
                     </span>
                   </div>
 
