@@ -5,7 +5,7 @@ Objetivo: comprobar que puedes cambiar la web por ti misma. Nada de lo que hagas
 **Antes de empezar:** entra en `/crm` y pulsa **Editar web** en el menú.
 
 ## 1. Editar una ficha de masaje
-1. En **Páginas**, busca «Ficha de masaje» y pulsa **Editar**. Si pone «Preparar borrador», púlsalo primero.
+1. En **Páginas**, busca «Ficha de masaje» y pulsa **Editar**.
 2. Verás una ficha real (con el precio y los datos del masaje de ejemplo). Arriba hay un aviso: los datos (precio, duración) se editan en **Servicios**; aquí decides el orden y el aspecto.
 3. Pulsa una sección (por ejemplo «Preguntas frecuentes»). A la derecha, en **Diseño**, cámbiale el fondo a «Beige suave».
 
