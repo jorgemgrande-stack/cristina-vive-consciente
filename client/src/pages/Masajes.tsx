@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, MapPin, Clock, Euro, Star, Loader2, ChevronDown, ChevronUp, Leaf, CheckCircle, Eye } from "lucide-react";
 import Layout from "@/components/Layout";
+import { LegacyHero } from "@/components/site/embed";
 import BookingModal from "@/components/BookingModal";
 import { trpc } from "@/lib/trpc";
 
@@ -80,6 +81,7 @@ export default function Masajes() {
       <Layout>
 
         {/* ── HERO compacto con intro integrada ── */}
+        <LegacyHero>
         <section className="relative min-h-[52vh] flex items-end overflow-hidden">
           <div className="absolute inset-0">
             <img
@@ -122,6 +124,7 @@ export default function Masajes() {
             </div>
           </div>
         </section>
+        </LegacyHero>
 
         {/* ── Sección técnica colapsable ── */}
         {tecnicaOpen && (

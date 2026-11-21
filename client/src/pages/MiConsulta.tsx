@@ -7,6 +7,7 @@
  */
 
 import { useState } from "react";
+import { useLabels } from "@/lib/siteGlobal";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import Layout from "@/components/Layout";
@@ -48,6 +49,7 @@ const EMPTY_FORM: FormState = {
 };
 
 export default function MiConsulta() {
+  const L = useLabels();
   const { items, removeItem, clearCart, count } = useConsultaCart();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitted, setSubmitted] = useState(false);
@@ -143,10 +145,10 @@ export default function MiConsulta() {
         <div className="max-w-2xl mx-auto px-6 py-24 text-center space-y-6">
           <ShoppingBag size={56} className="mx-auto text-[oklch(0.72_0.06_148)] opacity-40" />
           <h1 className="font-display text-2xl text-[oklch(0.18_0.018_55)]">
-            Tu consulta está vacía
+            {L("oils.emptyTitle")}
           </h1>
           <p className="font-body text-[oklch(0.42_0.02_55)] leading-relaxed">
-            Explora el catálogo de aceites esenciales y añade los que te interesen. Cristina te orientará sobre cuáles son los más adecuados para ti.
+            {L("oils.emptyText")}
           </p>
           <Link href="/aceites-esenciales">
             <button className="text-xs font-body uppercase tracking-wider bg-[oklch(0.52_0.08_148)] text-white px-8 py-3 hover:bg-[oklch(0.42_0.08_148)] transition-colors flex items-center gap-2 mx-auto" style={{ borderRadius: 0 }}>

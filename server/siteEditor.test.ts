@@ -105,17 +105,17 @@ describe("ajustes globales", () => {
       header: { nav: [{ label: "Bien", url: "/a" }, { label: "Mal", url: "javascript:x" }, { label: "", url: "/b" }] },
       footer: { instagram: "http://insegura.com", facebook: "https://facebook.com/x" },
       whatsapp: { number: "+34 657-16.53.43" },
-      labels: { "booking.title": "Reserva", "mala clave!": "x" },
+      labels: { "booking.submit": "Reserva", "mala clave!": "x" },
     });
     expect(g.header.nav).toEqual([{ label: "Bien", url: "/a" }]);
     expect(g.footer.instagram).toBe("");
     expect(g.footer.facebook).toBe("https://facebook.com/x");
     expect(g.whatsapp.number).toBe("34657165343");
-    expect(g.labels).toEqual({ "booking.title": "Reserva" });
+    expect(g.labels).toEqual({ "booking.submit": "Reserva" });
   });
   it("los textos usan el de serie si no se han editado", () => {
-    expect(labelText({}, "booking.title")).toBe("Reservar consulta");
-    expect(labelText({ "booking.title": "Pide tu cita" }, "booking.title")).toBe("Pide tu cita");
+    expect(labelText({}, "booking.submit")).toBe("Enviar solicitud");
+    expect(labelText({ "booking.submit": "Pide tu cita" }, "booking.submit")).toBe("Pide tu cita");
   });
 });
 

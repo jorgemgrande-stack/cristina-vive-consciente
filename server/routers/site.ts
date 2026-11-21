@@ -15,7 +15,10 @@ import {
   publishDraft, readDraft, readPublishedGlobal, readPublishedPage, removeRedirect, renameCustomPage, renameDocumentTitle, restoreVersion, saveDraft,
   serveLegacy, stripHidden,
 } from "../siteDb";
-import { createClient, findClientByEmail } from "../db";
+import { createClient, findClientByEmail, getDb } from "../db";
+import { and, eq } from "drizzle-orm";
+import { blogPosts, oilProducts, services, waterProducts } from "../../drizzle/schema";
+import { migratedContent } from "../siteMigration";
 import { sendAdminLeadNotificationEmail } from "../email";
 import { notifyAdminNewLead } from "../whatsapp";
 
@@ -155,6 +158,36 @@ export const siteRouter = router({
       return { blocks: content.blocks.length, text: plainText(content.blocks).slice(0, 2000) };
     })),
   systemPages: adminProcedure.query(() => SYSTEM_PAGES),
+
+  /** Ruta real para previsualizar una plantilla de ficha (la primera ficha publicada de su tipo). */
+  sampleRoute: adminProcedure.input(z.object({ docKey: docKeyInput })).query(async ({ input }) => {
+    if (!input.docKey.startsWith("tpl:")) return input.docKey === GLOBAL_KEY ? "/" : input.docKey;
+    const d = await getDb();
+    const base = input.docKey.replace("tpl:", "").replace("/:slug", "");
+    let slug: string | undefined;
+    if (d) {
+      if (base === "/consultas" || base === "/masajes") {
+        const type = base === "/consultas" ? "consulta" : "masaje";
+        [{ slug }] = [...(await d.select({ slug: services.slug }).from(services).where(and(eq(services.type, type), eq(services.status, "active"), eq(services.visibleEnPublico, 1))).limit(1)), { slug: undefined }];
+      } else if (base === "/sistemas-agua") [{ slug }] = [...(await d.select({ slug: waterProducts.slug }).from(waterProducts).where(eq(waterProducts.status, "active")).limit(1)), { slug: undefined }];
+      else if (base === "/aceites-esenciales") [{ slug }] = [...(await d.select({ slug: oilProducts.slug }).from(oilProducts).where(eq(oilProducts.status, "active")).limit(1)), { slug: undefined }];
+      else if (base === "/blog") [{ slug }] = [...(await d.select({ slug: blogPosts.slug }).from(blogPosts).where(eq(blogPosts.status, "published")).limit(1)), { slug: undefined }];
+    }
+    return slug ? `${base}/${slug}` : base;
+  }),
+
+  /** Prepara el borrador de una página original con sus textos, imágenes y enlaces actuales. No publica nada. */
+  migrate: adminProcedure
+    .input(z.object({ docKey: docKeyInput, overwrite: z.boolean().default(false) }))
+    .mutation(({ input, ctx }) => run(async () => {
+      const content = migratedContent(input.docKey);
+      if (!content) throw new SiteEditorError("Esa página no se puede preparar automáticamente.");
+      const { content: current } = await readDraft(input.docKey);
+      const hasWork = (current as PageContent).blocks?.length > 0;
+      if (hasWork && !input.overwrite) return { created: false as const };
+      await saveDraft(input.docKey, content, ctx.user.id);
+      return { created: true as const, blocks: content.blocks.length };
+    })),
 });
 
 function findPublishedForm(blocks: PageBlock[], id: string): Extract<PageBlock, { type: "form" }> | null {

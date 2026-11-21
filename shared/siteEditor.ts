@@ -60,6 +60,8 @@ export const CONNECTED_SOURCES = [
   { value: "recomendados", label: "Productos recomendados", note: "Datos de Afiliados" },
   { value: "blog", label: "Listado del blog", note: "Artículos publicados" },
   { value: "contacto", label: "Formulario y datos de contacto", note: "Envío a automatizaciones/CRM" },
+  { value: "privacidad", label: "Texto de la política de privacidad", note: "Texto legal en código (versiones de consentimiento enlazadas)" },
+  { value: "cookies", label: "Texto de la política de cookies", note: "Texto legal en código" },
   { value: "detalle", label: "Ficha del elemento (servicio, producto, artículo)", note: "Solo en plantillas de ficha" },
   { value: "home_slideshow", label: "Portada: presentación de imágenes", note: "Imágenes de Hero Inicio" },
   { value: "home_masajes", label: "Portada: masajes destacados", note: "Datos de Servicios" },
@@ -88,7 +90,8 @@ export interface BlockDataMap {
   separator: { kind: "line" | "space" };
   /** Formulario a medida: cada envío llega a Automatizaciones/CRM como contacto, con todas las respuestas */
   form: { title: string; intro: string; fields: FormFieldItem[]; submitLabel: string; successMessage: string; consentText: string };
-  connected: { source: ConnectedSource; title: string; intro: string };
+  /** Contenido real de otra parte de la web. Los textos solo los usa la presentación de la portada (home_slideshow). */
+  connected: { source: ConnectedSource; eyebrow: string; title: string; intro: string; buttonLabel: string; secondaryLabel: string; secondaryUrl: string };
 }
 
 // ─── Diseño del bloque (valores de lista cerrada) ───────────────────────────
@@ -202,7 +205,7 @@ export function defaultBlockData<K extends BlockType>(type: K): BlockDataMap[K] 
     cta: { title: "¿Hablamos?", text: "", buttonLabel: "Contactar", buttonUrl: "/contacto", secondaryLabel: "", secondaryUrl: "" },
     separator: { kind: "line" },
     form: { title: "Escríbeme", intro: "", fields: FIELD_DEFAULTS.map((f) => ({ ...f })), submitLabel: "Enviar", successMessage: "Gracias, te responderé lo antes posible.", consentText: "He leído y acepto la política de privacidad." },
-    connected: { source: "consultas", title: "", intro: "" },
+    connected: { source: "consultas", eyebrow: "", title: "", intro: "", buttonLabel: "", secondaryLabel: "", secondaryUrl: "" },
   };
   return structuredClone(d[type]) as BlockDataMap[K];
 }
@@ -404,7 +407,7 @@ export const DEFAULT_GLOBAL: SiteGlobal = {
     contactEmail: "hola@cristinaviveconsciente.com",
     contactLine: "Consultas por cita previa",
     ctaLabel: "Reservar consulta",
-    ctaUrl: "",
+    ctaUrl: "/consultas",
     instagram: "",
     facebook: "",
     youtube: "",
@@ -424,21 +427,18 @@ export const DEFAULT_GLOBAL: SiteGlobal = {
 /** Textos editables de los procesos de reserva y compra y otros avisos: clave, dónde se ven y texto de serie. */
 export interface LabelDef { key: string; group: string; where: string; text: string; long?: boolean }
 export const LABEL_DEFS: readonly LabelDef[] = [
-  { key: "booking.title", group: "Reserva de cita", where: "Ventana «Reservar consulta»: título", text: "Reservar consulta" },
-  { key: "booking.intro", group: "Reserva de cita", where: "Ventana «Reservar consulta»: introducción", text: "Cuéntanos qué necesitas y te confirmamos tu cita.", long: true },
-  { key: "booking.submit", group: "Reserva de cita", where: "Botón de enviar la solicitud", text: "Solicitar cita" },
-  { key: "booking.success", group: "Reserva de cita", where: "Mensaje tras enviar la solicitud", text: "¡Solicitud recibida! Te confirmaremos la cita lo antes posible.", long: true },
-  { key: "booking.emptyServices", group: "Reserva de cita", where: "Cuando no hay servicios disponibles", text: "Ahora mismo no hay servicios disponibles para reservar. Escríbenos y te ayudamos.", long: true },
-  { key: "oils.cartTitle", group: "Mi consulta (aceites)", where: "Título de la página Mi consulta", text: "Mi consulta" },
-  { key: "oils.cartEmpty", group: "Mi consulta (aceites)", where: "Cuando no hay aceites elegidos", text: "Aún no has elegido ningún aceite.", long: true },
-  { key: "oils.cartSubmit", group: "Mi consulta (aceites)", where: "Botón de enviar la consulta", text: "Enviar consulta" },
-  { key: "order.thanksTitle", group: "Compra y pedido", where: "Página del pedido: título", text: "Gracias por tu pedido" },
-  { key: "order.paymentNote", group: "Compra y pedido", where: "Página del pedido: indicaciones de pago", text: "Haz el pago por Bizum y envíanos el justificante indicando tu referencia.", long: true },
+  { key: "booking.successTitle", group: "Reserva de cita", where: "Ventana de reserva de consultas: título tras enviar la solicitud", text: "¡Solicitud recibida!" },
+  { key: "booking.successTitleMassage", group: "Reserva de cita", where: "Ventana de reserva de masajes: título tras enviar la solicitud", text: "Solicitud recibida" },
+  { key: "booking.submit", group: "Reserva de cita", where: "Botón de enviar la solicitud de cita", text: "Enviar solicitud" },
+  { key: "oils.emptyTitle", group: "Mi consulta (aceites)", where: "Cuando no hay aceites elegidos: título", text: "Tu consulta está vacía" },
+  { key: "oils.emptyText", group: "Mi consulta (aceites)", where: "Cuando no hay aceites elegidos: texto", text: "Explora el catálogo de aceites esenciales y añade los que te interesen. Cristina te orientará sobre cuáles son los más adecuados para ti.", long: true },
+  { key: "order.paidTitle", group: "Compra y pedido", where: "Pedido pagado: título", text: "¡Pago confirmado!" },
+  { key: "order.claimButton", group: "Compra y pedido", where: "Pedido por Bizum: botón para avisar del pago", text: "Ya he hecho el Bizum" },
+  { key: "order.claimed", group: "Compra y pedido", where: "Pedido por Bizum: mensaje tras avisar del pago", text: "Gracias. Cristina ya sabe que has pagado y lo está comprobando. En cuanto lo confirme recibirás la guía en tu email.", long: true },
   { key: "ebook.thanksTitle", group: "Guías digitales", where: "Página de gracias tras la compra: título", text: "¡Gracias por tu compra!" },
-  { key: "ebook.thanksText", group: "Guías digitales", where: "Página de gracias: texto", text: "En unos minutos recibirás un correo con el enlace de descarga.", long: true },
-  { key: "contact.success", group: "Contacto", where: "Mensaje tras enviar el formulario de contacto", text: "¡Gracias! Te responderé lo antes posible.", long: true },
+  { key: "contact.toast", group: "Contacto", where: "Aviso tras enviar el formulario de contacto", text: "Mensaje enviado. Cristina te responderá en 24–48 horas.", long: true },
   { key: "notfound.title", group: "Otros", where: "Página no encontrada: título", text: "Página no encontrada" },
-  { key: "notfound.text", group: "Otros", where: "Página no encontrada: texto", text: "La dirección que buscas no existe o ha cambiado.", long: true },
+  { key: "notfound.text", group: "Otros", where: "Página no encontrada: texto", text: "Parece que esta página no existe o ha sido movida. Vuelve al inicio para seguir explorando.", long: true },
 ];
 export const labelText = (labels: Record<string, string> | undefined, key: string): string => {
   const own = labels?.[key];

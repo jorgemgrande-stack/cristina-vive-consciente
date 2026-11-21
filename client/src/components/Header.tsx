@@ -10,26 +10,21 @@ import { Link, useLocation } from "wouter";
 import { Menu, X, ShoppingBag } from "lucide-react";
 import BookingModal from "./BookingModal";
 import { useConsultaCart } from "@/contexts/ConsultaCartContext";
+import { useSiteGlobal, isExternalUrl } from "@/lib/siteGlobal";
+import SiteLink from "@/components/site/SiteLink";
+import AnnouncementBar from "@/components/site/AnnouncementBar";
 
-const LOGO_URL = "/logo-bion.png";
-
-const navLinks = [
-  { href: "/", label: "Inicio" },
-  { href: "/consultas", label: "Consultas" },
-  { href: "/masajes", label: "Masajes" },
-  { href: "/sistemas-agua", label: "Sistemas de Agua" },
-  { href: "/aceites-esenciales", label: "Aceites Esenciales" },
-  { href: "/guias-digitales", label: "Guías Digitales" },
-  { href: "/recomendados", label: "Recomendados" },
-  { href: "/blog", label: "Blog" },
-  { href: "/contacto", label: "Contacto" },
-];
 
 export default function Header() {
+  const site = useSiteGlobal();
+  const LOGO_URL = site.identity.logoUrl;
+  const LOGO_ALT = site.identity.logoAlt;
+  const navLinks = site.header.nav.map((n) => ({ href: n.url, label: n.label }));
+  const mobileLinks = (site.header.mobileNav.length ? site.header.mobileNav : site.header.nav).map((n) => ({ href: n.url, label: n.label }));
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
@@ -41,6 +36,11 @@ export default function Header() {
     setMenuOpen(false);
   }, [location]);
 
+  const onCta = () => {
+    if (site.header.ctaMode === "booking" || !site.header.ctaUrl) return setBookingOpen(true);
+    if (isExternalUrl(site.header.ctaUrl) || site.header.ctaUrl.startsWith("#")) window.location.assign(site.header.ctaUrl);
+    else navigate(site.header.ctaUrl);
+  };
   const isHome = location === "/";
   const solidBg = scrolled || menuOpen || !isHome;
   const { count: cartCount } = useConsultaCart();
@@ -54,6 +54,7 @@ export default function Header() {
             : "bg-transparent"
         }`}
       >
+        <AnnouncementBar />
         <div className="container">
           <div className="flex items-center h-16 md:h-20">
 
@@ -61,7 +62,7 @@ export default function Header() {
             <Link href="/" className="flex items-center no-underline group">
               <img
                 src={LOGO_URL}
-                alt="BION — Cristina Vive Consciente"
+                alt={LOGO_ALT}
                 className={`w-auto object-contain transition-all duration-500 ${
                   solidBg ? "brightness-100" : "brightness-0 invert"
                 }`}
@@ -71,8 +72,8 @@ export default function Header() {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-7 ml-auto mr-8">
-              {navLinks.slice(0, 7).map((link) => (
-                <Link
+              {navLinks.slice(0, site.header.desktopCount).map((link) => (
+                <SiteLink
                   key={link.href}
                   href={link.href}
                   className={`nav-link text-[0.75rem] tracking-widest uppercase transition-colors duration-300 ${
@@ -88,7 +89,7 @@ export default function Header() {
                   }}
                 >
                   {link.label}
-                </Link>
+                </SiteLink>
               ))}
             </nav>
 
@@ -108,8 +109,9 @@ export default function Header() {
                   </button>
                 </Link>
               )}
-              <Link
-                href="/contacto"
+              {site.header.contactLabel && site.header.contactUrl && (
+              <SiteLink
+                href={site.header.contactUrl}
                 className={`text-[0.75rem] tracking-widest uppercase transition-colors duration-300 ${
                   solidBg
                     ? "text-[oklch(0.52_0.02_60)] hover:text-[oklch(0.52_0.08_148)]"
@@ -122,10 +124,12 @@ export default function Header() {
                   textDecoration: "none",
                 }}
               >
-                Contacto
-              </Link>
+                {site.header.contactLabel}
+              </SiteLink>
+              )}
+              {site.header.ctaLabel && (
               <button
-                onClick={() => setBookingOpen(true)}
+                onClick={onCta}
                 className={`px-5 py-2.5 text-[0.7rem] font-medium tracking-widest uppercase transition-all duration-350 ${
                   solidBg
                     ? "bg-[oklch(0.52_0.08_148)] text-white border border-[oklch(0.52_0.08_148)] hover:bg-[oklch(0.38_0.07_148)] hover:border-[oklch(0.38_0.07_148)]"
@@ -137,8 +141,9 @@ export default function Header() {
                   letterSpacing: "0.1em",
                 }}
               >
-                Reservar consulta
+                {site.header.ctaLabel}
               </button>
+              )}
             </div>
 
             {/* Mobile Toggle */}
@@ -175,16 +180,16 @@ export default function Header() {
             <div className="mb-6 pb-5 border-b border-[oklch(0.88_0.015_75)]">
               <img
                 src={LOGO_URL}
-                alt="BION — Cristina Vive Consciente"
+                alt={LOGO_ALT}
                 className="h-10 w-auto object-contain"
                 style={{ maxWidth: "160px" }}
               />
             </div>
 
             <nav className="flex flex-col gap-1 flex-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
+              {mobileLinks.map((link) => (
+                <SiteLink
+                  key={link.href + link.label}
                   href={link.href}
                   className={`py-3.5 border-b border-[oklch(0.88_0.015_75)] text-sm tracking-widest uppercase transition-colors duration-200 ${
                     location === link.href
@@ -199,15 +204,16 @@ export default function Header() {
                   }}
                 >
                   {link.label}
-                </Link>
+                </SiteLink>
               ))}
             </nav>
 
+            {site.header.ctaLabel && (
             <div className="mt-8">
               <button
                 onClick={() => {
                   setMenuOpen(false);
-                  setBookingOpen(true);
+                  onCta();
                 }}
                 className="w-full py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-colors duration-300"
                 style={{
@@ -216,9 +222,10 @@ export default function Header() {
                   letterSpacing: "0.12em",
                 }}
               >
-                Reservar consulta
+                {site.header.ctaLabel}
               </button>
             </div>
+            )}
           </div>
         </div>
       </div>

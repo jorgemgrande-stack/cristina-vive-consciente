@@ -10,6 +10,7 @@ import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import Layout from "@/components/Layout";
+import { LegacyHero } from "@/components/site/embed";
 import { useConsultaCart } from "@/contexts/ConsultaCartContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -161,6 +162,7 @@ export default function AceitesEsenciales() {
   return (
     <Layout>
       {/* ─── HERO ─────────────────────────────────────────────────────────── */}
+      <LegacyHero>
       <section className="relative bg-[oklch(0.14_0.018_55)] text-white overflow-hidden">
         <div
           className="absolute inset-0 opacity-10"
@@ -217,6 +219,7 @@ export default function AceitesEsenciales() {
           </div>
         </div>
       </section>
+      </LegacyHero>
 
       {/* ─── AVISO TERAPÉUTICO ────────────────────────────────────────────── */}
       <div className="bg-[oklch(0.96_0.02_148)] border-y border-[oklch(0.88_0.04_148)]">

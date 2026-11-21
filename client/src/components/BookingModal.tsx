@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useLabels } from "@/lib/siteGlobal";
 import { X, Leaf, CheckCircle2, Loader2, MessageCircle, MapPin } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -103,6 +104,7 @@ function formatPrice(price?: string | null): string {
 }
 
 export default function BookingModal({ isOpen, onClose, preselectedService }: BookingModalProps) {
+  const L = useLabels();
   const [form, setForm] = useState<FormData>({
     ...initialForm,
     serviceType: preselectedService ?? initialForm.serviceType,
@@ -301,7 +303,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
               className="font-display text-[oklch(0.18_0.018_55)] mb-3"
               style={{ fontWeight: 400, fontSize: "1.3rem" }}
             >
-              {isMassage ? "Solicitud recibida" : "¡Solicitud recibida!"}
+              {isMassage ? L("booking.successTitleMassage") : L("booking.successTitle")}
             </h3>
             <p className="text-[oklch(0.52_0.02_60)] text-sm leading-relaxed mb-6 font-body" style={{ fontWeight: 300 }}>
               {isMassage ? (
@@ -757,7 +759,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                 ) : isMassage && step === "form" ? (
                   "Revisar solicitud"
                 ) : (
-                  "Enviar solicitud"
+                  L("booking.submit")
                 )}
               </button>
 

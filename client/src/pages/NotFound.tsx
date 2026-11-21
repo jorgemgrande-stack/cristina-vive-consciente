@@ -4,10 +4,12 @@
  */
 
 import { Link } from "wouter";
+import { useLabels } from "@/lib/siteGlobal";
 import { ArrowLeft, Leaf } from "lucide-react";
 import Layout from "@/components/Layout";
 
 export default function NotFound() {
+  const L = useLabels();
   return (
     <Layout>
       <section className="min-h-[70vh] flex items-center justify-center bg-[oklch(0.985_0.006_85)]">
@@ -30,13 +32,13 @@ export default function NotFound() {
             className="font-display text-[oklch(0.18_0.018_55)] mb-4"
             style={{ fontWeight: 400, fontSize: "clamp(1.5rem, 3vw, 2.5rem)" }}
           >
-            Página no encontrada
+            {L("notfound.title")}
           </h1>
 
           <div className="section-divider mx-auto" />
 
           <p className="text-[oklch(0.52_0.02_60)] mt-5 mb-10 font-body max-w-sm mx-auto" style={{ fontWeight: 300 }}>
-            Parece que esta página no existe o ha sido movida. Vuelve al inicio para seguir explorando.
+            {L("notfound.text")}
           </p>
 
           <Link

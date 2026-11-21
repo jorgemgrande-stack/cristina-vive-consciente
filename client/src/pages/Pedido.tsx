@@ -5,6 +5,7 @@
  */
 
 import { useState } from "react";
+import { useLabels } from "@/lib/siteGlobal";
 import { useRoute, Link } from "wouter";
 import { AlertCircle, CheckCircle2, Clock, Copy, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -40,6 +41,7 @@ function CopyRow({ label, value, copyValue }: { label: string; value: string; co
 }
 
 export default function Pedido() {
+  const L = useLabels();
   const [, params] = useRoute("/pedido/:reference");
   const reference = (params?.reference ?? "").toUpperCase();
   const utils = trpc.useUtils();
@@ -104,7 +106,7 @@ export default function Pedido() {
                 <div className="flex items-start gap-3 p-4 bg-[oklch(0.96_0.02_148)]">
                   <Clock size={18} className="mt-0.5 flex-shrink-0" />
                   <p className="font-body text-sm" style={{ fontWeight: 300 }}>
-                    Gracias. Cristina ya sabe que has pagado y lo está comprobando. En cuanto lo confirme recibirás la guía en tu email.
+                    {L("order.claimed")}
                   </p>
                 </div>
               ) : (
@@ -114,7 +116,7 @@ export default function Pedido() {
                   className="w-full py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] disabled:opacity-60"
                   style={{ borderRadius: 0, letterSpacing: "0.1em" }}
                 >
-                  {claim.isPending ? "Avisando..." : "Ya he hecho el Bizum"}
+                  {claim.isPending ? "Avisando..." : L("order.claimButton")}
                 </button>
               )}
 
@@ -127,7 +129,7 @@ export default function Pedido() {
           {order?.status === "paid" && (
             <div className="text-center">
               <CheckCircle2 size={40} className="mx-auto mb-4" style={{ color: "oklch(0.38 0.07 148)" }} />
-              <h1 className="font-display mb-3" style={{ fontWeight: 400, fontSize: "1.6rem" }}>¡Pago confirmado!</h1>
+              <h1 className="font-display mb-3" style={{ fontWeight: 400, fontSize: "1.6rem" }}>{L("order.paidTitle")}</h1>
               <p className="font-body text-sm mb-6" style={{ fontWeight: 300 }}>
                 Cristina ha recibido tu Bizum. Te hemos enviado la guía <strong>{order.productTitle}</strong> por email. Si no la ves, revisa la carpeta de spam.
               </p>

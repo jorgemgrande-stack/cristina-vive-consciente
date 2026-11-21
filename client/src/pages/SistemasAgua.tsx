@@ -9,6 +9,7 @@ import { SITE_IMAGES } from "@/lib/siteImages";
 import { useState } from "react";
 import { Link } from "wouter";
 import Layout from "@/components/Layout";
+import { LegacyHero } from "@/components/site/embed";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
@@ -389,6 +390,7 @@ export default function SistemasAgua() {
   return (
     <Layout>
       {/* ── HERO ────────────────────────────────────────────────────────────── */}
+      <LegacyHero>
       <section className="relative text-white overflow-hidden">
         <div className="absolute inset-0">
           <img
@@ -435,6 +437,7 @@ export default function SistemasAgua() {
           </div>
         </div>
       </section>
+      </LegacyHero>
 
       {/* ── BLOQUE DE AUTORIDAD ──────────────────────────────────────────────── */}
       <section className="bg-[#F5F2EC] py-12 border-y border-[#E8E4DC]">

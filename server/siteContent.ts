@@ -158,7 +158,10 @@ function normalizeData(type: BlockType, d: Record<string, unknown>, depth: numbe
         })).filter((f) => f.label),
       };
     case "connected":
-      return { source: oneOf(d.source, CONNECTED_VALUES as readonly string[], "consultas"), title: str(d.title, S.title), intro: str(d.intro, S.long) };
+      return {
+        source: oneOf(d.source, CONNECTED_VALUES as readonly string[], "consultas"), eyebrow: str(d.eyebrow, 100), title: str(d.title, S.title), intro: str(d.intro, S.long),
+        buttonLabel: str(d.buttonLabel, 80), secondaryLabel: str(d.secondaryLabel, 80), secondaryUrl: safeLink(d.secondaryUrl),
+      };
   }
 }
 

@@ -5,6 +5,7 @@
  */
 
 import { SITE_IMAGES } from "@/lib/siteImages";
+import { useLabels } from "@/lib/siteGlobal";
 import { useState } from "react";
 import { Mail, Phone, Clock, MapPin, Instagram, Send, Users, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -58,6 +59,7 @@ const SUBJECT_OPTIONS = [
 ];
 
 export default function Contacto() {
+  const L = useLabels();
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -72,7 +74,7 @@ export default function Contacto() {
   const submitContact = trpc.automations.submitContact.useMutation({
     onSuccess: () => {
       setSubmitted(true);
-      toast.success("Mensaje enviado. Cristina te responderá en 24–48 horas.");
+      toast.success(L("contact.toast"));
     },
     onError: (err) => {
       toast.error(`Error al enviar: ${err.message}`);

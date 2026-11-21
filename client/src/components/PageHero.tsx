@@ -5,6 +5,7 @@
 
 import { Link } from "wouter";
 import { ChevronRight } from "lucide-react";
+import { useEmbed } from "./site/embed";
 
 interface PageHeroProps {
   title: string;
@@ -15,6 +16,7 @@ interface PageHeroProps {
 }
 
 export default function PageHero({ title, subtitle, tag, image, breadcrumb }: PageHeroProps) {
+  if (useEmbed().hideHero) return null;
   return (
     <section className="relative min-h-[55vh] flex items-end overflow-hidden">
       {/* Background */}

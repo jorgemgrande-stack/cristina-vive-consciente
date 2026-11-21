@@ -11,6 +11,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ScrollToTop from "./components/ScrollToTop";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import CmsRoute from "./components/site/CmsRoute";
 
 // Public Pages
 import Home from "./pages/Home";
@@ -79,6 +80,11 @@ import AguaProductos from "./pages/crm/AguaProductos";
 import AguaSolicitudes from "./pages/crm/AguaSolicitudes";
 import Galeria from "./pages/crm/Galeria";
 import HeroImagenes from "./pages/crm/HeroImagenes";
+import WebPaginas from "./pages/crm/web/WebPaginas";
+import WebEditor from "./pages/crm/web/WebEditor";
+import WebAjustes from "./pages/crm/web/WebAjustes";
+import WebTextos from "./pages/crm/web/WebTextos";
+import WebRedirecciones from "./pages/crm/web/WebRedirecciones";
 
 function Router() {
   return (
@@ -86,21 +92,21 @@ function Router() {
     <ScrollToTop />
     <Switch>
       {/* ── Public ── */}
-      <Route path="/" component={Home} />
-      <Route path="/consultas" component={Consultas} />
-      <Route path="/consultas/:slug" component={ConsultaDetalle} />
-      <Route path="/masajes" component={Masajes} />
-      <Route path="/masajes/:slug" component={MasajeDetalle} />
-      <Route path="/sistemas-agua" component={SistemasAgua} />
-      <Route path="/sistemas-agua/:slug" component={SistemaAguaDetalle} />
-      <Route path="/aceites-esenciales" component={AceitesEsenciales} />
-      <Route path="/aceites-esenciales/:slug" component={AceiteDetalle} />
+      <Route path="/">{() => <CmsRoute legacy={Home} />}</Route>
+      <Route path="/consultas">{() => <CmsRoute legacy={Consultas} />}</Route>
+      <Route path="/consultas/:slug">{() => <CmsRoute legacy={ConsultaDetalle} />}</Route>
+      <Route path="/masajes">{() => <CmsRoute legacy={Masajes} />}</Route>
+      <Route path="/masajes/:slug">{() => <CmsRoute legacy={MasajeDetalle} />}</Route>
+      <Route path="/sistemas-agua">{() => <CmsRoute legacy={SistemasAgua} />}</Route>
+      <Route path="/sistemas-agua/:slug">{() => <CmsRoute legacy={SistemaAguaDetalle} />}</Route>
+      <Route path="/aceites-esenciales">{() => <CmsRoute legacy={AceitesEsenciales} />}</Route>
+      <Route path="/aceites-esenciales/:slug">{() => <CmsRoute legacy={AceiteDetalle} />}</Route>
       <Route path="/mi-consulta" component={MiConsulta} />
-      <Route path="/guias-digitales" component={GuiasDigitales} />
-      <Route path="/recomendados" component={Recomendados} />
-      <Route path="/contacto" component={Contacto} />
-      <Route path="/blog" component={Blog} />
-      <Route path="/blog/:slug" component={BlogPost} />
+      <Route path="/guias-digitales">{() => <CmsRoute legacy={GuiasDigitales} />}</Route>
+      <Route path="/recomendados">{() => <CmsRoute legacy={Recomendados} />}</Route>
+      <Route path="/contacto">{() => <CmsRoute legacy={Contacto} />}</Route>
+      <Route path="/blog">{() => <CmsRoute legacy={Blog} />}</Route>
+      <Route path="/blog/:slug">{() => <CmsRoute legacy={BlogPost} />}</Route>
 
       {/* ── Ebooks ── */}
       <Route path="/ebooks/gracias" component={EbookGracias} />
@@ -125,8 +131,8 @@ function Router() {
       <Route path="/crm/citas/nueva" component={CitaForm} />
       <Route path="/crm/calendario" component={Calendario} />
 
-      <Route path="/politica-de-cookies" component={PoliticaCookies} />
-      <Route path="/privacidad" component={Privacidad} />
+      <Route path="/politica-de-cookies">{() => <CmsRoute legacy={PoliticaCookies} />}</Route>
+      <Route path="/privacidad">{() => <CmsRoute legacy={Privacidad} />}</Route>
 
       {/* Public — Selección de slot de reprogramación */}
       <Route path="/cita/seleccionar/:token" component={SeleccionarSlot} />
@@ -182,8 +188,17 @@ function Router() {
       {/* Automations */}
       <Route path="/crm/automatizaciones" component={Automatizaciones} />
 
+      {/* Editar web */}
+      <Route path="/crm/web" component={WebPaginas} />
+      <Route path="/crm/web/editar" component={WebEditor} />
+      <Route path="/crm/web/ajustes" component={WebAjustes} />
+      <Route path="/crm/web/textos" component={WebTextos} />
+      <Route path="/crm/web/redirecciones" component={WebRedirecciones} />
+
       {/* Fallback */}
       <Route path="/404" component={NotFound} />
+      {/* Páginas nuevas creadas en Editar web (/mi-pagina) */}
+      <Route path="/:slug">{() => <CmsRoute legacy={NotFound} />}</Route>
       <Route component={NotFound} />
     </Switch>
     </>
