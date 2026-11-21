@@ -33,9 +33,12 @@ export function useSiteGlobal(): SiteGlobal {
 }
 
 /** Función de textos editables: `const L = useLabels(); L("booking.submit")`. */
-export function useLabels(): (key: string) => string {
+export function useLabels(): (key: string, vars?: Record<string, string | number>) => string {
   const labels = useSiteGlobal().labels;
-  return (key) => labelText(labels, key);
+  return (key, vars) => {
+    const text = labelText(labels, key);
+    return vars ? text.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m)) : text;
+  };
 }
 
 /** Texto editable de la web (reserva, compra, avisos): el editado en «Textos» o el de serie. */

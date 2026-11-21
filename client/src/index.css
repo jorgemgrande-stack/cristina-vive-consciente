@@ -429,6 +429,8 @@
 .cvc-bg-image { background-size: cover; background-position: center; color: #fff; }
 .cvc-bg-brand h1, .cvc-bg-brand h2, .cvc-bg-brand h3, .cvc-bg-dark h1, .cvc-bg-dark h2, .cvc-bg-dark h3, .cvc-bg-image h1, .cvc-bg-image h2, .cvc-bg-image h3 { color: #fff; }
 .cvc-bg-brand p, .cvc-bg-dark p, .cvc-bg-image p, .cvc-bg-brand li, .cvc-bg-dark li, .cvc-bg-image li { color: rgba(255,255,255,0.85); }
+.cvc-hero-img { object-position: var(--ox, 50%) var(--oy, 50%); }
+@media (max-width: 767px) { .cvc-hero-img { object-position: var(--oxm, 50%) var(--oym, 50%); } }
 .cvc-overlay { position: absolute; inset: 0; pointer-events: none; }
 .cvc-overlay-dark { background: oklch(0.18 0.018 55 / 0.6); }
 .cvc-overlay-light { background: oklch(0.985 0.006 85 / 0.7); }
@@ -451,6 +453,7 @@
 }
 @media (min-width: 768px) and (max-width: 1023px) { .cvc-hide-tablet { display: none !important; } }
 @media (min-width: 1024px) { .cvc-hide-desktop { display: none !important; } }
+.cvc-prose mark { background: #fef3c7; color: #78350f; padding: 0 .25rem; border-radius: 2px; }
 /* El texto con formato del editor */
 .cvc-prose { font-family: 'DM Sans', sans-serif; font-weight: 300; line-height: 1.75; color: oklch(0.35 0.02 55); }
 .cvc-prose > * + * { margin-top: 1rem; }

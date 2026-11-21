@@ -4,6 +4,7 @@
  * pasado por una lista blanca (sin scripts, estilos ni eventos).
  */
 import sanitizeHtml from "sanitize-html";
+import { ACTION_RE } from "../shared/siteActions";
 import {
   ANCHOR_RE, BLOCK_ALIGNS, BLOCK_ANIMATIONS, BLOCK_BACKGROUNDS, BLOCK_MIN_HEIGHTS, BLOCK_OVERLAYS, BLOCK_SPACINGS, BLOCK_TYPES, BLOCK_WIDTHS,
   CONNECTED_VALUES, DEFAULT_BLOCK_STYLE, DEFAULT_GLOBAL, DEFAULT_SEO, DEVICES, FORM_FIELD_KINDS, PAGE_LIMITS, SECTION_LAYOUTS, SECTION_MAX_DEPTH,
@@ -29,6 +30,7 @@ export function safeLink(v: unknown): string {
   const s = str(v, PAGE_LIMITS.url).replace(/\s+/g, "");
   if (!s) return "";
   if (/^\/(?!\/)/.test(s) || s.startsWith("#")) return s;
+  if (ACTION_RE.test(s)) return s;
   if (/^https?:\/\/[^\s]+$/i.test(s)) return s;
   if (/^(mailto|tel):[^\s]+$/i.test(s)) return s;
   if (/^www\.[a-z0-9.-]+\.[a-z]{2,}(\/\S*)?$/i.test(s)) return `https://${s}`;
@@ -48,9 +50,9 @@ export function safeVideo(v: unknown): string {
 }
 
 const HTML_OPTIONS: sanitizeHtml.IOptions = {
-  allowedTags: ["p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "a", "h2", "h3", "h4", "blockquote", "hr"],
+  allowedTags: ["p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "a", "h2", "h3", "h4", "blockquote", "hr", "mark"],
   allowedAttributes: { a: ["href", "target", "rel"] },
-  allowedSchemes: ["http", "https", "mailto", "tel"],
+  allowedSchemes: ["http", "https", "mailto", "tel", "action"],
   allowProtocolRelative: false,
   transformTags: {
     a: (tag, attribs) => {
@@ -90,6 +92,7 @@ export function normalizeStyle(v: unknown): BlockStyle | undefined {
 
 // ─── Bloques ────────────────────────────────────────────────────────────────
 
+const pct = (v: unknown): number => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 50; };
 const list = <T,>(v: unknown, max: number, map: (x: Record<string, unknown>) => T): T[] =>
   (Array.isArray(v) ? v : []).filter(isObj).slice(0, max).map(map);
 
@@ -99,7 +102,9 @@ function normalizeData(type: BlockType, d: Record<string, unknown>, depth: numbe
     case "hero":
       return {
         eyebrow: str(d.eyebrow), title: str(d.title, S.title), subtitle: str(d.subtitle, S.long), imageUrl: safeImage(d.imageUrl), imageAlt: str(d.imageAlt),
-        buttonLabel: str(d.buttonLabel, 80), buttonUrl: safeLink(d.buttonUrl), height: oneOf(d.height, ["m", "l", "full"] as const, "m"), breadcrumb: onOff(d.breadcrumb, "on"),
+        buttonLabel: str(d.buttonLabel, 80), buttonUrl: safeLink(d.buttonUrl), secondaryLabel: str(d.secondaryLabel, 80), secondaryUrl: safeLink(d.secondaryUrl),
+        height: oneOf(d.height, ["m", "l", "full"] as const, "m"), breadcrumb: onOff(d.breadcrumb, "on"),
+        imageX: pct(d.imageX), imageY: pct(d.imageY), imageXM: pct(d.imageXM), imageYM: pct(d.imageYM),
       };
     case "heading":
       return { eyebrow: str(d.eyebrow), title: str(d.title, S.title), subtitle: str(d.subtitle, S.long), level: oneOf(d.level, ["h1", "h2", "h3"] as const, "h2"), align: oneOf(d.align, ["left", "center"] as const, "center") };
@@ -159,7 +164,7 @@ function normalizeData(type: BlockType, d: Record<string, unknown>, depth: numbe
       };
     case "connected":
       return {
-        source: oneOf(d.source, CONNECTED_VALUES as readonly string[], "consultas"), eyebrow: str(d.eyebrow, 100), title: str(d.title, S.title), intro: str(d.intro, S.long),
+        source: oneOf(d.source, CONNECTED_VALUES as readonly string[], "consultas"), section: str(d.section, 40).replace(/[^a-z0-9_-]/gi, ""), eyebrow: str(d.eyebrow, 100), title: str(d.title, S.title), intro: str(d.intro, S.long),
         buttonLabel: str(d.buttonLabel, 80), secondaryLabel: str(d.secondaryLabel, 80), secondaryUrl: safeLink(d.secondaryUrl),
       };
   }

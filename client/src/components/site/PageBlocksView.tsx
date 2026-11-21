@@ -10,6 +10,10 @@ import { ArrowRight, ChevronDown, Clock, Droplets, Flower2, Hand, Heart, Leaf, M
 import { cssUrl, type BlockOf, type BlockStyle, type PageBlock, DEFAULT_BLOCK_STYLE, sectionColumnCount } from "@shared/siteEditor";
 import { trpc } from "@/lib/trpc";
 import SiteLink from "./SiteLink";
+import { actionName } from "@shared/siteActions";
+import { dispatchSiteAction } from "@/lib/siteActions";
+import { useConsultaCart } from "@/contexts/ConsultaCartContext";
+import { FICHA_REGISTRY } from "./detail";
 import { EmbedProvider } from "./embed";
 import { HomeBlog, HomeSlideshow, HomeWater, HOME_SLIDESHOW_DEFAULTS } from "./HomeSections";
 import BookingModal from "@/components/BookingModal";
@@ -37,7 +41,7 @@ const ICONS: Record<string, ReactNode> = {
 };
 
 // ─── Texto con formato: defensa en profundidad (el servidor ya lo sanea al guardar) ──
-const ALLOWED = new Set(["P", "BR", "STRONG", "B", "EM", "I", "U", "UL", "OL", "LI", "A", "H2", "H3", "H4", "BLOCKQUOTE", "HR"]);
+const ALLOWED = new Set(["P", "BR", "STRONG", "B", "EM", "I", "U", "UL", "OL", "LI", "A", "H2", "H3", "H4", "BLOCKQUOTE", "HR", "MARK"]);
 export function sanitizeClientHtml(html: string): string {
   if (typeof document === "undefined") return html.replace(/<[^>]*>/g, "");
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, "text/html");
@@ -50,7 +54,7 @@ export function sanitizeClientHtml(html: string): string {
       }
       if (child.tagName === "A") {
         const href = child.getAttribute("href") ?? "";
-        if (!/^(\/(?!\/)|#|https?:|mailto:|tel:)/i.test(href)) child.removeAttribute("href");
+        if (!/^(\/(?!\/)|#|https?:|mailto:|tel:|action:)/i.test(href)) child.removeAttribute("href");
       }
       clean(child);
     }
@@ -111,18 +115,28 @@ function BlockFrame({ block, children, inEditor }: { block: PageBlock; children:
 const Eyebrow = ({ text }: { text: string }) =>
   text ? <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-3 font-body" style={{ fontWeight: 500 }}>{text}</p> : null;
 
-function Btn({ label, url, variant = "primary" }: { label: string; url: string; variant?: "primary" | "outline" }) {
-  if (!label || !url) return null;
+function Btn({ label, url, variant = "primary", light }: { label: string; url: string; variant?: "primary" | "outline"; light?: boolean }) {
+  // «{n}» en el texto = número de aceites en Mi consulta; sin aceites el botón no se muestra
+  const { count } = useConsultaCart();
+  if (label.includes("{n}") && count === 0) return null;
+  const text = label.replace("{n}", String(count));
+  if (!text || !url) return null;
   return (
-    <SiteLink href={url} className={variant === "primary" ? "btn-primary" : "btn-outline"} style={{ textDecoration: "none" }}>
-      {label}
+    <SiteLink href={url} className={light ? "btn-outline !text-white !border-white/60" : variant === "primary" ? "btn-primary" : "btn-outline"} style={{ textDecoration: "none" }}>
+      {text}
       {variant === "primary" && <ArrowRight size={15} />}
     </SiteLink>
   );
 }
 
 function Rich({ html, className = "" }: { html: string; className?: string }) {
-  return html ? <div className={`cvc-prose ${className}`} dangerouslySetInnerHTML={{ __html: sanitizeClientHtml(html) }} /> : null;
+  // Enlaces «action:…» (abrir reserva, preferencias de cookies…) dentro del texto con formato
+  const onClick = (e: React.MouseEvent) => {
+    const a = (e.target as HTMLElement).closest("a");
+    const name = a ? actionName(a.getAttribute("href") ?? "") : null;
+    if (name) { e.preventDefault(); dispatchSiteAction(name); }
+  };
+  return html ? <div onClick={onClick} className={`cvc-prose ${className}`} dangerouslySetInnerHTML={{ __html: sanitizeClientHtml(html) }} /> : null;
 }
 
 function embedVideo(url: string): string {
@@ -146,7 +160,11 @@ function HeroBlock({ b, title }: { b: BlockOf<"hero">; title: string }) {
   return (
     <section className={`relative ${h} flex items-end overflow-hidden`}>
       <div className="absolute inset-0 bg-[oklch(0.18_0.018_55)]">
-        {d.imageUrl && <img src={d.imageUrl} alt={d.imageAlt || d.title} className="w-full h-full object-cover object-center" />}
+        {d.imageUrl && (
+          <>
+            <img src={d.imageUrl} alt={d.imageAlt || d.title} className="cvc-hero-img w-full h-full object-cover" style={{ ["--ox" as string]: `${d.imageX}%`, ["--oy" as string]: `${d.imageY}%`, ["--oxm" as string]: `${d.imageXM}%`, ["--oym" as string]: `${d.imageYM}%` }} />
+          </>
+        )}
         <div className="absolute inset-0" style={{ background: "linear-gradient(to top, oklch(0.18 0.018 55 / 0.85) 0%, oklch(0.18 0.018 55 / 0.5) 50%, oklch(0.18 0.018 55 / 0.2) 100%)" }} />
       </div>
       <div className="container relative z-10 pb-14 pt-32">
@@ -160,7 +178,10 @@ function HeroBlock({ b, title }: { b: BlockOf<"hero">; title: string }) {
         {d.eyebrow && <p className="text-[oklch(0.72_0.06_148)] text-xs tracking-[0.2em] uppercase mb-3 font-body" style={{ fontWeight: 500 }}>{d.eyebrow}</p>}
         <h1 className="text-white font-display mb-4" style={{ fontWeight: 400, maxWidth: "600px" }}>{d.title}</h1>
         {d.subtitle && <p className="text-white/75 text-base md:text-lg font-body leading-relaxed mb-6" style={{ fontWeight: 300, maxWidth: "500px" }}>{d.subtitle}</p>}
-        <Btn label={d.buttonLabel} url={d.buttonUrl} />
+        <div className="flex flex-wrap gap-4">
+          <Btn label={d.buttonLabel} url={d.buttonUrl} />
+          <Btn label={d.secondaryLabel} url={d.secondaryUrl} variant="outline" light />
+        </div>
       </div>
     </section>
   );
@@ -241,6 +262,11 @@ function Connected({ b, detail, inEditor }: { b: BlockOf<"connected">; detail: D
     case "contacto": return wrap(<Contacto />);
     case "privacidad": return wrap(<Privacidad />);
     case "cookies": return wrap(<PoliticaCookies />);
+    case "ficha": {
+      if (inEditor && !FICHA_REGISTRY[detail ?? ""]) return null;
+      const entry = FICHA_REGISTRY[detail ?? ""];
+      return entry ? <entry.Section name={d.section} /> : null;
+    }
     case "detalle": {
       if (inEditor) return <div className="container py-16 text-center border-2 border-dashed border-[oklch(0.8_0.03_148)] bg-[oklch(0.97_0.01_148)] font-body text-sm text-[oklch(0.4_0.05_148)]">Aquí se mostrará la ficha del elemento (nombre, precio, duración, condiciones y botón de reserva), con los datos de su propia sección. Puedes añadir bloques antes y después.</div>;
       const Detail = { consultas: ConsultaDetalle, masajes: MasajeDetalle, "sistemas-agua": SistemaAguaDetalle, "aceites-esenciales": AceiteDetalle, blog: BlogPost }[detail ?? "consultas"];

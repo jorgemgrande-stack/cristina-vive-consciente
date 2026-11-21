@@ -9,6 +9,13 @@
  * Modelo inspirado en Elephant Studio (rama integration/elephant-source, 8c29f8f), reducido y adaptado a este sitio.
  */
 
+import type { LabelDef } from "./labels/types";
+import { MASAJES_LABELS } from "./labels/masajes";
+import { AGUA_LABELS } from "./labels/agua";
+import { ACEITES_LABELS } from "./labels/aceites";
+import { CONTACTO_LABELS } from "./labels/contacto";
+export type { LabelDef };
+
 export type OnOff = "on" | "off";
 
 // ─── Bloques ────────────────────────────────────────────────────────────────
@@ -62,7 +69,8 @@ export const CONNECTED_SOURCES = [
   { value: "contacto", label: "Formulario y datos de contacto", note: "Envío a automatizaciones/CRM" },
   { value: "privacidad", label: "Texto de la política de privacidad", note: "Texto legal en código (versiones de consentimiento enlazadas)" },
   { value: "cookies", label: "Texto de la política de cookies", note: "Texto legal en código" },
-  { value: "detalle", label: "Ficha del elemento (servicio, producto, artículo)", note: "Solo en plantillas de ficha" },
+  { value: "detalle", label: "Ficha completa del elemento (servicio, producto, artículo)", note: "Solo en plantillas de ficha" },
+  { value: "ficha", label: "Sección de la ficha (para reordenarla, ocultarla o cambiar su diseño)", note: "Solo en plantillas de ficha: los datos salen de la ficha del elemento" },
   { value: "home_slideshow", label: "Portada: presentación de imágenes", note: "Imágenes de Hero Inicio" },
   { value: "home_masajes", label: "Portada: masajes destacados", note: "Datos de Servicios" },
   { value: "home_agua", label: "Portada: sistemas de agua", note: "Datos de Agua" },
@@ -73,7 +81,9 @@ export const CONNECTED_VALUES = CONNECTED_SOURCES.map((s) => s.value) as readonl
 
 export interface BlockDataMap {
   /** Cabecera de página con imagen de fondo (como PageHero) */
-  hero: { eyebrow: string; title: string; subtitle: string; imageUrl: string; imageAlt: string; buttonLabel: string; buttonUrl: string; height: "m" | "l" | "full"; breadcrumb: OnOff };
+  hero: { eyebrow: string; title: string; subtitle: string; imageUrl: string; imageAlt: string; buttonLabel: string; buttonUrl: string; secondaryLabel: string; secondaryUrl: string; height: "m" | "l" | "full"; breadcrumb: OnOff;
+    /** Encuadre de la imagen (punto focal 0-100) en ordenador y, aparte, en móvil */
+    imageX: number; imageY: number; imageXM: number; imageYM: number };
   heading: { eyebrow: string; title: string; subtitle: string; level: "h1" | "h2" | "h3"; align: "left" | "center" };
   text: { title: string; html: string; align: "left" | "center" };
   image: { url: string; alt: string; caption: string; size: "medium" | "wide" };
@@ -91,7 +101,7 @@ export interface BlockDataMap {
   /** Formulario a medida: cada envío llega a Automatizaciones/CRM como contacto, con todas las respuestas */
   form: { title: string; intro: string; fields: FormFieldItem[]; submitLabel: string; successMessage: string; consentText: string };
   /** Contenido real de otra parte de la web. Los textos solo los usa la presentación de la portada (home_slideshow). */
-  connected: { source: ConnectedSource; eyebrow: string; title: string; intro: string; buttonLabel: string; secondaryLabel: string; secondaryUrl: string };
+  connected: { source: ConnectedSource; /** Solo con source «ficha»: qué sección de la ficha */ section: string; eyebrow: string; title: string; intro: string; buttonLabel: string; secondaryLabel: string; secondaryUrl: string };
 }
 
 // ─── Diseño del bloque (valores de lista cerrada) ───────────────────────────
@@ -189,7 +199,7 @@ const FIELD_DEFAULTS: FormFieldItem[] = [
 /** Datos iniciales de cada tipo de bloque. */
 export function defaultBlockData<K extends BlockType>(type: K): BlockDataMap[K] {
   const d: { [T in BlockType]: BlockDataMap[T] } = {
-    hero: { eyebrow: "", title: "Título de la página", subtitle: "", imageUrl: "", imageAlt: "", buttonLabel: "", buttonUrl: "", height: "m", breadcrumb: "on" },
+    hero: { eyebrow: "", title: "Título de la página", subtitle: "", imageUrl: "", imageAlt: "", buttonLabel: "", buttonUrl: "", secondaryLabel: "", secondaryUrl: "", height: "m", breadcrumb: "on", imageX: 50, imageY: 50, imageXM: 50, imageYM: 50 },
     heading: { eyebrow: "", title: "Nuevo título", subtitle: "", level: "h2", align: "center" },
     text: { title: "", html: "<p>Escribe aquí tu texto.</p>", align: "left" },
     image: { url: "", alt: "", caption: "", size: "medium" },
@@ -205,7 +215,7 @@ export function defaultBlockData<K extends BlockType>(type: K): BlockDataMap[K] 
     cta: { title: "¿Hablamos?", text: "", buttonLabel: "Contactar", buttonUrl: "/contacto", secondaryLabel: "", secondaryUrl: "" },
     separator: { kind: "line" },
     form: { title: "Escríbeme", intro: "", fields: FIELD_DEFAULTS.map((f) => ({ ...f })), submitLabel: "Enviar", successMessage: "Gracias, te responderé lo antes posible.", consentText: "He leído y acepto la política de privacidad." },
-    connected: { source: "consultas", eyebrow: "", title: "", intro: "", buttonLabel: "", secondaryLabel: "", secondaryUrl: "" },
+    connected: { source: "consultas", section: "", eyebrow: "", title: "", intro: "", buttonLabel: "", secondaryLabel: "", secondaryUrl: "" },
   };
   return structuredClone(d[type]) as BlockDataMap[K];
 }
@@ -425,8 +435,7 @@ export const DEFAULT_GLOBAL: SiteGlobal = {
 };
 
 /** Textos editables de los procesos de reserva y compra y otros avisos: clave, dónde se ven y texto de serie. */
-export interface LabelDef { key: string; group: string; where: string; text: string; long?: boolean }
-export const LABEL_DEFS: readonly LabelDef[] = [
+const BASE_LABELS: readonly LabelDef[] = [
   { key: "booking.successTitle", group: "Reserva de cita", where: "Ventana de reserva de consultas: título tras enviar la solicitud", text: "¡Solicitud recibida!" },
   { key: "booking.successTitleMassage", group: "Reserva de cita", where: "Ventana de reserva de masajes: título tras enviar la solicitud", text: "Solicitud recibida" },
   { key: "booking.submit", group: "Reserva de cita", where: "Botón de enviar la solicitud de cita", text: "Enviar solicitud" },
@@ -440,6 +449,7 @@ export const LABEL_DEFS: readonly LabelDef[] = [
   { key: "notfound.title", group: "Otros", where: "Página no encontrada: título", text: "Página no encontrada" },
   { key: "notfound.text", group: "Otros", where: "Página no encontrada: texto", text: "Parece que esta página no existe o ha sido movida. Vuelve al inicio para seguir explorando.", long: true },
 ];
+export const LABEL_DEFS: readonly LabelDef[] = [...BASE_LABELS, ...MASAJES_LABELS, ...AGUA_LABELS, ...ACEITES_LABELS, ...CONTACTO_LABELS];
 export const labelText = (labels: Record<string, string> | undefined, key: string): string => {
   const own = labels?.[key];
   if (own !== undefined && own !== "") return own;

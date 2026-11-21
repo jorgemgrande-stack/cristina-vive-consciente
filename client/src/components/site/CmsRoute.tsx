@@ -11,6 +11,8 @@ import { usePageSeo } from "@/hooks/usePageSeo";
 import { usePreviewMode } from "@/lib/siteGlobal";
 import Layout from "@/components/Layout";
 import PageBlocksView, { PreviewShield, type DetailKey } from "./PageBlocksView";
+import { FichaScope } from "./detail";
+import { WhatsappContextProvider } from "./whatsappContext";
 
 function detailKeyFor(path: string): DetailKey {
   const t = templateKeyFor(path);
@@ -23,14 +25,20 @@ export function CmsPage({ path, title, content, preview, inEditor }: { path: str
   usePageSeo(content.seo.title || content.seo.description || content.seo.ogImage || content.seo.noindex ? content.seo : null);
   return (
     <PreviewShield active={preview}>
-      <Layout>
+      <WhatsappContextProvider>
+      {(wa) => (
+      <Layout whatsappContext={wa}>
         {preview && (
           <div data-preview-allow className="fixed bottom-3 left-3 z-[70] bg-[oklch(0.18_0.018_55)] text-white text-xs font-body px-3 py-1.5 shadow-lg pointer-events-none">
             Vista previa del borrador · nada se envía ni se guarda
           </div>
         )}
-        <PageBlocksView blocks={content.blocks} ctx={{ path, title, detail: detailKey(path), inEditor }} />
+        <FichaScope kind={detailKey(path)} slug={path.split("/").pop() ?? ""}>
+          <PageBlocksView blocks={content.blocks} ctx={{ path, title, detail: detailKey(path), inEditor }} />
+        </FichaScope>
       </Layout>
+      )}
+      </WhatsappContextProvider>
     </PreviewShield>
   );
 }

@@ -13,6 +13,7 @@ import { useConsultaCart } from "@/contexts/ConsultaCartContext";
 import { useSiteGlobal, isExternalUrl } from "@/lib/siteGlobal";
 import SiteLink from "@/components/site/SiteLink";
 import AnnouncementBar from "@/components/site/AnnouncementBar";
+import { useSiteAction } from "@/lib/siteActions";
 
 
 export default function Header() {
@@ -36,6 +37,7 @@ export default function Header() {
     setMenuOpen(false);
   }, [location]);
 
+  useSiteAction("booking", () => setBookingOpen(true));
   const onCta = () => {
     if (site.header.ctaMode === "booking" || !site.header.ctaUrl) return setBookingOpen(true);
     if (isExternalUrl(site.header.ctaUrl) || site.header.ctaUrl.startsWith("#")) window.location.assign(site.header.ctaUrl);
