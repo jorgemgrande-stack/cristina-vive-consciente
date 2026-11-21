@@ -6,7 +6,7 @@ import { CalendarClock, CalendarPlus, FileText, History, Loader2, Mail, Pencil, 
 import { Link } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { LIMITS, REMEMBER_INFO_HELP } from "@shared/clientCare";
+import { LIMITS, REMEMBER_INFO_HELP, servicesBreakdown } from "@shared/clientCare";
 import { btnGhost, btnPrimary, card, confirmDiscard, Field, formatDay, formatDayTime, input, SectionTitle } from "./ui";
 import DatosCliente from "./DatosCliente";
 
@@ -163,17 +163,19 @@ export default function ResumenTab({ clientId, onAddSession, onOpenSessions, onA
       </div>
 
       <div className={card}>
-        <SectionTitle>
-          Servicios recibidos · {data.sessionsCount} {data.sessionsCount === 1 ? "sesión" : "sesiones"}
-        </SectionTitle>
+        {/* Mismos registros que la pestaña «Servicios»: sesiones + compras + recursos, sin las categorías a cero */}
+        {(() => {
+          const b = servicesBreakdown({ sessions: data.sessionsCount, purchases: data.purchasesCount, resources: data.resourcesCount });
+          return <SectionTitle>{b.total ? `Servicios · ${b.text}` : "Servicios"}</SectionTitle>;
+        })()}
         {data.servicesReceived.length === 0 ? (
-          <p className="text-sm text-[oklch(0.52_0.02_60)] font-body">
-            {data.sessionsCount === 0 ? (
-              <>Todavía no hay sesiones. <button type="button" onClick={onAddSession} className="text-[oklch(0.52_0.08_148)] hover:underline">Registrar la primera</button></>
-            ) : (
-              "Las sesiones registradas no indican servicio. Al añadir o editar una sesión puedes elegirlo."
-            )}
-          </p>
+          data.sessionsCount === 0 && data.purchasesCount + data.resourcesCount === 0 ? (
+            <p className="text-sm text-[oklch(0.52_0.02_60)] font-body">
+              Todavía no hay nada registrado. <button type="button" onClick={onAddSession} className="text-[oklch(0.52_0.08_148)] hover:underline">Registrar el primero</button>
+            </p>
+          ) : data.sessionsCount > 0 ? (
+            <p className="text-sm text-[oklch(0.52_0.02_60)] font-body">Las sesiones registradas no indican servicio. Al añadir o editar una sesión puedes elegirlo.</p>
+          ) : null
         ) : (
           <ul className="flex flex-wrap gap-2">
             {data.servicesReceived.map((s) => (

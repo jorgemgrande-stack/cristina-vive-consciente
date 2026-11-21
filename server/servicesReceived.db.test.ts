@@ -73,6 +73,13 @@ d("Servicios recibidos con base de datos", () => {
       expect(mine).toHaveLength(1);
       expect(mine[0]).toMatchObject({ pathLabel: `Recursos ${tag} → Guía del agua ${tag}`, paymentStatus: "free", source: "manual" });
       await expect(sr.deleteClientService(mine[0].id, cid + 999)).rejects.toThrow();
+      // Resumen: mismos registros que la pestaña → 1 sesión (cita realizada) + 1 recurso, 0 compras
+      const { clientCareRouter } = await import("./routers/clientCare");
+      const { servicesBreakdown } = await import("../shared/clientCare");
+      const care = clientCareRouter.createCaller({ user: { id: 1, role: "admin" }, req: {}, res: {} } as any);
+      const sumA = await care.summary({ clientId: cid });
+      expect([sumA.sessionsCount, sumA.purchasesCount, sumA.resourcesCount]).toEqual([1, 0, 1]);
+      expect(servicesBreakdown({ sessions: sumA.sessionsCount, purchases: sumA.purchasesCount, resources: sumA.resourcesCount }).text).toBe("1 sesión · 1 recurso");
 
       // ── 3a. Pedido con UNA ficha por email (mayúsculas distintas) ──
       const existing = await newClient("Existente", `Vanessa.${tag}@Mail.TEST`);
@@ -83,6 +90,11 @@ d("Servicios recibidos con base de datos", () => {
       const rows = await sr.listClientServices(existing);
       expect(rows).toHaveLength(1);
       expect(rows[0]).toMatchObject({ pathLabel: `Productos ${tag} → Ebooks ${tag} → Guía Digital del Agua`, amountCents: 1200, paymentStatus: "paid", source: "order", orderId: o1 });
+      // Resumen de la ficha con la compra: «1 compra» y total 1 (como «Servicios (1)» en la pestaña)
+      const sumV = await care.summary({ clientId: existing });
+      expect([sumV.sessionsCount, sumV.purchasesCount, sumV.resourcesCount]).toEqual([0, 1, 0]);
+      const bV = servicesBreakdown({ sessions: sumV.sessionsCount, purchases: sumV.purchasesCount, resources: sumV.resourcesCount });
+      expect(bV).toMatchObject({ total: 1, text: "1 compra" });
       // filtro por producto: por artículo, por tipo y por categoría, una sola vez
       const find = async (id: number) => (await dbm.getClients(undefined, undefined, undefined, id)).filter((c) => c.lastName === tag);
       expect((await find(agua)).map((c) => c.id)).toEqual([existing]);

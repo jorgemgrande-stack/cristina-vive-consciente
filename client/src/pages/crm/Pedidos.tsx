@@ -38,7 +38,7 @@ function ReviewLink({ orderId, onDone }: { orderId: number; onDone: () => void }
   const { data: candidates = [] } = trpc.received.orderCandidates.useQuery({ orderId });
   const [pick, setPick] = useState("");
   const link = trpc.received.linkOrder.useMutation({
-    onSuccess: () => { toast.success("Pedido vinculado a la ficha y registrado en Servicios recibidos."); onDone(); },
+    onSuccess: () => { toast.success("Pedido vinculado a la ficha y registrado en Servicios."); onDone(); },
     onError: (e) => toast.error(e.message),
   });
   return (

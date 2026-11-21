@@ -572,3 +572,13 @@ describe("acceso de administración", () => {
     expect(adminSessionCookieOptions()).toMatchObject({ httpOnly: true, sameSite: "lax", secure: true });
   });
 });
+
+describe("Desglose de «Servicios» del Resumen", () => {
+  it("omite lo que está a cero, con singular y plural, y suma lo mismo que la pestaña", async () => {
+    const { servicesBreakdown } = await import("../shared/clientCare");
+    expect(servicesBreakdown({ sessions: 0, purchases: 1, resources: 0 })).toEqual({ total: 1, parts: ["1 compra"], text: "1 compra" });
+    expect(servicesBreakdown({ sessions: 2, purchases: 1, resources: 3 })).toMatchObject({ total: 6, text: "2 sesiones · 1 compra · 3 recursos" });
+    expect(servicesBreakdown({ sessions: 1, purchases: 0, resources: 1 }).text).toBe("1 sesión · 1 recurso");
+    expect(servicesBreakdown({ sessions: 0, purchases: 0, resources: 0 })).toEqual({ total: 0, parts: [], text: "" });
+  });
+});

@@ -28,6 +28,7 @@ import {
   type SessionInput,
 } from "../../shared/clientCare";
 import * as care from "../clientCareDb";
+import { listClientServices } from "../servicesReceivedDb";
 import { allModulesReadiness, keyVersion, moduleReadiness, type SensitiveModule } from "../sensitive/config";
 import { decryptPayload, encryptPayload } from "../sensitive/crypto";
 
@@ -159,6 +160,8 @@ export const clientCareRouter = router({
     const client = await requireClient(input.clientId);
     const [sessions, appts, services] = await Promise.all([care.listSessions(input.clientId), care.listClientAppointments(input.clientId), care.listServicesBasic()]);
     const latest = sessions[0];
+    // Compras y recursos registrados en «Servicios» (los mismos registros que lista la pestaña)
+    const received = await listClientServices(input.clientId).catch(() => []);
     return {
       client: {
         id: client.id,
@@ -178,6 +181,8 @@ export const clientCareRouter = router({
       servicesReceived: servicesReceived(sessions, services),
       latestSession: latest ? { id: latest.id, sessionDate: latest.sessionDate, sessionTime: latest.sessionTime, serviceName: latest.serviceName } : null,
       sessionsCount: sessions.length,
+      purchasesCount: received.filter((r) => r.paymentStatus !== "free").length,
+      resourcesCount: received.filter((r) => r.paymentStatus === "free").length,
     };
   }),
 

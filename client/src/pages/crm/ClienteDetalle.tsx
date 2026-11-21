@@ -16,6 +16,7 @@ import { trpc } from "@/lib/trpc";
 import CRMLayout from "@/components/CRMLayout";
 import ResumenTab from "@/components/crm/ficha/ResumenTab";
 import ClientCategoryEditor from "@/components/crm/ClientCategoryEditor";
+import { servicesBreakdown } from "@shared/clientCare";
 import ServiciosRecibidosTab from "@/components/crm/ficha/ServiciosRecibidosTab";
 import PrimeraVisitaTab from "@/components/crm/ficha/PrimeraVisitaTab";
 import AcompanamientoTab from "@/components/crm/ficha/AcompanamientoTab";
@@ -290,7 +291,7 @@ export default function ClienteDetalle() {
             {(
               [
                 ["resumen", "Resumen"],
-                ["servicios", `Servicios recibidos (${(sessions?.length ?? 0) + (receivedRows?.length ?? 0)})`],
+                ["servicios", `Servicios (${servicesBreakdown({ sessions: sessions?.length ?? 0, purchases: (receivedRows ?? []).filter((r) => r.paymentStatus !== "free").length, resources: (receivedRows ?? []).filter((r) => r.paymentStatus === "free").length }).total})`],
                 ["citas", `Citas (${appointments?.length ?? 0})`],
                 ["notas", `Notas (${notes?.length ?? 0})`],
                 ["primera", "Primera visita"],

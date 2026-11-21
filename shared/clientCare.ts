@@ -212,3 +212,17 @@ export function sessionTimeOptions(current?: string | null): string[] {
 export function changedFields(before: Record<string, unknown>, after: Record<string, unknown>): string[] {
   return Object.keys(after).filter((k) => after[k] !== undefined && (before[k] ?? null) !== (after[k] ?? null));
 }
+
+/**
+ * Desglose del bloque «Servicios» del Resumen: los mismos registros que cuenta la pestaña «Servicios»
+ * (sesiones + compras + recursos). Se omiten las categorías a cero.
+ */
+export function servicesBreakdown(c: { sessions: number; purchases: number; resources: number }): { total: number; parts: string[]; text: string } {
+  const one = (n: number, s: string, p: string) => `${n} ${n === 1 ? s : p}`;
+  const parts = [
+    c.sessions > 0 ? one(c.sessions, "sesión", "sesiones") : null,
+    c.purchases > 0 ? one(c.purchases, "compra", "compras") : null,
+    c.resources > 0 ? one(c.resources, "recurso", "recursos") : null,
+  ].filter((x): x is string => !!x);
+  return { total: c.sessions + c.purchases + c.resources, parts, text: parts.join(" · ") };
+}

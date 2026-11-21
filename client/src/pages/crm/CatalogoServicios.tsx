@@ -96,7 +96,7 @@ export default function CatalogoServicios() {
     <CRMLayout title="Catálogo de fichas">
       <div className="max-w-4xl">
         <p className="text-sm text-[oklch(0.45_0.02_60)] font-body mb-4" style={{ fontWeight: 300 }}>
-          Lo que aparece en los desplegables de «Registrar» en «Servicios recibidos» de cada ficha. Archivar oculta el elemento sin perder el historial de nadie.
+          Lo que aparece en los desplegables de «Registrar» en «Servicios» de cada ficha. Archivar oculta el elemento sin perder el historial de nadie.
         </p>
         <div className="bg-white border border-[oklch(0.92_0.01_80)] p-4">
           {isLoading ? <p className="text-sm text-[oklch(0.52_0.02_60)]">Cargando…</p> : (
