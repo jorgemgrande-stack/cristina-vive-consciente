@@ -7,6 +7,9 @@ import {
   BLOCK_CATALOG, CONNECTED_SOURCES, DEFAULT_BLOCK_STYLE, DEVICES, FEATURE_ICONS, type BlockStyle, type BlockType, type PageBlock,
 } from "@shared/siteEditor";
 import { ImageUploader } from "@/components/ImageUploader";
+import { ImageField, FocusPicker } from "./media";
+import { SITE_ACTIONS } from "@shared/siteActions";
+import { FICHA_SECTIONS } from "@shared/fichaSections";
 import { sanitizeClientHtml } from "@/components/site/PageBlocksView";
 import { inputCls, labelCls } from "./shared";
 
@@ -14,6 +17,7 @@ import { inputCls, labelCls } from "./shared";
 
 export type FieldDef =
   | { key: string; label: string; kind: "text" | "textarea" | "rich" | "image" | "url"; hint?: string }
+  | { key: string; label: string; kind: "focus"; imageKey: string; xKey: string; yKey: string }
   | { key: string; label: string; kind: "select"; options: ReadonlyArray<readonly [string, string]> }
   | { key: string; label: string; kind: "list"; itemLabel: string; fields: FieldDef[]; max: number; blank: Record<string, unknown> };
 
@@ -29,6 +33,10 @@ export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
     { key: "imageAlt", label: "Descripción de la imagen (accesibilidad)", kind: "text" },
     { key: "buttonLabel", label: "Texto del botón (opcional)", kind: "text" },
     { key: "buttonUrl", label: "Enlace del botón", kind: "url" },
+    { key: "secondaryLabel", label: "Segundo botón (opcional). En aceites, «{n}» muestra el número de aceites de Mi consulta", kind: "text" },
+    { key: "secondaryUrl", label: "Enlace del segundo botón", kind: "url" },
+    { key: "imageX", label: "Encuadre de la imagen en ordenador", kind: "focus", imageKey: "imageUrl", xKey: "imageX", yKey: "imageY" },
+    { key: "imageXM", label: "Encuadre de la imagen en móvil", kind: "focus", imageKey: "imageUrl", xKey: "imageXM", yKey: "imageYM" },
     { key: "height", label: "Altura", kind: "select", options: opt(["m", "Normal"], ["l", "Alta"], ["full", "Pantalla completa"]) },
     { key: "breadcrumb", label: "Migas de pan (Inicio › Página)", kind: "select", options: opt(["on", "Mostrar"], ["off", "Ocultar"]) },
   ],
@@ -49,6 +57,8 @@ export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
     { key: "alt", label: "Descripción (accesibilidad)", kind: "text" },
     { key: "caption", label: "Pie de foto", kind: "text" },
     { key: "size", label: "Tamaño", kind: "select", options: opt(["medium", "Mediano"], ["wide", "Ancho"]) },
+    { key: "ratio", label: "Proporción (recorta la imagen para encajarla)", kind: "select", options: opt(["auto", "La de la imagen"], ["16:9", "Panorámica 16:9"], ["4:3", "Clásica 4:3"], ["1:1", "Cuadrada"]) },
+    { key: "imageX", label: "Encuadre", kind: "focus", imageKey: "url", xKey: "imageX", yKey: "imageY" },
   ],
   gallery: [
     { key: "title", label: "Título (opcional)", kind: "text" },
@@ -71,6 +81,7 @@ export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
     { key: "html", label: "Texto", kind: "rich" },
     { key: "imageUrl", label: "Imagen", kind: "image" },
     { key: "imageAlt", label: "Descripción de la imagen", kind: "text" },
+    { key: "imageX", label: "Encuadre de la imagen", kind: "focus", imageKey: "imageUrl", xKey: "imageX", yKey: "imageY" },
     { key: "imagePosition", label: "Posición de la imagen", kind: "select", options: opt(["right", "A la derecha"], ["left", "A la izquierda"]) },
     { key: "buttonLabel", label: "Texto del botón (opcional)", kind: "text" },
     { key: "buttonUrl", label: "Enlace del botón", kind: "url" },
@@ -183,14 +194,29 @@ function Field({ def, value, onChange }: { def: FieldDef; value: unknown; onChan
   const id = `fld-${def.key}-${Math.random().toString(36).slice(2, 7)}`;
   switch (def.kind) {
     case "text":
-    case "url":
-      return <div><label className={labelCls} htmlFor={id}>{def.label}</label><input id={id} className={inputCls} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} placeholder={def.kind === "url" ? "/contacto o https://…" : ""} /></div>;
+      return <div><label className={labelCls} htmlFor={id}>{def.label}</label><input id={id} className={inputCls} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} /></div>;
+    case "url": {
+      const v = String(value ?? "");
+      const isAction = v.startsWith("action:");
+      return (
+        <div>
+          <label className={labelCls} htmlFor={id}>{def.label}</label>
+          <select aria-label={`Tipo de destino de: ${def.label}`} className={`${inputCls} mb-1`} value={isAction ? v : "url"} onChange={(e) => onChange(e.target.value === "url" ? "" : e.target.value)}>
+            <option value="url">Una dirección o enlace</option>
+            {SITE_ACTIONS.map((a) => <option key={a.value} value={`action:${a.value}`}>Acción: {a.label}</option>)}
+          </select>
+          {!isAction && <input id={id} className={inputCls} value={v} onChange={(e) => onChange(e.target.value)} placeholder="/contacto, #ancla o https://…" />}
+        </div>
+      );
+    }
     case "textarea":
       return <div><label className={labelCls} htmlFor={id}>{def.label}</label><textarea id={id} rows={3} className={inputCls} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} /></div>;
     case "rich":
       return <div><span className={labelCls}>{def.label}</span><RichTextEditor value={String(value ?? "")} onChange={onChange} /></div>;
     case "image":
-      return <div><span className={labelCls}>{def.label}</span><ImageUploader value={String(value ?? "")} onChange={(u) => onChange(u)} label="" /></div>;
+      return <div><span className={labelCls}>{def.label}</span><ImageField value={String(value ?? "")} onChange={(u) => onChange(u)} /></div>;
+    case "focus":
+      return null; // se pinta desde ContentFields (necesita la imagen y las dos coordenadas)
     case "select":
       return <div><label className={labelCls} htmlFor={id}>{def.label}</label><select id={id} className={inputCls} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)}>{def.options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>;
     case "list": {
@@ -226,14 +252,29 @@ function Field({ def, value, onChange }: { def: FieldDef; value: unknown; onChan
   }
 }
 
-export function ContentFields({ block, onChange }: { block: PageBlock; onChange: (data: Record<string, unknown>) => void }) {
+export function ContentFields({ block, onChange, detailKind }: { block: PageBlock; onChange: (data: Record<string, unknown>) => void; detailKind?: string | null }) {
   const data = block.data as unknown as Record<string, unknown>;
   const isSlideshow = block.type === "connected" && data.source === "home_slideshow";
   const defs = [...BLOCK_FIELDS[block.type], ...(isSlideshow ? SLIDESHOW_FIELDS : [])];
   const note = block.type === "connected" ? CONNECTED_SOURCES.find((s) => s.value === data.source)?.note : null;
   return (
     <div className="space-y-4">
-      {defs.map((d) => <Field key={d.key} def={d} value={data[d.key]} onChange={(v) => onChange({ ...data, [d.key]: v })} />)}
+      {defs.map((d) =>
+        d.kind === "focus" ? (
+          <FocusPicker key={d.key} label={d.label} url={String(data[d.imageKey] ?? "")} x={Number(data[d.xKey] ?? 50)} y={Number(data[d.yKey] ?? 50)} onChange={(x, y) => onChange({ ...data, [d.xKey]: x, [d.yKey]: y })} />
+        ) : (
+          <Field key={d.key} def={d} value={data[d.key]} onChange={(v) => onChange({ ...data, [d.key]: v })} />
+        ),
+      )}
+      {block.type === "connected" && data.source === "ficha" && (
+        <div>
+          <label className={labelCls} htmlFor="ficha-sec">Sección de la ficha</label>
+          <select id="ficha-sec" className={inputCls} value={String(data.section ?? "")} onChange={(e) => onChange({ ...data, section: e.target.value })}>
+            <option value="">Elige una sección…</option>
+            {(FICHA_SECTIONS[detailKind ?? ""] ?? []).map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+          </select>
+        </div>
+      )}
       {note && <p className="text-xs font-body text-[oklch(0.45_0.02_55)] bg-[oklch(0.96_0.02_148)] p-3">{note}. Los datos no se copian: se editan en su propia sección del panel y aquí solo eliges dónde y cómo se muestran.</p>}
     </div>
   );

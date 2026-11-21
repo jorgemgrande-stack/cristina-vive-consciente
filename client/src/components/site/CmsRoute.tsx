@@ -21,7 +21,9 @@ function detailKeyFor(path: string): DetailKey {
   return seg as DetailKey;
 }
 
-export function CmsPage({ path, title, content, preview, inEditor }: { path: string; title: string; content: PageContent; preview: boolean; inEditor?: boolean }) {
+const LEGAL_PATHS = ["/privacidad", "/politica-de-cookies"];
+
+export function CmsPage({ path, title, content, preview, inEditor, version }: { path: string; title: string; content: PageContent; preview: boolean; inEditor?: boolean; version?: { id: number | null; at: Date | string | null } }) {
   usePageSeo(content.seo.title || content.seo.description || content.seo.ogImage || content.seo.noindex ? content.seo : null);
   return (
     <PreviewShield active={preview}>
@@ -36,6 +38,11 @@ export function CmsPage({ path, title, content, preview, inEditor }: { path: str
         <FichaScope kind={detailKey(path)} slug={path.split("/").pop() ?? ""}>
           <PageBlocksView blocks={content.blocks} ctx={{ path, title, detail: detailKey(path), inEditor }} />
         </FichaScope>
+        {LEGAL_PATHS.includes(path) && version?.id && (
+          <p className="container max-w-3xl text-xs text-[oklch(0.52_0.02_60)] font-body pb-12">
+            Versión publicada n.º {version.id}{version.at ? ` · ${new Intl.DateTimeFormat("es-ES", { dateStyle: "long", timeZone: "Europe/Madrid" }).format(new Date(version.at))}` : ""}
+          </p>
+        )}
       </Layout>
       )}
       </WhatsappContextProvider>
@@ -57,7 +64,7 @@ export default function CmsRoute({ legacy: Legacy }: { legacy: ComponentType }) 
   if (loading) return <div className="min-h-screen bg-[oklch(0.985_0.006_85)]" aria-busy="true" />;
 
   const doc = preview ? (draft.data && draft.data.content.blocks.length > 0 ? draft.data : null) : published.data;
-  if (doc) return <CmsPage path={path} title={doc.title} content={doc.content} preview={preview} />;
+  if (doc) return <CmsPage path={path} title={doc.title} content={doc.content} preview={preview} version={{ id: (doc as unknown as { versionId?: number | null }).versionId ?? null, at: (doc as unknown as { publishedAt?: Date | null }).publishedAt ?? null }} />;
   // Vista previa de una página que aún sirve el código: también sin acciones activas
   return preview ? <PreviewShield active><Legacy /></PreviewShield> : <Legacy />;
 }

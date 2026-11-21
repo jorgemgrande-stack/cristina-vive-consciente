@@ -111,7 +111,7 @@ function normalizeData(type: BlockType, d: Record<string, unknown>, depth: numbe
     case "text":
       return { title: str(d.title, S.title), html: cleanHtml(d.html), align: oneOf(d.align, ["left", "center"] as const, "left") };
     case "image":
-      return { url: safeImage(d.url), alt: str(d.alt), caption: str(d.caption), size: oneOf(d.size, ["medium", "wide"] as const, "medium") };
+      return { url: safeImage(d.url), alt: str(d.alt), caption: str(d.caption), size: oneOf(d.size, ["medium", "wide"] as const, "medium"), ratio: oneOf(d.ratio, ["auto", "16:9", "4:3", "1:1"] as const, "auto"), imageX: pct(d.imageX), imageY: pct(d.imageY) };
     case "gallery":
       return {
         title: str(d.title, S.title), layout: oneOf(d.layout, ["grid", "masonry"] as const, "grid"),
@@ -125,6 +125,7 @@ function normalizeData(type: BlockType, d: Record<string, unknown>, depth: numbe
       return {
         title: str(d.title, S.title), html: cleanHtml(d.html), imageUrl: safeImage(d.imageUrl), imageAlt: str(d.imageAlt),
         imagePosition: oneOf(d.imagePosition, ["left", "right"] as const, "right"), buttonLabel: str(d.buttonLabel, 80), buttonUrl: safeLink(d.buttonUrl),
+        imageX: pct(d.imageX), imageY: pct(d.imageY),
       };
     case "section": {
       const layout = oneOf(d.layout, SECTION_LAYOUTS, "1-1");

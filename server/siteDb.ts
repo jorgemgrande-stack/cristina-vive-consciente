@@ -169,7 +169,7 @@ async function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
   return value;
 }
 
-export type PublicPage = { docKey: string; title: string; kind: "page" | "template"; content: PageContent };
+export type PublicPage = { docKey: string; title: string; kind: "page" | "template"; content: PageContent; /** Versión publicada que se está mostrando (trazabilidad de textos legales) */ versionId: number | null; publishedAt: Date | null };
 
 async function loadPublished(docKey: string): Promise<{ doc: SiteDocument; json: string } | null> {
   const doc = await getDocument(docKey);
@@ -186,7 +186,15 @@ export async function readPublishedPage(path: string): Promise<PublicPage | null
     const hit = direct ?? (templateKeyFor(clean) ? await loadPublished(templateKeyFor(clean)!) : null);
     if (!hit) return null;
     const content = normalizePageContent(parse(hit.json));
-    return { docKey: hit.doc.docKey, title: hit.doc.title, kind: hit.doc.kind === "template" ? "template" : "page", content: { ...content, blocks: stripHidden(content.blocks) } } as PublicPage;
+    return { docKey: hit.doc.docKey, title: hit.doc.title, kind: hit.doc.kind === "template" ? "template" : "page", content: { ...content, blocks: stripHidden(content.blocks) }, versionId: hit.doc.publishedVersionId, publishedAt: hit.doc.publishedAt } as PublicPage;
+  });
+}
+
+/** Versión publicada de los textos legales (null = se muestra el texto original en código). */
+export async function legalVersions(): Promise<{ privacy: number | null; cookies: number | null }> {
+  return cached("legal", async () => {
+    const get = async (key: string) => { const d = await getDocument(key); return d && d.servedFrom === "cms" ? d.publishedVersionId : null; };
+    return { privacy: await get("/privacidad"), cookies: await get("/politica-de-cookies") };
   });
 }
 

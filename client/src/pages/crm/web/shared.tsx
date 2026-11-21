@@ -111,7 +111,7 @@ export function StatusPill({ published, changed, served }: { published: boolean;
 }
 
 /** Botones de publicar e historial. */
-export function PublishControls({ docKey, editor, label = "Publicar" }: { docKey: string; editor: ReturnType<typeof useDocEditor<any>>; label?: string }) {
+export function PublishControls({ docKey, editor, label = "Publicar", warning }: { docKey: string; editor: ReturnType<typeof useDocEditor<any>>; label?: string; warning?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -119,7 +119,7 @@ export function PublishControls({ docKey, editor, label = "Publicar" }: { docKey
         <History size={13} /> Historial
       </button>
       <button
-        onClick={async () => { if (window.confirm("¿Publicar ahora? Los cambios se verán en la web para todo el mundo.")) await editor.publish(); }}
+        onClick={async () => { if (window.confirm(`${warning ? warning + "\n\n" : ""}¿Publicar ahora? Los cambios se verán en la web para todo el mundo.`)) await editor.publish(); }}
         disabled={editor.publishing || editor.state === "saving"}
         className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-body bg-[oklch(0.52_0.08_148)] text-white hover:bg-[oklch(0.42_0.08_148)] disabled:opacity-60"
       >

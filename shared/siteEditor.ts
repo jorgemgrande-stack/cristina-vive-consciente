@@ -86,11 +86,11 @@ export interface BlockDataMap {
     imageX: number; imageY: number; imageXM: number; imageYM: number };
   heading: { eyebrow: string; title: string; subtitle: string; level: "h1" | "h2" | "h3"; align: "left" | "center" };
   text: { title: string; html: string; align: "left" | "center" };
-  image: { url: string; alt: string; caption: string; size: "medium" | "wide" };
+  image: { url: string; alt: string; caption: string; size: "medium" | "wide"; /** Proporción y encuadre (punto focal 0-100) */ ratio: "auto" | "16:9" | "4:3" | "1:1"; imageX: number; imageY: number };
   gallery: { title: string; images: GalleryImage[]; layout: "grid" | "masonry" };
   button: { label: string; url: string; variant: "primary" | "outline"; align: "left" | "center" };
   video: { title: string; url: string; caption: string };
-  columns: { title: string; html: string; imageUrl: string; imageAlt: string; imagePosition: "left" | "right"; buttonLabel: string; buttonUrl: string };
+  columns: { title: string; html: string; imageUrl: string; imageAlt: string; imagePosition: "left" | "right"; buttonLabel: string; buttonUrl: string; imageX: number; imageY: number };
   section: { layout: SectionLayout; gap: "s" | "m" | "l"; valign: "top" | "center"; mobile: "stack" | "reverse"; width: "normal" | "wide"; columns: SectionColumn[] };
   features: { title: string; intro: string; columns: "2" | "3" | "4"; items: FeatureItem[] };
   cards: { title: string; intro: string; columns: "2" | "3" | "4"; items: CardItem[] };
@@ -202,11 +202,11 @@ export function defaultBlockData<K extends BlockType>(type: K): BlockDataMap[K] 
     hero: { eyebrow: "", title: "Título de la página", subtitle: "", imageUrl: "", imageAlt: "", buttonLabel: "", buttonUrl: "", secondaryLabel: "", secondaryUrl: "", height: "m", breadcrumb: "on", imageX: 50, imageY: 50, imageXM: 50, imageYM: 50 },
     heading: { eyebrow: "", title: "Nuevo título", subtitle: "", level: "h2", align: "center" },
     text: { title: "", html: "<p>Escribe aquí tu texto.</p>", align: "left" },
-    image: { url: "", alt: "", caption: "", size: "medium" },
+    image: { url: "", alt: "", caption: "", size: "medium", ratio: "auto", imageX: 50, imageY: 50 },
     gallery: { title: "", images: [], layout: "grid" },
     button: { label: "Más información", url: "/contacto", variant: "primary", align: "center" },
     video: { title: "", url: "", caption: "" },
-    columns: { title: "Título", html: "<p>Texto de la sección.</p>", imageUrl: "", imageAlt: "", imagePosition: "right", buttonLabel: "", buttonUrl: "" },
+    columns: { title: "Título", html: "<p>Texto de la sección.</p>", imageUrl: "", imageAlt: "", imagePosition: "right", buttonLabel: "", buttonUrl: "", imageX: 50, imageY: 50 },
     section: { layout: "1-1", gap: "m", valign: "top", mobile: "stack", width: "normal", columns: [{ blocks: [] }, { blocks: [] }] },
     features: { title: "", intro: "", columns: "3", items: [{ icon: "leaf", title: "Ventaja", text: "Descripción breve." }] },
     cards: { title: "", intro: "", columns: "3", items: [{ imageUrl: "", imageAlt: "", title: "Tarjeta", text: "", buttonLabel: "", buttonUrl: "" }] },

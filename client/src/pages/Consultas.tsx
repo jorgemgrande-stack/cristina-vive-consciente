@@ -5,6 +5,7 @@
  */
 
 import { SITE_IMAGES } from "@/lib/siteImages";
+import AdminEditLink from "@/components/site/AdminEditLink";
 import { Link } from "wouter";
 import { formatEuros } from "@shared/booking";
 import { ArrowRight, Clock, CheckCircle, Monitor, MapPin, Loader2, Leaf } from "lucide-react";
@@ -80,12 +81,13 @@ export default function Consultas() {
                 return (
                   <div
                     key={c.id}
-                    className={`card-natural overflow-hidden transition-all duration-300 hover:shadow-md ${
+                    className={`relative card-natural overflow-hidden transition-all duration-300 hover:shadow-md ${
                       c.featured === 1
                         ? "border-[oklch(0.52_0.08_148)]/40 bg-[oklch(0.97_0.008_100)]"
                         : "bg-white"
                     }`}
                   >
+                    <AdminEditLink href={`/crm/servicios/${c.id}/editar`} label="Editar servicio" />
                     <div className="flex flex-col md:flex-row">
 
                       {/* Imagen */}

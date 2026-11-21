@@ -13,7 +13,7 @@ import { normalizePageContent, plainText } from "../siteContent";
 import {
   SiteEditorError, addRedirect, createCustomPage, deleteCustomPage, ensureDocument, getDocument, listDocuments, listRedirects, listVersions,
   publishDraft, readDraft, readPublishedGlobal, readPublishedPage, removeRedirect, renameCustomPage, renameDocumentTitle, restoreVersion, saveDraft,
-  serveLegacy, stripHidden,
+  serveLegacy, stripHidden, legalVersions,
 } from "../siteDb";
 import { createClient, findClientByEmail, getDb } from "../db";
 import { and, eq } from "drizzle-orm";
@@ -46,6 +46,8 @@ export const siteRouter = router({
     return page;
   }),
   global: publicProcedure.query(() => readPublishedGlobal()),
+  /** Versiones publicadas de privacidad y cookies: se guardan junto al consentimiento de cookies. */
+  legalVersions: publicProcedure.query(() => legalVersions()),
 
   /** Formulario de un bloque publicado: la configuración se lee del servidor (no se fía del cliente). */
   submitForm: publicProcedure

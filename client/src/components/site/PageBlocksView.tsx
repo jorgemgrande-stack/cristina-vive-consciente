@@ -338,7 +338,7 @@ function renderInner(block: PageBlock, ctx: ViewCtx, wrapper?: (b: PageBlock, no
       if (!d.url) return <div className="container py-8 text-center text-sm text-[oklch(0.55_0.04_75)] font-body">Imagen sin elegir</div>;
       return (
         <figure className={`container py-8 ${d.size === "wide" ? "" : "max-w-3xl"}`}>
-          <img src={d.url} alt={d.alt} loading="lazy" className="w-full h-auto" />
+          <img src={d.url} alt={d.alt} loading="lazy" className={d.ratio === "auto" ? "w-full h-auto" : "w-full object-cover"} style={d.ratio === "auto" ? undefined : { aspectRatio: d.ratio.replace(":", " / "), objectPosition: `${d.imageX}% ${d.imageY}%` }} />
           {d.caption && <figcaption className="mt-2 text-center text-xs text-[oklch(0.52_0.02_60)] font-body">{d.caption}</figcaption>}
         </figure>
       );
@@ -371,7 +371,7 @@ function renderInner(block: PageBlock, ctx: ViewCtx, wrapper?: (b: PageBlock, no
     }
     case "columns": {
       const d = block.data;
-      const img = d.imageUrl ? <img src={d.imageUrl} alt={d.imageAlt} loading="lazy" className="w-full h-full object-cover min-h-[240px]" /> : null;
+      const img = d.imageUrl ? <img src={d.imageUrl} alt={d.imageAlt} loading="lazy" className="w-full h-full object-cover min-h-[240px]" style={{ objectPosition: `${d.imageX}% ${d.imageY}%` }} /> : null;
       return (
         <div className="container py-10">
           <div className={`grid md:grid-cols-2 gap-10 items-center ${d.imagePosition === "left" ? "" : ""}`}>

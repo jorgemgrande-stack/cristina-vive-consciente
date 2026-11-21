@@ -11,10 +11,12 @@ import {
 } from "lucide-react";
 import {
   BLOCK_CATALOG, createBlock, duplicateBlock, findBlock, insertBlocks, mapBlock, placeProblem, relayoutColumns, removeBlock, shiftBlock, systemPage,
-  type BlockType, type PageBlock, type PageContent, type Place, type BlockStyle, isDefaultStyle, sectionColumnCount,
+  type BlockType, type PageBlock, type PageContent, type Place, type BlockStyle, isDefaultStyle, sectionColumnCount, moveBlock, walk,
 } from "@shared/siteEditor";
 import CRMLayout from "@/components/CRMLayout";
 import { BlockView, type DetailKey } from "@/components/site/PageBlocksView";
+import { FichaScope } from "@/components/site/detail";
+import { WhatsappContextProvider } from "@/components/site/whatsappContext";
 import { trpc } from "@/lib/trpc";
 import { ContentFields, DesignFields, catalogLabel } from "./blockFields";
 import { PublishControls, SaveBadge, StatusPill, inputCls, labelCls, useDocEditor } from "./shared";
@@ -32,6 +34,29 @@ function defaultSource(docKey: string): string {
   const map: Record<string, string> = { "/consultas": "consultas", "/masajes": "masajes", "/sistemas-agua": "sistemas_agua", "/aceites-esenciales": "aceites", "/guias-digitales": "guias", "/recomendados": "recomendados", "/blog": "blog", "/contacto": "contacto" };
   return docKey.startsWith("tpl:") ? "detalle" : (map[docKey] ?? "consultas");
 }
+
+/** Datos «Pendiente» que quedan en el texto (marcados con <mark>): hay que completarlos con información confirmada. */
+export function collectPending(blocks: PageBlock[]): string[] {
+  const out: string[] = [];
+  walk(blocks, ({ block }) => {
+    const html = (block.data as { html?: string }).html;
+    if (typeof html === "string") for (const m of Array.from(html.matchAll(/<mark>(.*?)<\/mark>/g))) out.push(m[1].replace(/<[^>]+>/g, ""));
+  });
+  return out;
+}
+
+/** Dónde se gestionan los datos reales de cada contenido conectado. */
+const DATA_LINKS: Record<string, { href: string; label: string }> = {
+  consultas: { href: "/crm/servicios", label: "Servicios" }, masajes: { href: "/crm/servicios", label: "Servicios" }, home_masajes: { href: "/crm/servicios", label: "Servicios" },
+  sistemas_agua: { href: "/crm/agua/productos", label: "Agua → Productos" }, home_agua: { href: "/crm/agua/productos", label: "Agua → Productos" },
+  aceites: { href: "/crm/aceites/productos", label: "Aceites → Productos" }, guias: { href: "/crm/ebooks", label: "Ebooks" }, recomendados: { href: "/crm/afiliados", label: "Afiliados" },
+  blog: { href: "/crm/blog/articulos", label: "Blog → Artículos" }, home_blog: { href: "/crm/blog/articulos", label: "Blog → Artículos" }, home_slideshow: { href: "/crm/hero", label: "Hero Inicio (imágenes)" },
+  contacto: { href: "/crm/automatizaciones", label: "Automatizaciones" },
+};
+const TEMPLATE_DATA: Record<string, { href: string; label: string }> = {
+  consultas: { href: "/crm/servicios", label: "Servicios" }, masajes: { href: "/crm/servicios", label: "Servicios" }, "sistemas-agua": { href: "/crm/agua/productos", label: "Agua → Productos" },
+  "aceites-esenciales": { href: "/crm/aceites/productos", label: "Aceites → Productos" }, blog: { href: "/crm/blog/articulos", label: "Blog → Artículos" },
+};
 
 function blockSummary(b: PageBlock): string {
   const d = b.data as unknown as Record<string, unknown>;
@@ -52,6 +77,8 @@ export default function WebEditor() {
   const [inspectorTab, setInspectorTab] = useState<"content" | "design">("content");
   const [pageOpen, setPageOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropMark, setDropMark] = useState<{ id: string; pos: "before" | "after" } | null>(null);
   const docs = trpc.site.documents.useQuery();
   const summary = docs.data?.find((d) => d.docKey === docKey);
   const sample = trpc.site.sampleRoute.useQuery({ docKey }, { staleTime: 60_000 });
@@ -107,7 +134,40 @@ export default function WebEditor() {
   }
 
   const filtered = BLOCK_CATALOG.filter((b) => !q || `${b.label} ${b.description}`.toLowerCase().includes(q.toLowerCase()));
-  const wrapper = (b: PageBlock, node: React.ReactNode) => <div className={b.hidden ? "opacity-40" : ""} title={b.hidden ? "Oculto en la web" : undefined}>{node}</div>;
+  const mark = (id: string) => (dropMark?.id === id ? (dropMark.pos === "before" ? "shadow-[0_-3px_0_0_oklch(0.52_0.08_148)]" : "shadow-[0_3px_0_0_oklch(0.52_0.08_148)]") : "");
+  /** Arrastrar y soltar (además de los botones subir/bajar, que siguen para teclado y táctil). */
+  const dnd = (b: PageBlock) => ({
+    draggable: true,
+    onDragStart: (e: React.DragEvent) => { e.stopPropagation(); setDragId(b.id); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", b.id); },
+    onDragEnd: () => { setDragId(null); setDropMark(null); },
+    onDragOver: (e: React.DragEvent) => {
+      if (!dragId || dragId === b.id) return;
+      e.preventDefault(); e.stopPropagation();
+      const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      setDropMark({ id: b.id, pos: e.clientY < r.top + r.height / 2 ? "before" : "after" });
+    },
+    onDrop: (e: React.DragEvent) => {
+      if (!dragId || !dropMark || dragId === b.id) return;
+      e.preventDefault(); e.stopPropagation();
+      const f = findBlock(blocks, b.id);
+      if (f) {
+        const place = { ...f.place, index: f.place.index + (dropMark.pos === "after" ? 1 : 0) };
+        const next = moveBlock(blocks, dragId, place);
+        if (next === blocks) toast.error("Ahí no se puede colocar ese bloque.");
+        else setBlocks(() => next);
+      }
+      setDragId(null); setDropMark(null);
+    },
+  });
+  const moveToColumn = (sectionId: string, col: number) => {
+    if (!dragId) return;
+    const next = moveBlock(blocks, dragId, { parent: sectionId, col, index: 99999 });
+    if (next === blocks) toast.error("Ahí no se puede colocar ese bloque."); else setBlocks(() => next);
+    setDragId(null); setDropMark(null);
+  };
+  const wrapper = (b: PageBlock, node: React.ReactNode) => <div {...dnd(b)} className={`${b.hidden ? "opacity-40" : ""} ${mark(b.id)}`} title={b.hidden ? "Oculto en la web" : undefined}>{node}</div>;
+  const pending = collectPending(blocks);
+  const dataLink = docKey.startsWith("tpl:") ? TEMPLATE_DATA[detailKeyOf(docKey) ?? ""] : null;
   const ctx = { path: route, title: meta?.title ?? "", detail: detailKeyOf(docKey), inEditor: true };
 
   // Marco de vista previa: se escala si el panel es más estrecho que el dispositivo
@@ -148,9 +208,20 @@ export default function WebEditor() {
             {!route.includes(":") && (
               <button onClick={async () => { await editor.flush(); window.open(previewUrl(route), "_blank"); }} className="inline-flex items-center gap-1.5 px-3 py-2 text-xs border border-[oklch(0.85_0.015_75)] bg-white hover:bg-[oklch(0.97_0.006_85)]"><ExternalLink size={13} /> Vista previa</button>
             )}
-            <PublishControls docKey={docKey} editor={editor} />
+            <PublishControls docKey={docKey} editor={editor} warning={pending.length ? `⚠ Quedan ${pending.length} dato(s) «Pendiente» sin completar en esta página.` : undefined} />
           </div>
         </div>
+
+        {pending.length > 0 && (
+          <div role="alert" className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs font-body text-amber-900">
+            <b>{pending.length} dato(s) «Pendiente» por completar</b> con información confirmada antes de publicar: {pending.slice(0, 6).map((p) => p.replace("[Pendiente: ", "").replace("]", "")).join(" · ")}{pending.length > 6 ? "…" : ""}. En el texto aparecen resaltados en amarillo.
+          </div>
+        )}
+        {dataLink && (
+          <div className="bg-[oklch(0.97_0.01_148)] border-b border-[oklch(0.9_0.03_148)] px-4 py-1.5 text-xs font-body">
+            Los datos de la ficha (precio, duración, contenido) se editan en <a href={dataLink.href} target="_blank" rel="noreferrer" className="underline">{dataLink.label} <ExternalLink size={11} className="inline" /></a>. Aquí decides el orden, la visibilidad y el diseño de sus secciones.
+          </div>
+        )}
 
         {/* Selector de panel en pantallas pequeñas */}
         {mode === "edit" && (
@@ -188,7 +259,7 @@ export default function WebEditor() {
                 })}
               </div>
             ) : (
-              <Outline blocks={blocks} selectedId={selectedId} onSelect={(id) => { setSelectedId(id); setPanel("right"); }} />
+              <Outline blocks={blocks} selectedId={selectedId} onSelect={(id) => { setSelectedId(id); setPanel("right"); }} dnd={dnd} mark={mark} onDropColumn={moveToColumn} dragging={!!dragId} />
             )}
           </aside>
 
@@ -199,7 +270,13 @@ export default function WebEditor() {
                 <style>{style}{`.cvc-canvas [data-block-id]:hover{outline:1px dashed oklch(0.52 0.08 148 / .6);outline-offset:-1px}`}</style>
                 <div className="cvc-canvas bg-[oklch(0.985_0.006_85)] shadow-sm min-h-[60vh]" onClickCapture={canvasClick} onSubmitCapture={(e) => e.preventDefault()}>
                   {blocks.length === 0 && <div className="py-24 text-center text-sm font-body text-[oklch(0.5_0.02_60)]">La página está vacía. Elige un bloque en «Añadir».</div>}
-                  {blocks.map((b) => <div key={b.id} className={b.hidden ? "opacity-40" : ""}><BlockView block={b} ctx={ctx} wrapper={wrapper} /></div>)}
+                  <WhatsappContextProvider>
+                    {() => (
+                      <FichaScope kind={detailKeyOf(docKey)} slug={route.split("/").pop() ?? ""}>
+                        {blocks.map((b) => <div key={b.id} {...dnd(b)} className={`${b.hidden ? "opacity-40" : ""} ${mark(b.id)}`}><BlockView block={b} ctx={ctx} wrapper={wrapper} /></div>)}
+                      </FichaScope>
+                    )}
+                  </WhatsappContextProvider>
                 </div>
                 <p className="text-center text-xs text-[oklch(0.5_0.02_60)] mt-3 font-body">Pulsa un bloque para editarlo. Para ver el resultado real en móvil o tableta, usa los botones de arriba.</p>
               </div>
@@ -231,7 +308,10 @@ export default function WebEditor() {
                   {selected.block.hidden && <p className="text-xs bg-[oklch(0.96_0.04_80)] p-2 mb-3 font-body">Este bloque está oculto: se conserva en el borrador pero no se ve en la web.</p>}
                   {inspectorTab === "content" ? (
                     <>
-                      <ContentFields block={selected.block} onChange={(d) => patchData(selected.block.id, d)} />
+                      <ContentFields block={selected.block} detailKind={detailKeyOf(docKey)} onChange={(d) => patchData(selected.block.id, d)} />
+                      {selected.block.type === "connected" && DATA_LINKS[(selected.block.data as { source: string }).source] && (
+                        <a href={DATA_LINKS[(selected.block.data as { source: string }).source].href} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-xs underline text-[oklch(0.35_0.08_148)]"><ExternalLink size={12} /> Gestionar estos datos en {DATA_LINKS[(selected.block.data as { source: string }).source].label}</a>
+                      )}
                       {selected.block.type === "section" && (
                         <div className="mt-4 border-t border-[oklch(0.92_0.01_75)] pt-3 space-y-1.5">
                           <p className={labelCls}>Añadir un bloque a una columna</p>
@@ -268,17 +348,18 @@ function IconBtn({ label, onClick, children, danger }: { label: string; onClick:
   return <button onClick={onClick} title={label} aria-label={label} className={`p-1.5 border border-[oklch(0.88_0.015_75)] bg-white hover:bg-[oklch(0.96_0.006_85)] ${danger ? "text-red-700" : ""}`}>{children}</button>;
 }
 
-function Outline({ blocks, selectedId, onSelect, depth = 0 }: { blocks: PageBlock[]; selectedId: string | null; onSelect: (id: string) => void; depth?: number }) {
+type OutlineProps = { selectedId: string | null; onSelect: (id: string) => void; dnd: (b: PageBlock) => Record<string, unknown>; mark: (id: string) => string; onDropColumn: (sectionId: string, col: number) => void; dragging: boolean };
+function Outline({ blocks, selectedId, onSelect, dnd, mark, onDropColumn, dragging, depth = 0 }: OutlineProps & { blocks: PageBlock[]; depth?: number }) {
   if (blocks.length === 0 && depth === 0) return <p className="p-4 text-xs font-body text-[oklch(0.5_0.02_60)]">Todavía no hay bloques.</p>;
   return (
     <ul className={depth ? "ml-3 border-l border-[oklch(0.92_0.01_75)]" : "p-2"}>
       {blocks.map((b) => (
-        <li key={b.id}>
-          <button onClick={() => onSelect(b.id)} className={`w-full text-left px-2 py-1.5 text-xs font-body flex items-center gap-1.5 ${b.id === selectedId ? "bg-[oklch(0.94_0.03_148)]" : "hover:bg-[oklch(0.97_0.006_85)]"} ${b.hidden ? "opacity-50" : ""}`}>
+        <li key={b.id} {...dnd(b)} className={mark(b.id)}>
+          <button onClick={() => onSelect(b.id)} title="Arrastra para reordenar" className={`w-full text-left px-2 py-1.5 text-xs font-body flex items-center gap-1.5 ${b.id === selectedId ? "bg-[oklch(0.94_0.03_148)]" : "hover:bg-[oklch(0.97_0.006_85)]"} ${b.hidden ? "opacity-50" : ""}`}>
             <span style={{ fontWeight: 500 }}>{catalogLabel(b.type)}</span><span className="text-[oklch(0.55_0.02_60)] truncate">{blockSummary(b)}</span>{b.hidden && <EyeOff size={11} />}
           </button>
           {b.type === "section" && b.data.columns.map((c, i) => (
-            <div key={i}><p className="ml-3 mt-1 text-[0.65rem] uppercase tracking-widest text-[oklch(0.55_0.02_60)]">Columna {i + 1}</p><Outline blocks={c.blocks} selectedId={selectedId} onSelect={onSelect} depth={depth + 1} /></div>
+            <div key={i} onDragOver={(e) => { if (dragging) e.preventDefault(); }} onDrop={(e) => { e.preventDefault(); e.stopPropagation(); onDropColumn(b.id, i); }}><p className={`ml-3 mt-1 text-[0.65rem] uppercase tracking-widest text-[oklch(0.55_0.02_60)] ${dragging ? "bg-[oklch(0.96_0.02_148)]" : ""}`}>Columna {i + 1}{dragging ? " · soltar aquí" : ""}</p><Outline blocks={c.blocks} selectedId={selectedId} onSelect={onSelect} dnd={dnd} mark={mark} onDropColumn={onDropColumn} dragging={dragging} depth={depth + 1} /></div>
           ))}
         </li>
       ))}

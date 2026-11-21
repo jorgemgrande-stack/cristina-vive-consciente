@@ -19,7 +19,24 @@ import {
   blogPosts,
   heroImages,
   serviceImages,
+  siteDocuments,
+  siteDocumentVersions,
 } from "../../drizzle/schema";
+
+/** Imágenes que usan las páginas del editor (borradores, versiones publicadas e historial): no se pueden borrar de la galería. */
+async function siteDocumentUploads(): Promise<string[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const found = new Set<string>();
+  try {
+    const rows = [
+      ...(await db.select({ j: siteDocuments.draftJson }).from(siteDocuments)),
+      ...(await db.select({ j: siteDocumentVersions.contentJson }).from(siteDocumentVersions)),
+    ];
+    for (const r of rows) for (const m of Array.from(r.j.matchAll(/\/uploads\/[^"\\\s)]+/g))) found.add(m[0]);
+  } catch { /* las tablas de Editar web pueden no existir todavía */ }
+  return Array.from(found);
+}
 
 /**
  * Returns the set of all `/uploads/...` paths currently referenced in the DB.
@@ -70,6 +87,7 @@ async function getUsedUploadUrls(): Promise<Set<string>> {
       }
     }
   }
+  for (const u of await siteDocumentUploads()) usedUrls.add(u);
   return usedUrls;
 }
 
@@ -112,6 +130,7 @@ export async function collectImageRefs(): Promise<Map<string, string[]>> {
       for (const row of await job) for (const v of Object.values(row)) push(src, v);
     } catch { /* tabla no disponible: se ignora */ }
   }
+  for (const u of await siteDocumentUploads()) refs.set(u, [...(refs.get(u) ?? []), "editar-web"]);
   return refs;
 }
 
