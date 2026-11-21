@@ -16,6 +16,7 @@ import { handleStripeCheckoutCompleted } from "../routers/ebooks";
 import { getPendingLeadSequences, updateLeadSequence, createAutomationLog, updateAutomationLog } from "../db";
 import { sendLeadSequenceEmail } from "../email";
 import { generateInvoicePdf } from "../invoicePdf";
+import { registerClientsExport } from "../clientsExport";
 import { sdk } from "./sdk";
 import { adminSessionCookieOptions, clientIp, loginLimiter, safeEqual } from "./adminAuth";
 import { uploadRouter } from "../upload";
@@ -119,6 +120,9 @@ async function startServer() {
       return res.status(500).json({ error: err.message ?? "Error generando PDF" });
     }
   });
+
+  // ─── Exportar clientes (Excel, CSV, PDF) — solo admin ───────────────────────────
+  registerClientsExport(app, (req) => sdk.authenticateRequest(req));
 
   // File upload endpoint (admin only)
   app.use("/api/upload", uploadRouter);
