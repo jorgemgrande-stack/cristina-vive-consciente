@@ -160,3 +160,63 @@ d("Importación y categorías con base de datos", () => {
     }
   });
 });
+
+describe("filas resueltas a mano", () => {
+  it("una fila con nota «resuelta» en una ficha no se importa ni queda pendiente", () => {
+    const plan = planImport(
+      file([rec({ sourceRow: 79, fullName: "Vanessa", servicesAndPurchases: "Guia del agua-12 € 11-11-26", categories: ["guias"] })]),
+      [client({ id: 129, firstName: "Vanessa", lastName: "Porras", email: "v@x.es", noteKeys: ["CLIENTAS-ES:F79-resuelta"] })],
+    );
+    expect(plan).toHaveLength(1);
+    expect(plan[0]).toMatchObject({ action: "resolved", clientId: 129, rows: [79] });
+  });
+  it("sin la nota, la fila sin contacto sigue pendiente", () => {
+    const [p] = planImport(file([rec({ sourceRow: 79, fullName: "Vanessa" })]), [client({ id: 129, noteKeys: [] })]);
+    expect(p.action).toBe("pending");
+  });
+});
+
+const URL2 = process.env.SITE_TEST_DATABASE_URL;
+describe.runIf(!!URL2 && /(_test|test_)/.test(URL2 ?? ""))("markRowResolved con base de datos", () => {
+  it("deja constancia una sola vez, sin importar la fila, y exige pedido pagado, vinculado y con un único registro", async () => {
+    process.env.DATABASE_URL = URL2;
+    const imp = await import("./clientImport");
+    const dbm = await import("./db");
+    const { clients, orders, clientServices, clientNotes, clientPriorItems } = await import("../drizzle/schema");
+    const { eq, like, inArray } = await import("drizzle-orm");
+    const conn = (await dbm.getDb())!;
+    const tag = `res${Date.now()}`;
+    const ids: number[] = [];
+    try {
+      const [c] = (await conn.insert(clients).values({ firstName: "Vanessa", lastName: tag, email: `v.${tag}@mail.test` })) as any;
+      ids.push(c.insertId);
+      const ref = `GUIA-${tag.slice(-6).toUpperCase().replace(/[^A-Z0-9]/g, "X").padEnd(6, "X")}`;
+      const [o] = (await conn.insert(orders).values({ reference: ref, productType: "ebook", productSlug: tag, productTitle: "Guía", amountCents: 1200, customerName: "V", customerEmail: `v.${tag}@mail.test`, status: "paid", paidAt: Date.now(), clientId: null })) as any;
+      // sin vínculo → rechaza
+      await expect(imp.markRowResolved(79, c.insertId, ref, "Guia")).rejects.toThrow(/no está vinculado/);
+      await conn.update(orders).set({ clientId: c.insertId }).where(eq(orders.id, o.insertId));
+      // sin registro en Servicios → rechaza
+      await expect(imp.markRowResolved(79, c.insertId, ref, "Guia")).rejects.toThrow(/exactamente 1 registro/);
+      await conn.insert(clientServices).values({ clientId: c.insertId, pathLabel: "P → E → G", name: "G", amountCents: 1200, paymentStatus: "paid", receivedAt: Date.now(), source: "order", orderId: o.insertId, sourceKey: `order:${o.insertId}` });
+      expect(await imp.markRowResolved(79, c.insertId, ref, "Guia del agua-12 € 11-11-26")).toEqual({ created: true });
+      expect(await imp.markRowResolved(79, c.insertId, ref, "Guia del agua-12 € 11-11-26")).toEqual({ created: false });
+      const notes = await conn.select().from(clientNotes).where(eq(clientNotes.clientId, c.insertId));
+      expect(notes).toHaveLength(1);
+      expect(notes[0].content).toContain(ref);
+      expect(notes[0].sourceKey).toBe("CLIENTAS-ES:F79-resuelta");
+      // no crea historial ni otro registro de compra
+      expect(await conn.select().from(clientPriorItems).where(eq(clientPriorItems.clientId, c.insertId))).toHaveLength(0);
+      expect(await conn.select().from(clientServices).where(eq(clientServices.clientId, c.insertId))).toHaveLength(1);
+      // el cruce posterior la ve como resuelta
+      const plan = imp.planImport(file([rec({ sourceRow: 79, fullName: "Vanessa" })]), await imp.loadExisting());
+      expect(plan[0]).toMatchObject({ action: "resolved", clientId: c.insertId });
+    } finally {
+      if (ids.length) {
+        await conn.delete(clientNotes).where(inArray(clientNotes.clientId, ids));
+        await conn.delete(clientServices).where(inArray(clientServices.clientId, ids));
+        await conn.delete(clients).where(inArray(clients.id, ids));
+      }
+      await conn.delete(orders).where(like(orders.customerEmail, `%${tag}%`));
+    }
+  }, 60_000);
+});

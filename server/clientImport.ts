@@ -10,7 +10,7 @@
  */
 import { and, eq } from "drizzle-orm";
 import { getDb } from "./db";
-import { clients, clientCategories, clientNotes, clientPriorItems } from "../drizzle/schema";
+import { clients, clientCategories, clientNotes, clientPriorItems, clientServices, orders } from "../drizzle/schema";
 import { CLIENT_CATEGORY_KEYS, isClientCategory } from "../shared/clientCategories";
 
 export interface SourceRecord {
@@ -70,7 +70,12 @@ export type PlanItem =
       add: { categories: string[]; notes: string[]; prior: string[]; fields: string[] };
       changed: boolean;
     })
-  | (PlanPerson & { action: "pending"; reason: string; candidates?: number[] });
+  | (PlanPerson & { action: "pending"; reason: string; candidates?: number[] })
+  /** Fila resuelta a mano (nota «fila N resuelta» en una ficha): no se importa ni queda pendiente */
+  | (PlanPerson & { action: "resolved"; clientId: number });
+
+/** Clave de la nota que deja constancia de que una fila del archivo está resuelta. */
+export const resolvedKey = (row: number) => `CLIENTAS-ES:F${row}-resuelta`;
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
@@ -156,7 +161,13 @@ export function planImport(file: ImportFile, existing: ExistingClient[]): PlanIt
   const seen = new Map<string, PlanPerson[]>();
   for (const p of people) for (const k of [p.email && `e:${p.email}`, p.phone && `p:${p.phone}`]) if (k) seen.set(k, [...(seen.get(k) ?? []), p]);
 
+  // Filas resueltas a mano: la constancia vive en la BD (nota con clave «CLIENTAS-ES:F<fila>-resuelta»)
+  const resolvedRows = new Map<number, number>();
+  for (const c of existing) for (const k of c.noteKeys) { const m = /^CLIENTAS-ES:F(\d+)-resuelta$/.exec(k); if (m) resolvedRows.set(Number(m[1]), c.id); }
+
   return people.map((p): PlanItem => {
+    const done = p.rows.map((r) => resolvedRows.get(r)).find((id) => id !== undefined);
+    if (done !== undefined) return { ...p, action: "resolved", clientId: done };
     if (p.rows.some((r) => doubtful.has(r))) return { ...p, action: "pending", reason: "Posible persona repetida en otra fila: hay que confirmar la identidad antes de unirlas" };
     if (!p.email && !p.phone) return { ...p, action: "pending", reason: "Sin email ni teléfono utilizables: no se puede cruzar ni evitar duplicados" };
     const dup = [p.email && `e:${p.email}`, p.phone && `p:${p.phone}`].some((k) => k && (seen.get(k)?.length ?? 0) > 1);
@@ -233,15 +244,17 @@ export interface ApplyReport {
   priorAdded: number;
   categoriesAdded: number;
   pending: { rows: number[]; reason: string }[];
+  resolved: number[][];
 }
 
 /** Escribe solo los casos claros. Idempotente: cada escritura comprueba antes si ya existe. */
 export async function applyPlan(plan: PlanItem[]): Promise<ApplyReport> {
   const db = await getDb();
   if (!db) throw new Error("Base de datos no disponible");
-  const rep: ApplyReport = { created: 0, updated: 0, unchanged: 0, notesAdded: 0, priorAdded: 0, categoriesAdded: 0, pending: [] };
+  const rep: ApplyReport = { created: 0, updated: 0, unchanged: 0, notesAdded: 0, priorAdded: 0, categoriesAdded: 0, pending: [], resolved: [] };
   for (const item of plan) {
     if (item.action === "pending") { rep.pending.push({ rows: item.rows, reason: item.reason }); continue; }
+    if (item.action === "resolved") { rep.resolved.push(item.rows); continue; }
     await db.transaction(async (tx) => {
       let clientId: number;
       let touched = false;
@@ -283,4 +296,33 @@ export async function applyPlan(plan: PlanItem[]): Promise<ApplyReport> {
     });
   }
   return rep;
+}
+
+/**
+ * Marca una fila del archivo como resuelta: deja una nota en la ficha («corresponde a esta ficha y al pedido X») y
+ * NO importa la fila ni crea otro registro de compra. Exige que el pedido esté pagado, vinculado a esa ficha y con
+ * un único registro en Servicios. Repetirla no duplica la nota.
+ */
+export async function markRowResolved(row: number, clientId: number, orderRef: string, rowText: string): Promise<{ created: boolean }> {
+  const db = await getDb();
+  if (!db) throw new Error("Base de datos no disponible");
+  const [cl] = await db.select({ id: clients.id }).from(clients).where(eq(clients.id, clientId)).limit(1);
+  if (!cl) throw new Error(`No existe la ficha #${clientId}`);
+  const [o] = await db.select().from(orders).where(eq(orders.reference, orderRef)).limit(1);
+  if (!o) throw new Error(`No existe el pedido ${orderRef}`);
+  if (o.status !== "paid") throw new Error("El pedido no está pagado");
+  if (o.clientId !== clientId) throw new Error(`El pedido no está vinculado a la ficha #${clientId}`);
+  const reg = await db.select({ id: clientServices.id }).from(clientServices).where(eq(clientServices.orderId, o.id));
+  if (reg.length !== 1) throw new Error(`El pedido debe tener exactamente 1 registro en Servicios (tiene ${reg.length})`);
+  const key = resolvedKey(row);
+  const [x] = await db.select({ id: clientNotes.id }).from(clientNotes).where(and(eq(clientNotes.clientId, clientId), eq(clientNotes.sourceKey, key))).limit(1);
+  if (x) return { created: false };
+  await db.insert(clientNotes).values({
+    clientId,
+    type: "general",
+    content: `Fila ${row} de CLIENTAS-ES («${rowText}») resuelta: corresponde a esta ficha y al pedido ${orderRef}. La compra ya consta en Servicios (un único registro); no se vuelve a importar.`,
+    source: `Importada de CLIENTAS-ES · fila ${row} (resuelta)`,
+    sourceKey: key,
+  });
+  return { created: true };
 }
