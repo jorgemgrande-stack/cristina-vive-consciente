@@ -290,7 +290,7 @@ export default function ClienteDetalle() {
             {(
               [
                 ["resumen", "Resumen"],
-                ["servicios", `Servicios recibidos (${(sessions?.length ?? 0) + (receivedRows?.length ?? 0)})`],
+                ["servicios", `Servicios (${(sessions?.length ?? 0) + (receivedRows?.length ?? 0)})`],
                 ["citas", `Citas (${appointments?.length ?? 0})`],
                 ["notas", `Notas (${notes?.length ?? 0})`],
                 ["primera", "Primera visita"],

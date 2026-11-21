@@ -164,7 +164,7 @@ export default function ResumenTab({ clientId, onAddSession, onOpenSessions, onA
 
       <div className={card}>
         <SectionTitle>
-          Servicios recibidos · {data.sessionsCount} {data.sessionsCount === 1 ? "sesión" : "sesiones"}
+          Servicios · {data.sessionsCount} {data.sessionsCount === 1 ? "sesión" : "sesiones"}
         </SectionTitle>
         {data.servicesReceived.length === 0 ? (
           <p className="text-sm text-[oklch(0.52_0.02_60)] font-body">
