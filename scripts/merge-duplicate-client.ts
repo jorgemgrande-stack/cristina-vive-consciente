@@ -22,7 +22,7 @@ console.log(`Conserva #${a.keepId} · retira #${a.dropId}`);
 console.log("Filas de la duplicada por tabla:", JSON.stringify(a.dropRefs));
 console.log("Vínculos no trasladables (bloquean):", JSON.stringify(a.unexpectedRefs));
 console.log("Datos contradictorios (bloquean):", a.conflicts.length ? a.conflicts.map((c) => c.field).join(", ") : "ninguno");
-console.log("Campos con valor solo en la duplicada (no se trasladan):", a.onlyInDrop.length ? a.onlyInDrop.join(", ") : "ninguno");
+console.log("Campos con valor solo en la duplicada (bloquean: que Cristina decida qué conservar):", a.onlyInDrop.length ? a.onlyInDrop.join(", ") : "ninguno");
 console.log("Se trasladaría:", JSON.stringify(a.move), "· ya existían en la que se conserva:", JSON.stringify(a.skipped));
 console.log(a.ok ? "→ Todo coincide: se puede unificar." : "→ NO se puede unificar: revisar antes.");
 if (apply) {

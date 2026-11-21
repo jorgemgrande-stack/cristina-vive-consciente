@@ -71,6 +71,19 @@ d("Unificar fichas duplicadas", () => {
       await expect(mc.applyMerge(k3, d3)).rejects.toThrow(/contradictorios/);
       expect(await count(s.clients, s.clients.id, d3)).toBe(1);
 
+      // ── Se detiene: la duplicada tiene un teléfono que la que se conserva no tiene ──
+      const k5 = await mk({ phone: null });
+      const d5 = await mk({ phone: "677888999" });
+      await conn.insert(s.clientPriorItems).values({ clientId: d5, content: "Guia", source: "S", sourceKey: "CLIENTAS-ES:F5" });
+      const a5 = await mc.analyzeMerge(k5, d5);
+      expect(a5.conflicts).toEqual([]);
+      expect(a5.onlyInDrop).toEqual(["phone"]);
+      expect(a5.ok).toBe(false);
+      await expect(mc.applyMerge(k5, d5)).rejects.toThrow(/solo tiene la ficha a retirar.*phone/);
+      expect(await count(s.clients, s.clients.id, d5)).toBe(1); // no se retiró
+      expect(await count(s.clientPriorItems, s.clientPriorItems.clientId, d5)).toBe(1); // nada se movió
+      expect(await count(s.clientPriorItems, s.clientPriorItems.clientId, k5)).toBe(0);
+
       // ── Historial repetido (misma clave) no se duplica ──
       const k4 = await mk({});
       const d4 = await mk({});

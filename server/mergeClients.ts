@@ -85,7 +85,7 @@ export async function analyzeMerge(keepId: number, dropId: number): Promise<Merg
     priorItems: dropPrior.filter((p) => keepPrior.has(p.sourceKey)).map((p) => p.id),
     notes: dropNotes.filter((n) => n.sourceKey && keepNotes.has(n.sourceKey)).map((n) => n.id),
   };
-  return { keepId, dropId, dropRefs, unexpectedRefs, conflicts, onlyInDrop, move, skipped, ok: Object.keys(unexpectedRefs).length === 0 && conflicts.length === 0 };
+  return { keepId, dropId, dropRefs, unexpectedRefs, conflicts, onlyInDrop, move, skipped, ok: Object.keys(unexpectedRefs).length === 0 && conflicts.length === 0 && onlyInDrop.length === 0 };
 }
 
 export interface MergeResult {
@@ -96,7 +96,7 @@ export interface MergeResult {
 /** Traslada, verifica y retira la duplicada en una transacción. Si no cuadra, lanza y se deshace. */
 export async function applyMerge(keepId: number, dropId: number, backup?: (snapshot: unknown) => void): Promise<MergeResult> {
   const a = await analyzeMerge(keepId, dropId);
-  if (!a.ok) throw new Error(`No se unifica: ${Object.keys(a.unexpectedRefs).length ? "la ficha a retirar tiene vínculos en " + Object.keys(a.unexpectedRefs).join(", ") + ". " : ""}${a.conflicts.length ? "Datos contradictorios en " + a.conflicts.map((c) => c.field).join(", ") + "." : ""}`);
+  if (!a.ok) throw new Error(`No se unifica: ${Object.keys(a.unexpectedRefs).length ? "la ficha a retirar tiene vínculos en " + Object.keys(a.unexpectedRefs).join(", ") + ". " : ""}${a.conflicts.length ? "Datos contradictorios en " + a.conflicts.map((c) => c.field).join(", ") + ". " : ""}${a.onlyInDrop.length ? "Datos que solo tiene la ficha a retirar (decidir qué conservar): " + a.onlyInDrop.join(", ") + "." : ""}`);
   const db = (await getDb())!;
   return db.transaction(async (tx) => {
     // Copia previa de la ficha a retirar y de lo que cuelga de ella
