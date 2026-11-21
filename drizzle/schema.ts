@@ -820,3 +820,55 @@ export const clientConsents = mysqlTable(
   (t) => [index("client_consents_client_module_idx").on(t.clientId, t.module)],
 );
 export type ClientConsent = typeof clientConsents.$inferSelect;
+
+/**
+ * Editar web (0028). Cada página, plantilla de ficha o los ajustes globales son un «documento» con borrador y una versión
+ * publicada; cada publicación o restauración añade una versión al historial. `servedFrom` decide qué sirve la web pública:
+ * la página de siempre en código (`legacy`) o el documento publicado (`cms`).
+ */
+export const siteDocuments = mysqlTable(
+  "site_documents",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    /** Ruta pública ("/consultas"), plantilla ("tpl:/consultas/:slug") o "global" */
+    docKey: varchar("docKey", { length: 191 }).notNull().unique(),
+    kind: mysqlEnum("kind", ["page", "template", "global"]).notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    servedFrom: mysqlEnum("servedFrom", ["legacy", "cms"]).default("legacy").notNull(),
+    draftJson: mediumtext("draftJson").notNull(),
+    draftUpdatedAt: timestamp("draftUpdatedAt").defaultNow().notNull(),
+    draftUpdatedBy: int("draftUpdatedBy"),
+    publishedVersionId: int("publishedVersionId"),
+    publishedAt: timestamp("publishedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [index("site_documents_kind_idx").on(t.kind)],
+);
+export type SiteDocument = typeof siteDocuments.$inferSelect;
+
+export const siteDocumentVersions = mysqlTable(
+  "site_document_versions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    documentId: int("documentId").notNull(),
+    contentJson: mediumtext("contentJson").notNull(),
+    action: mysqlEnum("action", ["publish", "restore", "migrate"]).notNull(),
+    note: varchar("note", { length: 200 }),
+    createdBy: int("createdBy"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (t) => [index("site_document_versions_doc_idx").on(t.documentId)],
+);
+export type SiteDocumentVersion = typeof siteDocumentVersions.$inferSelect;
+
+/** Redirecciones editables desde el panel (se suman a redirects.json, que sigue siendo la base). */
+export const siteRedirects = mysqlTable("site_redirects", {
+  id: int("id").autoincrement().primaryKey(),
+  fromPath: varchar("fromPath", { length: 300 }).notNull().unique(),
+  toPath: varchar("toPath", { length: 500 }).notNull(),
+  /** 1 = creada sola al cambiar la dirección de una página */
+  auto: int("auto").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SiteRedirect = typeof siteRedirects.$inferSelect;

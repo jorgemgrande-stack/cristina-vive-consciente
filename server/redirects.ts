@@ -15,6 +15,7 @@
 import fs from "fs";
 import path from "path";
 import type { Request, Response, NextFunction } from "express";
+import { redirectMap as editableRedirects } from "./siteDb";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -88,11 +89,11 @@ export function createRedirectMiddleware() {
   // Rutas que nunca deben pasar por el middleware (API, assets, uploads)
   const SKIP_PREFIXES = ["/api/", "/uploads/", "/_vite", "/__vite"];
 
-  return function redirectMiddleware(
+  return async function redirectMiddleware(
     req: Request,
     res: Response,
     next: NextFunction
-  ): void {
+  ): Promise<void> {
     const rawPath = req.path;
 
     // Saltamos rutas internas
@@ -102,7 +103,14 @@ export function createRedirectMiddleware() {
 
     const normalizedPath = normalizePath(rawPath);
 
-    const destination = redirectMap.get(normalizedPath);
+    // Las redirecciones editadas en «Editar web» mandan sobre redirects.json
+    let destination: string | undefined;
+    try {
+      destination = (await editableRedirects()).get(normalizedPath);
+    } catch {
+      destination = undefined; // si la BD falla, se sigue con redirects.json
+    }
+    destination = destination ?? redirectMap.get(normalizedPath);
 
     if (!destination) {
       return next();
