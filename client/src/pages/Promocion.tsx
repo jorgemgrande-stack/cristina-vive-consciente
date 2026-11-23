@@ -2,18 +2,17 @@
  * Promoción de descarga gratuita de un ebook (/promocion/:slug) — Cristina Vive Consciente
  * Design: "Luz Botánica". Móvil: titular, portada, plazo y botón. El estado (activa / programada / terminada) lo decide
  * el servidor; al cierre la descarga se bloquea aunque la página siga abierta o se conserve el enlace directo.
+ * La descarga exige completar el formulario: el servidor guarda a la persona en el CRM y entrega un token para la ruta protegida.
  */
 import { useEffect, useRef, useState } from "react";
 import { Link, useRoute } from "wouter";
-import { ArrowDown, Check, Copy, Gift, MessageCircle, Share2 } from "lucide-react";
+import { ArrowDown, Copy, Gift, MessageCircle, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import NotFound from "@/pages/NotFound";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { promoSource, trackPromo, usePublicPromo } from "@/lib/promoApi";
+import { promoSource, registerPromo, trackPromo, usePublicPromo, type RegisterErrors } from "@/lib/promoApi";
 import { PROMO_BIZUM_COPY, PROMO_BIZUM_DISPLAY, countdownParts, formatMadridDeadline, promoPath, promoShareMessage, whatsappShareUrl } from "@shared/promo";
-
-const GREEN = "oklch(0.52_0.08_148)";
 
 function Countdown({ remaining }: { remaining: number }) {
   const c = countdownParts(remaining);
@@ -50,6 +49,8 @@ function CopyRow({ label, value, shown }: { label: string; value: string; shown:
   );
 }
 
+const SHARE_BTN = "inline-flex items-center gap-2 px-4 py-2.5 border border-[oklch(0.38_0.07_148)] bg-white text-[oklch(0.3_0.07_148)] text-sm font-body no-underline hover:bg-[oklch(0.38_0.07_148)] hover:text-white transition-colors";
+
 export default function Promocion() {
   const [, params] = useRoute("/promocion/:slug");
   const slug = params?.slug ?? "";
@@ -58,11 +59,15 @@ export default function Promocion() {
   const [bizum, setBizum] = useState(false);
   const [started, setStarted] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", phone: "" });
+  const [errors, setErrors] = useState<RegisterErrors>({});
+  const [token, setToken] = useState<string | null>(null);
   const viewed = useRef(false);
 
   useEffect(() => {
     if (promo && !viewed.current) {
       viewed.current = true;
+      promoSource(promo.slug); // guarda la procedencia al abrir la ficha, antes de cualquier otro paso
       trackPromo(promo.slug, "view");
     }
   }, [promo]);
@@ -81,43 +86,60 @@ export default function Promocion() {
   const ebook = promo.ebook;
   const [line1, ...rest] = promo.headline.split("\n");
   const line2 = rest.join(" ");
-  const source = promoSource();
+  const source = promoSource(promo.slug);
   const url = `${window.location.origin}${promoPath(promo.slug)}`;
-  const withSource = (s: string) => `${url}?utm_source=${s}`;
+  /** Enlace compartido: solo identificador de campaña y canal (nada del cliente ni del destinatario) */
+  const withSource = (channel: string) => `${url}?utm_campaign=${promo.slug}&utm_source=${channel}`;
+  const downloadUrl = (t: string) => `/api/promos/${encodeURIComponent(promo.slug)}/descarga?t=${t}&s=${encodeURIComponent(source)}`;
   const deadline = formatMadridDeadline(promo.endsAt);
   const active = state === "active";
+  const title = ebook?.title ?? "Cuento ilustrado";
 
-  /** Comprueba con el servidor que sigue activa y entonces inicia la descarga (sin registro ni correo). */
-  const startDownload = async () => {
+  /** Envía el formulario: el servidor valida y guarda en el CRM; solo entonces se habilita la descarga protegida. */
+  const submitForm = async (e: React.FormEvent) => {
+    e.preventDefault();
     setChecking(true);
-    try {
-      const res = await fetch(`/api/promos/${encodeURIComponent(promo.slug)}`, { cache: "no-store" });
-      const fresh = res.ok ? await res.json() : null;
-      if (!fresh || fresh.state !== "active") {
-        setOpen(false);
-        toast.error("La descarga gratuita ha terminado.");
-        return;
-      }
-      window.location.href = `/api/promos/${encodeURIComponent(promo.slug)}/descarga?s=${encodeURIComponent(source)}`;
+    setErrors({});
+    const r = await registerPromo(promo.slug, form); // si falla, lo escrito se conserva para reintentar
+    setChecking(false);
+    if ("token" in r) {
+      setToken(r.token);
       setOpen(false);
       setStarted(true);
-    } catch {
-      toast.error("No se pudo iniciar la descarga. Inténtalo de nuevo.");
-    } finally {
-      setChecking(false);
+      window.location.href = downloadUrl(r.token);
+      return;
     }
+    setErrors(r.errors);
+    if (r.errors.form) toast.error(r.errors.form);
   };
 
-  const shareText = (s: string) => promoShareMessage(ebook?.title ?? "Cuento ilustrado", promo.endsAt, withSource(s));
-  const copy = (text: string, ok: string) => navigator.clipboard?.writeText(text).then(() => toast.success(ok), () => toast.error("No se pudo copiar"));
-  const doShare = async () => {
-    trackPromo(promo.slug, "share", { channel: "native" });
-    const data = { title: ebook?.title ?? "Cuento ilustrado", text: shareText("compartido"), url: withSource("compartido") };
-    if (navigator.share) {
-      try { await navigator.share(data); } catch { /* cancelado */ }
-    } else {
-      copy(`${data.text}`, "Mensaje copiado");
+  const shareText = (channel: string) => promoShareMessage(title, promo.endsAt, withSource(channel));
+  /** Acción observada: se anota cuando el navegador confirma la copia o abre el destino, no antes. */
+  const copyLink = () =>
+    navigator.clipboard
+      ? navigator.clipboard.writeText(withSource("amigo_enlace")).then(
+          () => { trackPromo(promo.slug, "share", { channel: "amigo_enlace" }); toast.success("Enlace copiado"); },
+          () => toast.error("No se pudo copiar el enlace"),
+        )
+      : toast.error("Tu navegador no permite copiar el enlace.");
+  /** Menú de compartir del móvil: solo se anota si la plataforma devuelve «compartido» (confirmada). */
+  const nativeShare = async () => {
+    if (!navigator.share) return toast.error("Tu navegador no tiene menú de compartir: usa Facebook, X o WhatsApp.");
+    try {
+      await navigator.share({ title, text: shareText("red_nativo"), url: withSource("red_nativo") });
+      trackPromo(promo.slug, "share", { channel: "red_nativo", confirmed: true });
+    } catch {
+      /* cancelado: no se registra */
     }
+  };
+  const openNetwork = (channel: "red_facebook" | "red_x") => {
+    const link = withSource(channel);
+    const dest =
+      channel === "red_facebook"
+        ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`
+        : `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText(channel).replace(link, "").trim())}&url=${encodeURIComponent(link)}`;
+    const w = window.open(dest, "_blank", "noopener,noreferrer");
+    if (w) trackPromo(promo.slug, "share", { channel }); // observado: se abrió la ventana (no equivale a publicación confirmada)
   };
 
   return (
@@ -166,7 +188,7 @@ export default function Promocion() {
                   >
                     Descargar el cuento gratis <ArrowDown size={16} />
                   </button>
-                  <p className="text-xs text-[oklch(0.45_0.02_60)] font-body">PDF ilustrado · Sin registro{promo.donationEnabled ? " · Donativo por Bizum opcional" : ""}</p>
+                  <p className="text-xs text-[oklch(0.45_0.02_60)] font-body" data-testid="promo-hint">PDF ilustrado · Descarga gratuita con formulario{promo.donationEnabled ? " · Donativo por Bizum opcional" : ""}</p>
                 </>
               )}
 
@@ -201,37 +223,43 @@ export default function Promocion() {
             </div>
           </div>
 
-          {/* Tras iniciar la descarga: difusión */}
-          {started && active && (
-            <section className="mt-10 border border-[oklch(0.85_0.03_148)] bg-[oklch(0.95_0.02_148)] p-5 sm:p-7 flex flex-col md:flex-row md:items-center md:justify-between gap-5" data-testid="promo-share">
-              <div>
-                <h2 className="font-display text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 400, fontSize: "1.7rem" }}>¿A quién le regalarías este cuento?</h2>
-                <p className="text-sm text-[oklch(0.38_0.02_55)] font-body mt-1">Envíale la invitación para que pueda descargarlo durante el lanzamiento.</p>
+          {/* Compartir desde la ficha pública (campaña activa): cada canal lleva su propio enlace identificable */}
+          {active && (
+            <section className="mt-10 border border-[oklch(0.85_0.03_148)] bg-[oklch(0.95_0.02_148)] p-5 sm:p-7" data-testid="promo-share">
+              <h2 className="font-display text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 400, fontSize: "1.7rem" }}>¿A quién le regalarías este cuento?</h2>
+              <p className="text-sm text-[oklch(0.38_0.02_55)] font-body mt-1 mb-5">Comparte la invitación para que pueda descargarlo durante el lanzamiento.</p>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-xs tracking-widest uppercase text-[oklch(0.38_0.07_148)] font-body mb-2.5" style={{ fontWeight: 600 }}>Compartir en redes</h3>
+                  <div className="flex flex-wrap gap-2.5">
+                    <button type="button" onClick={() => openNetwork("red_facebook")} className={SHARE_BTN} style={{ borderRadius: 0, fontWeight: 600 }} data-testid="promo-facebook">Facebook</button>
+                    <button type="button" onClick={() => openNetwork("red_x")} className={SHARE_BTN} style={{ borderRadius: 0, fontWeight: 600 }} data-testid="promo-x">X</button>
+                    <button type="button" onClick={nativeShare} className={SHARE_BTN} style={{ borderRadius: 0, fontWeight: 600 }} data-testid="promo-native-share"><Share2 size={15} /> Compartir en redes</button>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-xs tracking-widest uppercase text-[oklch(0.38_0.07_148)] font-body mb-2.5" style={{ fontWeight: 600 }}>Enviar a un amigo</h3>
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <a
+                      href={whatsappShareUrl(shareText("amigo_whatsapp"))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => trackPromo(promo.slug, "share", { channel: "amigo_whatsapp" })}
+                      className={SHARE_BTN}
+                      style={{ fontWeight: 600 }}
+                      data-testid="promo-whatsapp"
+                    >
+                      <MessageCircle size={15} /> Enviar por WhatsApp
+                    </a>
+                    <button type="button" onClick={copyLink} className={SHARE_BTN} style={{ borderRadius: 0, fontWeight: 600 }} data-testid="promo-copy-link"><Copy size={15} /> Copiar enlace</button>
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <a
-                  href={whatsappShareUrl(shareText("whatsapp"))}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => trackPromo(promo.slug, "share", { channel: "whatsapp" })}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-3 border border-[oklch(0.38_0.07_148)] bg-white text-[oklch(0.3_0.07_148)] text-sm font-body no-underline hover:bg-[oklch(0.38_0.07_148)] hover:text-white transition-colors"
-                  style={{ fontWeight: 600 }}
-                  data-testid="promo-whatsapp"
-                >
-                  <MessageCircle size={16} /> Regálaselo por WhatsApp
-                </a>
-                <button type="button" onClick={doShare} className="inline-flex items-center justify-center gap-2 px-5 py-3 border border-[oklch(0.38_0.07_148)] text-[oklch(0.3_0.07_148)] text-sm font-body hover:bg-white transition-colors" style={{ borderRadius: 0, fontWeight: 600 }} data-testid="promo-native-share">
-                  <Share2 size={16} /> Compartir
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { trackPromo(promo.slug, "share", { channel: "copy" }); copy(withSource("compartido"), "Enlace copiado"); }}
-                  className="inline-flex items-center justify-center gap-2 px-3 py-3 text-sm text-[oklch(0.3_0.07_148)] font-body underline underline-offset-4"
-                  data-testid="promo-copy-link"
-                >
-                  Copiar enlace
-                </button>
-              </div>
+              {started && token && (
+                <p className="text-xs text-[oklch(0.45_0.02_60)] font-body mt-5">
+                  ¿No se ha descargado el PDF? <a href={downloadUrl(token)} className="underline underline-offset-2 text-[oklch(0.3_0.07_148)]" data-testid="promo-redownload">Descargar de nuevo</a>
+                </p>
+              )}
             </section>
           )}
 
@@ -242,49 +270,73 @@ export default function Promocion() {
         </div>
       </div>
 
-      {/* Paso breve antes de descargar */}
+      {/* Formulario de descarga */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md" data-testid="promo-dialog">
+        <DialogContent className="max-w-md max-h-[92vh] overflow-y-auto" data-testid="promo-dialog">
           <DialogHeader>
-            <DialogTitle className="font-display" style={{ fontWeight: 400, fontSize: "1.5rem" }}>Tu cuento está listo</DialogTitle>
-            <DialogDescription className="font-body">La descarga es gratuita, sin registro y sin correo.</DialogDescription>
+            <DialogTitle className="font-display" style={{ fontWeight: 400, fontSize: "1.5rem" }}>Descarga tu cuento de regalo</DialogTitle>
+            <DialogDescription className="font-body">Completa tus datos para descargar el cuento en PDF</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
+          <form onSubmit={submitForm} noValidate className="space-y-3" data-testid="promo-form">
+            {([["name", "Nombre y apellidos", "text", "name"], ["email", "Correo electrónico", "email", "email"], ["phone", "Teléfono", "tel", "tel"]] as const).map(([k, label, type, ac]) => (
+              <div key={k}>
+                <label htmlFor={`promo-${k}`} className="block text-xs text-[oklch(0.38_0.02_55)] font-body mb-1" style={{ fontWeight: 500 }}>{label} <span aria-hidden>*</span></label>
+                <input
+                  id={`promo-${k}`}
+                  name={k}
+                  type={type}
+                  autoComplete={ac}
+                  required
+                  aria-invalid={!!errors[k]}
+                  value={form[k]}
+                  onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))}
+                  className="w-full border border-[oklch(0.85_0.015_75)] bg-white px-3 py-2.5 text-base font-body focus:outline-none focus:border-[oklch(0.52_0.08_148)]"
+                  style={{ borderRadius: 0 }}
+                />
+                {errors[k] && <p className="text-xs text-red-600 font-body mt-1" role="alert">{errors[k]}</p>}
+              </div>
+            ))}
+            {errors.form && <p className="text-sm text-red-600 font-body" role="alert" data-testid="promo-form-error">{errors.form}</p>}
+            <p className="text-[0.7rem] text-[oklch(0.45_0.02_60)] font-body leading-snug">
+              Guardaremos tus datos en el registro de clientes de Cristina para gestionar tu descarga. Más información en la{" "}
+              <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">política de privacidad</a>.
+            </p>
             <button
-              type="button"
-              onClick={startDownload}
+              type="submit"
               disabled={checking}
               className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-4 bg-[oklch(0.38_0.07_148)] text-white text-sm font-body hover:bg-[oklch(0.3_0.07_148)] disabled:opacity-60 transition-colors"
               style={{ borderRadius: 0, fontWeight: 600 }}
               data-testid="promo-download"
             >
-              <ArrowDown size={16} /> Descargar el PDF gratis
+              <ArrowDown size={16} /> {checking ? "Guardando…" : "Descargar el PDF gratis"}
             </button>
-            {promo.donationEnabled && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setBizum((v) => !v)}
-                  className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-3.5 border border-[oklch(0.38_0.07_148)] text-[oklch(0.3_0.07_148)] text-sm font-body hover:bg-[oklch(0.96_0.012_80)] transition-colors"
-                  style={{ borderRadius: 0, fontWeight: 600 }}
-                  aria-expanded={bizum}
-                  data-testid="promo-donate"
-                >
-                  <Gift size={16} /> Hacer un donativo por Bizum
-                </button>
-                {bizum && (
-                  <div className="space-y-2.5 pt-1" data-testid="promo-bizum">
-                    <p className="text-sm text-[oklch(0.38_0.02_55)] font-body">
-                      Es voluntario y no condiciona tu descarga. Abre tu app del banco, elige Bizum y envía el importe que quieras a este móvil:
-                    </p>
-                    <CopyRow label="Número" value={PROMO_BIZUM_COPY} shown={PROMO_BIZUM_DISPLAY} />
-                    <CopyRow label="Concepto" value={promo.donationConcept} shown={promo.donationConcept} />
-                    <p className="text-xs text-[oklch(0.45_0.02_60)] font-body flex items-start gap-1.5"><Check size={13} className="mt-0.5 flex-shrink-0" style={{ color: GREEN }} /> Gracias de corazón: tu aportación ayuda a seguir creando cuentos.</p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+          </form>
+          {promo.donationEnabled && (
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setBizum((v) => !v)}
+                className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-3.5 border border-[oklch(0.38_0.07_148)] text-[oklch(0.3_0.07_148)] text-sm font-body hover:bg-[oklch(0.96_0.012_80)] transition-colors"
+                style={{ borderRadius: 0, fontWeight: 600 }}
+                aria-expanded={bizum}
+                data-testid="promo-donate"
+              >
+                <Gift size={16} /> Hacer un donativo por Bizum
+              </button>
+              <p className="text-[0.7rem] text-[oklch(0.45_0.02_60)] font-body leading-snug" data-testid="promo-donate-note">
+                Si te apetece apoyarme, tu donativo me ayuda a seguir creando y publicando. ¡Gracias por tu ayuda!
+                <br />
+                Cualquier persona que complete el formulario puede descargar el cuento sin donar.
+              </p>
+              {bizum && (
+                <div className="space-y-2.5 pt-1" data-testid="promo-bizum">
+                  <p className="text-sm text-[oklch(0.38_0.02_55)] font-body">Abre tu app del banco, elige Bizum y envía el importe que quieras a este móvil:</p>
+                  <CopyRow label="Número" value={PROMO_BIZUM_COPY} shown={PROMO_BIZUM_DISPLAY} />
+                  <CopyRow label="Concepto" value={promo.donationConcept} shown={promo.donationConcept} />
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </Layout>

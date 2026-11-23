@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import CRMLayout from "@/components/CRMLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import PromoMetrics from "@/components/crm/PromoMetrics";
 import { formatMadridDeadline, promoPath, type PromoState } from "@shared/promo";
 
 export const PROMO_STATE_LABEL: Record<PromoState, { label: string; cls: string }> = {
@@ -67,7 +68,6 @@ export default function Promociones() {
             <div className="divide-y divide-gray-50">
               {promos.map((p) => {
                 const st = PROMO_STATE_LABEL[p.state];
-                const sources = Object.entries(p.bySource).sort((a, b) => b[1].view - a[1].view);
                 return (
                   <div key={p.id} className="p-4 space-y-3" data-testid="promo-row">
                     <div className="flex items-start gap-3 flex-wrap">
@@ -93,16 +93,7 @@ export default function Promociones() {
                         )}
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3 max-w-md text-center">
-                      <div className="bg-gray-50 rounded p-2"><p className="text-lg font-semibold text-gray-900">{p.views}</p><p className="text-[0.65rem] text-gray-500">Visitas</p></div>
-                      <div className="bg-gray-50 rounded p-2"><p className="text-lg font-semibold text-[oklch(0.42_0.08_148)]">{p.downloads}</p><p className="text-[0.65rem] text-gray-500">Descargas iniciadas</p></div>
-                      <div className="bg-gray-50 rounded p-2"><p className="text-lg font-semibold text-gray-900">{p.shares}</p><p className="text-[0.65rem] text-gray-500">Clics en compartir</p></div>
-                    </div>
-                    {sources.length > 0 && (
-                      <p className="text-xs text-gray-500">
-                        Por origen: {sources.map(([s, v]) => `${s} (${v.view} visitas, ${v.download} descargas)`).join(" · ")}
-                      </p>
-                    )}
+                    <PromoMetrics stats={p.stats} />
                   </div>
                 );
               })}

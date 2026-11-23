@@ -91,3 +91,17 @@ export function detectPromoSource(search: string, referrer: string): string {
 }
 
 export const PROMO_SOURCE_RE = /^[a-z0-9_-]{1,30}$/;
+
+export interface PromoStats {
+  views: number;
+  downloads: number;
+  uniqueClients: number;
+  registrations: number;
+  review: number;
+  /** Compartir en redes: acciones observadas por canal (confirmed = la plataforma lo confirmó) */
+  networks: Record<string, { count: number; confirmed: number }>;
+  /** Enviar a un amigo: acciones observadas por canal (WhatsApp, copia de enlace) */
+  friends: Record<string, { count: number; confirmed: number }>;
+  /** Visitas y descargas por origen (los enlaces compartidos llevan red_* / amigo_*) */
+  bySource: Record<string, { views: number; downloads: number }>;
+}

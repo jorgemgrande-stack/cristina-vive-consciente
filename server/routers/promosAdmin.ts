@@ -4,11 +4,11 @@
  */
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { ebookPromoEvents, ebookPromos } from "../../drizzle/schema";
-import { promoState } from "../../shared/promo";
+import { ebookPromoEvents, ebookPromoRegistrations, ebookPromos } from "../../drizzle/schema";
+import { promoState, type PromoStats } from "../../shared/promo";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
@@ -57,34 +57,57 @@ async function uniqueSlug(base: string): Promise<string> {
 
 const isDup = (e: unknown) => /duplicate|ER_DUP_ENTRY/i.test(String((e as { message?: string; cause?: { message?: string } })?.message ?? "") + String((e as { cause?: { message?: string } })?.cause?.message ?? ""));
 
+/**
+ * Medición de una promoción (reutilizable en futuras campañas):
+ *  - visitas: aperturas de la página pública; descargas: entregas válidas del PDF (incluye las repetidas de un mismo cliente);
+ *  - clientes únicos: una vez por persona (email) y promoción entre quienes descargaron;
+ *  - compartir: acciones observadas, no publicaciones confirmadas (salvo `confirmed`).
+ */
+export async function promoStats(promoId: number): Promise<PromoStats> {
+  const d = await db();
+  const rows = await d
+    .select({ kind: ebookPromoEvents.kind, channel: ebookPromoEvents.channel, source: ebookPromoEvents.source, n: sql<number>`count(*)`, ok: sql<number>`sum(${ebookPromoEvents.confirmed})` })
+    .from(ebookPromoEvents)
+    .where(eq(ebookPromoEvents.promoId, promoId))
+    .groupBy(ebookPromoEvents.kind, ebookPromoEvents.channel, ebookPromoEvents.source);
+  const out: PromoStats = { views: 0, downloads: 0, uniqueClients: 0, registrations: 0, review: 0, networks: {}, friends: {}, bySource: {} };
+  for (const r of rows) {
+    const n = Number(r.n);
+    out.bySource[r.source] ??= { views: 0, downloads: 0 };
+    if (r.kind === "view") { out.views += n; out.bySource[r.source].views += n; }
+    else if (r.kind === "download") { out.downloads += n; out.bySource[r.source].downloads += n; }
+    else if (r.channel?.startsWith("red_")) { const o = (out.networks[r.channel] ??= { count: 0, confirmed: 0 }); o.count += n; o.confirmed += Number(r.ok ?? 0); }
+    else if (r.channel?.startsWith("amigo_")) { const o = (out.friends[r.channel] ??= { count: 0, confirmed: 0 }); o.count += n; o.confirmed += Number(r.ok ?? 0); }
+  }
+  const [u] = await d
+    .select({ n: sql<number>`count(distinct ${ebookPromoRegistrations.email})` })
+    .from(ebookPromoEvents)
+    .innerJoin(ebookPromoRegistrations, eq(ebookPromoRegistrations.id, ebookPromoEvents.registrationId))
+    .where(and(eq(ebookPromoEvents.promoId, promoId), eq(ebookPromoEvents.kind, "download")));
+  out.uniqueClients = Number(u?.n ?? 0);
+  const [g] = await d
+    .select({ n: sql<number>`count(*)`, review: sql<number>`sum(${ebookPromoRegistrations.status} = 'review')` })
+    .from(ebookPromoRegistrations)
+    .where(eq(ebookPromoRegistrations.promoId, promoId));
+  out.registrations = Number(g?.n ?? 0);
+  out.review = Number(g?.review ?? 0);
+  return out;
+}
+
 export const promosAdminRouter = router({
   /** Campañas con su estado actual (según la hora del servidor) y su medición. */
   list: adminProcedure.query(async () => {
     const d = await db();
     const now = Date.now();
     const promos = await d.select().from(ebookPromos).orderBy(desc(ebookPromos.endsAt));
-    const events = await d
-      .select({ promoId: ebookPromoEvents.promoId, kind: ebookPromoEvents.kind, source: ebookPromoEvents.source, n: sql<number>`count(*)` })
-      .from(ebookPromoEvents)
-      .groupBy(ebookPromoEvents.promoId, ebookPromoEvents.kind, ebookPromoEvents.source)
-      .orderBy(asc(ebookPromoEvents.promoId));
-    return promos.map((p) => {
-      const ev = events.filter((e) => e.promoId === p.id);
-      const total = (k: string) => ev.filter((e) => e.kind === k).reduce((a, e) => a + Number(e.n), 0);
-      const bySource: Record<string, { view: number; download: number; share: number }> = {};
-      for (const e of ev) {
-        bySource[e.source] ??= { view: 0, download: 0, share: 0 };
-        bySource[e.source][e.kind] += Number(e.n);
-      }
-      return { ...p, state: promoState(p, now), views: total("view"), downloads: total("download"), shares: total("share"), bySource };
-    });
+    return Promise.all(promos.map(async (p) => ({ ...p, state: promoState(p, now), stats: await promoStats(p.id) })));
   }),
 
   get: adminProcedure.input(z.object({ id: z.number().int() })).query(async ({ input }) => {
     const d = await db();
     const [p] = await d.select().from(ebookPromos).where(eq(ebookPromos.id, input.id)).limit(1);
     if (!p) throw new TRPCError({ code: "NOT_FOUND", message: "Promoción no encontrada" });
-    return { ...p, state: promoState(p, Date.now()) };
+    return { ...p, state: promoState(p, Date.now()), stats: await promoStats(p.id) };
   }),
 
   create: adminProcedure.input(promoInput).mutation(async ({ input }) => {

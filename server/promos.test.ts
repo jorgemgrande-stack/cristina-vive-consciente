@@ -90,10 +90,19 @@ d("servidor con base de datos de pruebas", () => {
     const base = { name: "t", ebookId, headline: "Hay regalos que\nno se envuelven.", message: "Mensaje", bannerText: "Aviso" };
     const mk = (slug: string, over: Partial<typeof s.ebookPromos.$inferInsert>) => conn.insert(s.ebookPromos).values({ ...base, slug: `${tag}-${slug}`, published: 1, endsAt: now + 3_600_000, ...over });
     try {
-      await mk("activa", {});
+      await mk("activa", { endsAt: now + 600_000 }); // termina antes que las campañas de otros tests en paralelo
       await mk("borrador", { published: 0 });
-      await mk("programada", { startsAt: now + 60_000 });
+      await mk("programada", { startsAt: now + 60_000, endsAt: now + 300_000 });
       await mk("terminada", { endsAt: now - 1000 });
+      const [pa] = await conn.select().from(s.ebookPromos).where(eq(s.ebookPromos.slug, `${tag}-activa`));
+      const [pt] = await conn.select().from(s.ebookPromos).where(eq(s.ebookPromos.slug, `${tag}-terminada`));
+      // Registros (formulario completado): el token es la llave de la ruta protegida de ESA promoción
+      const TOK_A = "a".repeat(63) + "1";
+      const TOK_T = "b".repeat(63) + "2";
+      await conn.insert(s.ebookPromoRegistrations).values([
+        { promoId: pa.id, name: "Ana Prueba", email: `${tag}@t.es`, phone: "+34600000001", source: "instagram", status: "created", token: TOK_A },
+        { promoId: pt.id, name: "Ana Prueba", email: `${tag}@t.es`, phone: "+34600000001", source: "directo", status: "created", token: TOK_T },
+      ]);
 
       const app = express();
       registerPromoRoutes(app);
@@ -115,14 +124,36 @@ d("servidor con base de datos de pruebas", () => {
         expect((await (await fetch(`${url}/api/promos/${tag}-programada`)).json()).state).toBe("scheduled");
 
         // Descarga: activa sí; borrador, programada y terminada no
-        const ok = await fetch(`${url}/api/promos/${tag}-activa/descarga?s=instagram`);
+        // Sin formulario (sin token) o con un token ajeno/inventado: no hay descarga
+        for (const q of ["", "?t=", `?t=${"c".repeat(64)}`, `?t=${TOK_T}`, "?t=../../etc"]) {
+          const r = await fetch(`${url}/api/promos/${tag}-activa/descarga${q}`);
+          expect(r.status, q).toBe(403);
+          expect(r.headers.get("cache-control")).toContain("no-store");
+        }
+        const ok = await fetch(`${url}/api/promos/${tag}-activa/descarga?t=${TOK_A}&s=otro`);
         expect(ok.status).toBe(200);
         expect(ok.headers.get("content-type")).toContain("application/pdf");
         expect(ok.headers.get("content-disposition")).toContain("attachment");
         expect(ok.headers.get("cache-control")).toContain("no-store");
         expect(await ok.text()).toContain("%PDF-1.4");
+        // Doble clic / reintento técnico / petición parcial / HEAD: no inflan el contador
+        await fetch(`${url}/api/promos/${tag}-activa/descarga?t=${TOK_A}`);
+        await fetch(`${url}/api/promos/${tag}-activa/descarga?t=${TOK_A}`, { headers: { Range: "bytes=5-" } });
+        const part = await fetch(`${url}/api/promos/${tag}-activa/descarga?t=${TOK_A}`, { headers: { Range: "bytes=5-" } });
+        expect(part.status).toBe(206);
+        await fetch(`${url}/api/promos/${tag}-activa/descarga?t=${TOK_A}`, { method: "HEAD" });
+        const dl1 = await conn.select().from(s.ebookPromoEvents).where(eq(s.ebookPromoEvents.promoId, pa.id));
+        expect(dl1.filter((e) => e.kind === "download")).toHaveLength(1);
+        // Pasada la ventana de repetición, otra descarga válida del mismo cliente SÍ suma
+        const later = vi.spyOn(Date, "now").mockReturnValue(Date.now() + 120_000);
+        try {
+          expect((await fetch(`${url}/api/promos/${tag}-activa/descarga?t=${TOK_A}`)).status).toBe(200);
+        } finally {
+          later.mockRestore();
+        }
+        expect((await conn.select().from(s.ebookPromoEvents).where(eq(s.ebookPromoEvents.promoId, pa.id))).filter((e) => e.kind === "download")).toHaveLength(2);
         for (const slug of ["borrador", "programada", "terminada", "no-existe"]) {
-          const r = await fetch(`${url}/api/promos/${tag}-${slug}/descarga`);
+          const r = await fetch(`${url}/api/promos/${tag}-${slug}/descarga?t=${TOK_T}`);
           expect(r.status, slug).toBe(410);
           expect(r.headers.get("cache-control")).toContain("no-store");
         }
@@ -133,9 +164,9 @@ d("servidor con base de datos de pruebas", () => {
         expect(act.active.path).toBe(`/promocion/${act.active.slug}`);
 
         // El cierre llega mientras alguien conserva el enlace: con el reloj del servidor pasado el cierre, 410 y sin aviso
-        const spy = vi.spyOn(Date, "now").mockReturnValue(now + 3_600_001);
+        const spy = vi.spyOn(Date, "now").mockReturnValue(now + 600_001);
         try {
-          expect((await fetch(`${url}/api/promos/${tag}-activa/descarga`)).status).toBe(410);
+          expect((await fetch(`${url}/api/promos/${tag}-activa/descarga?t=${TOK_A}`)).status).toBe(410);
           expect((await (await fetch(`${url}/api/promos/${tag}-activa`)).json()).state).toBe("ended");
           const after = await (await fetch(`${url}/api/promos/active`)).json();
           expect(after.active?.slug?.startsWith(tag) ?? false).toBe(false);
@@ -145,11 +176,23 @@ d("servidor con base de datos de pruebas", () => {
 
         // Medición agregada
         await fetch(`${url}/api/promos/${tag}-activa/event`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "view", source: "whatsapp" }) });
-        await fetch(`${url}/api/promos/${tag}-activa/event`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "share", source: "directo", channel: "whatsapp" }) });
+        await fetch(`${url}/api/promos/${tag}-activa/event`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "share", source: "directo", channel: "amigo_whatsapp" }) });
+        await fetch(`${url}/api/promos/${tag}-activa/event`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "share", source: "directo", channel: "whatsapp" }) }); // canal desconocido: se ignora
         await fetch(`${url}/api/promos/${tag}-activa/event`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "download", source: "x" }) }); // no se acepta desde el navegador
-        const [promo] = await conn.select().from(s.ebookPromos).where(eq(s.ebookPromos.slug, `${tag}-activa`));
-        const ev = await conn.select().from(s.ebookPromoEvents).where(eq(s.ebookPromoEvents.promoId, promo.id));
-        expect(ev.map((e) => `${e.kind}:${e.source}:${e.channel ?? ""}`).sort()).toEqual(["download:instagram:", "share:directo:whatsapp", "view:whatsapp:"]);
+        const ev = await conn.select().from(s.ebookPromoEvents).where(eq(s.ebookPromoEvents.promoId, pa.id));
+        // La descarga se atribuye a la procedencia guardada en el registro (instagram), no a la que llegue en la petición
+        expect(ev.map((e) => `${e.kind}:${e.source}:${e.channel ?? ""}`).sort()).toEqual(["download:instagram:", "download:instagram:", "share:directo:amigo_whatsapp", "view:whatsapp:"]);
+
+        // Métricas del panel: descargas totales (2, mismo cliente) y clientes únicos (1), compartir por canal, atribución por origen
+        await fetch(`${url}/api/promos/${tag}-activa/event`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "share", source: "red_facebook", channel: "red_nativo", confirmed: true }) });
+        await fetch(`${url}/api/promos/${tag}-activa/event`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "share", source: "directo", channel: "amigo_enlace" }) });
+        const { promoStats } = await import("./routers/promosAdmin");
+        const st = await promoStats(pa.id);
+        expect(st).toMatchObject({ views: 1, downloads: 2, uniqueClients: 1, registrations: 1, review: 0 });
+        expect(st.networks).toEqual({ red_nativo: { count: 1, confirmed: 1 } });
+        expect(st.friends).toEqual({ amigo_whatsapp: { count: 1, confirmed: 0 }, amigo_enlace: { count: 1, confirmed: 0 } });
+        expect(st.bySource.instagram).toEqual({ views: 0, downloads: 2 });
+        expect(st.bySource.whatsapp.views).toBe(1);
 
         // Página: SEO con la portada, 404 para borrador/inexistente, sigue viva tras el cierre
         const page = await (await fetch(`${url}/promocion/${tag}-activa`)).text();
@@ -163,7 +206,10 @@ d("servidor con base de datos de pruebas", () => {
       }
     } finally {
       const ids = (await conn.select({ id: s.ebookPromos.id }).from(s.ebookPromos).where(like(s.ebookPromos.slug, `${tag}%`))).map((r) => r.id);
-      for (const id of ids) await conn.delete(s.ebookPromoEvents).where(eq(s.ebookPromoEvents.promoId, id));
+      for (const id of ids) {
+        await conn.delete(s.ebookPromoEvents).where(eq(s.ebookPromoEvents.promoId, id));
+        await conn.delete(s.ebookPromoRegistrations).where(eq(s.ebookPromoRegistrations.promoId, id));
+      }
       await conn.delete(s.ebookPromos).where(like(s.ebookPromos.slug, `${tag}%`));
       await conn.delete(s.ebooks).where(like(s.ebooks.slug, `${tag}%`));
       fs.rmSync(dir, { recursive: true, force: true });

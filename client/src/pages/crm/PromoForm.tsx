@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { PROMO_STATE_LABEL } from "./Promociones";
+import PromoMetrics from "@/components/crm/PromoMetrics";
 import { madridLocalToMs, msToMadridLocal, promoPath } from "@shared/promo";
 
 type Mode = "draft" | "now" | "scheduled";
@@ -127,6 +128,13 @@ export default function PromoForm() {
           {promo && <span className={`text-xs px-2 py-0.5 rounded ${PROMO_STATE_LABEL[promo.state].cls}`}>{PROMO_STATE_LABEL[promo.state].label}</span>}
         </div>
 
+        {promo && (
+          <div className="bg-white rounded-lg border border-gray-100 p-5 mb-5">
+            <h2 className="text-sm font-semibold text-gray-900 mb-3">Métricas de la campaña</h2>
+            <PromoMetrics stats={promo.stats} />
+          </div>
+        )}
+
         <div className="bg-white rounded-lg border border-gray-100 p-5 space-y-5">
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
@@ -196,7 +204,7 @@ export default function PromoForm() {
             <div className="flex items-center justify-between">
               <div>
                 <Label>Donativo voluntario por Bizum</Label>
-                <p className="text-xs text-gray-500">Solo muestra las instrucciones; la descarga no espera confirmación.</p>
+                <p className="text-xs text-gray-500">Solo muestra las instrucciones: quien completa el formulario descarga sin donar.</p>
               </div>
               <Switch checked={f.donationEnabled} onCheckedChange={(v) => set("donationEnabled", v)} />
             </div>
