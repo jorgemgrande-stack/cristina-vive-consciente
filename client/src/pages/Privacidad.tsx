@@ -9,7 +9,7 @@ import Layout from "@/components/Layout";
 import { CONSENT_TEXTS, RETENTION_REVIEW_MONTHS } from "@shared/clientCare";
 
 const CONTACT_EMAIL = "info@cristinaviveconsciente.es";
-const UPDATED = "25 de octubre de 2026";
+const UPDATED = "24 de noviembre de 2026";
 
 /** Dato que falta: se muestra marcado para que no pase por un dato real. */
 function Pendiente({ children }: { children: ReactNode }) {
@@ -61,6 +61,18 @@ const TREATMENTS: Array<{ title: string; data: string; purpose: string; basis: R
     data: "El nombre que indiques y el comentario.",
     purpose: "Moderar y, si se aprueba, publicar el comentario con ese nombre.",
     basis: "Tu consentimiento al enviarlo (art. 6.1.a RGPD).",
+  },
+  {
+    title: "Descarga de promociones y regalos digitales",
+    data: "Nombre y apellidos, correo electrónico y teléfono, y la campaña y el canal por el que llegaste (por ejemplo, Instagram o WhatsApp). Los enlaces para compartir solo llevan la campaña y el canal, nunca datos personales.",
+    purpose:
+      "Gestionar tu descarga del recurso gratuito y registrarla en tu ficha de clientes (categoría «Recursos gratuitos»). Este formulario no te suscribe a novedades ni a emails de seguimiento. También se cuentan, de forma agregada, las visitas, descargas y acciones de compartir de cada campaña. Si Cristina tuviera ya una ficha tuya, se reutiliza; si tus datos coincidieran con varias fichas, se deja para que ella lo revise y no se mezcla ninguna.",
+    basis: (
+      <>
+        Tu solicitud de la descarga (art. 6.1.b RGPD) y, para las estadísticas agregadas, el interés legítimo de Cristina (art. 6.1.f RGPD).{" "}
+        <Pendiente>plazo de conservación confirmado por Cristina</Pendiente>
+      </>
+    ),
   },
   {
     title: "Ficha de cliente",
@@ -175,6 +187,7 @@ export default function Privacidad() {
             <H2>5. Cuánto tiempo se guardan</H2>
             <ul className="list-disc pl-5 space-y-1">
               <li>Primera visita y Acompañamiento: mientras mantengas el consentimiento y sean necesarios, con revisión cada {RETENTION_REVIEW_MONTHS} meses.</li>
+              <li>Descarga de promociones y regalos digitales: mientras seas clienta o cliente potencial de Cristina, con revisión periódica, y puedes pedir su supresión cuando quieras. <Pendiente>plazo concreto confirmado por Cristina</Pendiente></li>
               <li>Solicitudes, consultas, ficha de cliente y comentarios: mientras sean necesarios para la finalidad. <Pendiente>plazos concretos</Pendiente></li>
               <li>Facturas y datos de pedidos: durante los plazos que exija la normativa fiscal y mercantil. <Pendiente>plazos concretos</Pendiente></li>
             </ul>

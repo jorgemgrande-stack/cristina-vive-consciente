@@ -12,7 +12,7 @@
 import crypto from "crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { clientCategories, clients, clientServices, ebookPromoRegistrations, serviceCatalog, type EbookPromo, type Ebook } from "../drizzle/schema";
+import { clientCategories, clients, clientServices, ebookPromoRegistrations, ebookPromos, ebooks, serviceCatalog, type EbookPromo, type Ebook } from "../drizzle/schema";
 import { namesCompatible, normalizeEmail, normalizePhone as normalizePhoneDigits, splitName } from "./clientImport";
 import { normalizePhone } from "../shared/phone";
 
@@ -83,6 +83,58 @@ export interface RegistrationResult {
   categoryAdded: boolean;
 }
 
+/** Categoría «Recursos gratuitos» (si falta) y recurso gratuito UNA vez por cliente y promoción. Sin pedido, factura ni pago. */
+export async function classifyClient(promo: EbookPromo, ebook: Ebook, clientId: number, source: string): Promise<{ resourceCreated: boolean; categoryAdded: boolean }> {
+  const db = await requireDb();
+  let resourceCreated = false;
+  let categoryAdded = false;
+  try {
+    await db.insert(clientCategories).values({ clientId, category: "recursos_gratuitos" });
+    categoryAdded = true;
+  } catch (e) {
+    if (!isDup(e)) throw e;
+  }
+  const node = await ensurePromoNode(promo, ebook);
+  try {
+    await db.insert(clientServices).values({
+      clientId,
+      categoryId: node.categoryId,
+      groupId: null,
+      itemId: node.itemId,
+      pathLabel: node.pathLabel,
+      name: node.name,
+      amountCents: null,
+      paymentStatus: "free",
+      receivedAt: Date.now(),
+      notes: `Origen: promoción «${promo.name}» (/promocion/${promo.slug}) · procedencia: ${source}`,
+      source: "promo",
+      sourceKey: `promo:${promo.id}`,
+    });
+    resourceCreated = true;
+  } catch (e) {
+    if (!isDup(e)) throw e; // ya figuraba: una sola vez por cliente y promoción
+  }
+  return { resourceCreated, categoryAdded };
+}
+
+/** Cristina vincula un registro «en revisión» a la ficha correcta: se clasifica y sus descargas pasan a contar como cliente único. */
+export function linkRegistrationToClient(registrationId: number, clientId: number): Promise<{ resourceCreated: boolean; categoryAdded: boolean }> {
+  return serialized(async () => {
+    const db = await requireDb();
+    const [reg] = await db.select().from(ebookPromoRegistrations).where(eq(ebookPromoRegistrations.id, registrationId)).limit(1);
+    if (!reg) throw new Error("Registro no encontrado");
+    if (reg.clientId != null) throw new Error("Este registro ya está vinculado a una ficha");
+    const [client] = await db.select({ id: clients.id }).from(clients).where(eq(clients.id, clientId)).limit(1);
+    if (!client) throw new Error("Ficha no encontrada");
+    const [promo] = await db.select().from(ebookPromos).where(eq(ebookPromos.id, reg.promoId)).limit(1);
+    const [ebook] = promo ? await db.select().from(ebooks).where(eq(ebooks.id, promo.ebookId)).limit(1) : [];
+    if (!promo || !ebook) throw new Error("Promoción no encontrada");
+    const r = await classifyClient(promo, ebook, clientId, reg.source);
+    await db.update(ebookPromoRegistrations).set({ clientId, status: "linked" }).where(eq(ebookPromoRegistrations.id, registrationId));
+    return r;
+  });
+}
+
 export function registerPromoDownload(promo: EbookPromo, ebook: Ebook, input: RegistrationInput & { name: string; email: string; phone: string }): Promise<RegistrationResult> {
   return serialized(async () => {
     const db = await requireDb();
@@ -123,34 +175,7 @@ export function registerPromoDownload(promo: EbookPromo, ebook: Ebook, input: Re
 
     let resourceCreated = false;
     let categoryAdded = false;
-    if (clientId != null) {
-      try {
-        await db.insert(clientCategories).values({ clientId, category: "recursos_gratuitos" });
-        categoryAdded = true;
-      } catch (e) {
-        if (!isDup(e)) throw e;
-      }
-      const node = await ensurePromoNode(promo, ebook);
-      try {
-        await db.insert(clientServices).values({
-          clientId,
-          categoryId: node.categoryId,
-          groupId: null,
-          itemId: node.itemId,
-          pathLabel: node.pathLabel,
-          name: node.name,
-          amountCents: null,
-          paymentStatus: "free",
-          receivedAt: Date.now(),
-          notes: `Origen: promoción «${promo.name}» (/promocion/${promo.slug}) · procedencia: ${input.source}`,
-          source: "promo",
-          sourceKey: `promo:${promo.id}`,
-        });
-        resourceCreated = true;
-      } catch (e) {
-        if (!isDup(e)) throw e; // ya figuraba: una sola vez por cliente y promoción
-      }
-    }
+    if (clientId != null) ({ resourceCreated, categoryAdded } = await classifyClient(promo, ebook, clientId, input.source));
 
     const token = crypto.randomBytes(32).toString("hex");
     const [reg] = await db.insert(ebookPromoRegistrations).values({

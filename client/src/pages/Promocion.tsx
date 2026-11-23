@@ -330,7 +330,7 @@ export default function Promocion() {
             ))}
             {errors.form && <p className="text-sm text-red-600 font-body" role="alert" data-testid="promo-form-error">{errors.form}</p>}
             <p className="text-[0.7rem] text-[oklch(0.45_0.02_60)] font-body leading-snug">
-              Guardaremos tus datos en el registro de clientes de Cristina para gestionar tu descarga. Más información en la{" "}
+              Recogemos tu nombre y apellidos, correo electrónico y teléfono para gestionar tu descarga y registrarla en la ficha de clientes de Cristina. Este formulario no te suscribe a novedades. Más información en la{" "}
               <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">política de privacidad</a>.
             </p>
             <button

@@ -15,8 +15,8 @@ import express, { type Express, type Request, type Response } from "express";
 import { and, asc, eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { getUploadDir } from "./storage";
-import { ebookPromoEvents, ebookPromos, ebooks, type EbookPromo } from "../drizzle/schema";
-import { desc, gt } from "drizzle-orm";
+import { ebookPromoEvents, ebookPromoRegistrations, ebookPromos, ebooks, type EbookPromo } from "../drizzle/schema";
+import { isNull, lte, or } from "drizzle-orm";
 import { findRegistrationByToken, registerPromoDownload, validateRegistration } from "./promoRegistrations";
 import { clientIp } from "./_core/adminAuth";
 import { ebookImages, ebookPath, ebookPriceLabel, ebookUrlSlug } from "../shared/ebookPage";
@@ -98,6 +98,24 @@ function tooManyAttempts(key: string, now = Date.now()) {
 
 /** Ventana en la que repetir la misma entrega (doble clic, reintento técnico) no suma otra descarga. */
 export const DOWNLOAD_DEDUPE_MS = 60_000;
+
+/** Reserva el turno de descarga de un registro: UPDATE condicional atómico. true = esta petición es la que cuenta. */
+export async function claimDownload(registrationId: number, now: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const [r] = await db
+    .update(ebookPromoRegistrations)
+    .set({ lastDownloadAt: now })
+    .where(and(eq(ebookPromoRegistrations.id, registrationId), or(isNull(ebookPromoRegistrations.lastDownloadAt), lte(ebookPromoRegistrations.lastDownloadAt, now - DOWNLOAD_DEDUPE_MS))));
+  return Number((r as { affectedRows?: number }).affectedRows ?? 0) === 1;
+}
+
+/** Devuelve el turno si la entrega falló (solo si sigue siendo el nuestro). */
+export async function releaseDownload(registrationId: number, claimedAt: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(ebookPromoRegistrations).set({ lastDownloadAt: null }).where(and(eq(ebookPromoRegistrations.id, registrationId), eq(ebookPromoRegistrations.lastDownloadAt, claimedAt))).catch(() => undefined);
+}
 
 /** Ruta absoluta del PDF dentro de la carpeta de subidas; null si no es un archivo de subidas válido. */
 export function resolveUploadFile(pdfUrl: string): string | null {
@@ -196,14 +214,19 @@ export function registerPromoRoutes(app: Express) {
     const file = resolveUploadFile(row.ebook.pdfUrl);
     if (!file) return res.status(404).type("text/plain; charset=utf-8").send("El archivo no está disponible. Escribe a Cristina.");
 
+    // Cuenta solo la entrega completa desde el principio (sin Range, o «bytes=0-»): no suman HEAD, peticiones parciales ni repeticiones
     const range = req.headers.range;
-    const fromStart = !range || /^bytes=0-/.test(range);
-    if (req.method === "GET" && fromStart) {
-      const db = await getDb();
-      const recent = db
-        ? await db.select({ id: ebookPromoEvents.id }).from(ebookPromoEvents).where(and(eq(ebookPromoEvents.registrationId, reg.id), eq(ebookPromoEvents.kind, "download"), gt(ebookPromoEvents.createdAt, new Date(now - DOWNLOAD_DEDUPE_MS)))).orderBy(desc(ebookPromoEvents.id)).limit(1)
-        : [];
-      if (recent.length === 0) await recordPromoEvent(row.promo.id, "download", reg.source, null, { registrationId: reg.id });
+    const countable = req.method === "GET" && (!range || /^bytes=0-$/.test(range));
+    // Reserva atómica (una sola sentencia UPDATE): de varias peticiones simultáneas solo una obtiene el turno
+    const claimed = countable ? await claimDownload(reg.id, now) : false;
+    if (claimed) {
+      res.once("finish", () => {
+        // «finish»: el servidor terminó de enviar el PDF. Solo una entrega correcta (200, o 206 completa) suma
+        if (res.statusCode === 200 || res.statusCode === 206) void recordPromoEvent(row.promo.id, "download", reg.source, null, { registrationId: reg.id });
+        else void releaseDownload(reg.id, now);
+      });
+      // Conexión cortada antes de terminar (entrega fallida): no suma y se libera el turno para el reintento
+      res.once("close", () => { if (!res.writableFinished) void releaseDownload(reg.id, now); });
     }
     res.sendFile(file, { cacheControl: false, headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${ebookUrlSlug(row.ebook.slug)}.pdf"`, ...NO_STORE } }, (err) => {
       if (err && !res.headersSent) res.status(500).end();

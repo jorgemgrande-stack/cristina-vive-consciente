@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { PROMO_STATE_LABEL } from "./Promociones";
 import PromoMetrics from "@/components/crm/PromoMetrics";
+import PromoReviews from "@/components/crm/PromoReviews";
 import { madridLocalToMs, msToMadridLocal, promoPath } from "@shared/promo";
 
 type Mode = "draft" | "now" | "scheduled";
@@ -134,6 +135,8 @@ export default function PromoForm() {
             <PromoMetrics stats={promo.stats} />
           </div>
         )}
+
+        {promo && <PromoReviews promoId={promo.id} />}
 
         <div className="bg-white rounded-lg border border-gray-100 p-5 space-y-5">
           <div className="grid sm:grid-cols-2 gap-4">

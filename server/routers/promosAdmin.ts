@@ -4,10 +4,11 @@
  */
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { ebookPromoEvents, ebookPromoRegistrations, ebookPromos } from "../../drizzle/schema";
+import { clients, ebookPromoEvents, ebookPromoRegistrations, ebookPromos } from "../../drizzle/schema";
+import { linkRegistrationToClient } from "../promoRegistrations";
 import { promoState, type PromoStats } from "../../shared/promo";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -70,7 +71,7 @@ export async function promoStats(promoId: number): Promise<PromoStats> {
     .from(ebookPromoEvents)
     .where(eq(ebookPromoEvents.promoId, promoId))
     .groupBy(ebookPromoEvents.kind, ebookPromoEvents.channel, ebookPromoEvents.source);
-  const out: PromoStats = { views: 0, downloads: 0, uniqueClients: 0, registrations: 0, review: 0, networks: {}, friends: {}, bySource: {} };
+  const out: PromoStats = { views: 0, downloads: 0, uniqueClients: 0, downloadsInReview: 0, registrations: 0, review: 0, networks: {}, friends: {}, bySource: {} };
   for (const r of rows) {
     const n = Number(r.n);
     out.bySource[r.source] ??= { views: 0, downloads: 0 };
@@ -79,12 +80,20 @@ export async function promoStats(promoId: number): Promise<PromoStats> {
     else if (r.channel?.startsWith("red_")) { const o = (out.networks[r.channel] ??= { count: 0, confirmed: 0 }); o.count += n; o.confirmed += Number(r.ok ?? 0); }
     else if (r.channel?.startsWith("amigo_")) { const o = (out.friends[r.channel] ??= { count: 0, confirmed: 0 }); o.count += n; o.confirmed += Number(r.ok ?? 0); }
   }
+  // Clientes únicos: por ID de ficha del CRM (dos correos de la misma ficha = 1). Las descargas «en revisión» (sin ficha)
+  // suman al total y pasan a clientes únicos cuando se vinculan a una ficha.
   const [u] = await d
-    .select({ n: sql<number>`count(distinct ${ebookPromoRegistrations.email})` })
+    .select({ n: sql<number>`count(distinct ${ebookPromoRegistrations.clientId})` })
     .from(ebookPromoEvents)
     .innerJoin(ebookPromoRegistrations, eq(ebookPromoRegistrations.id, ebookPromoEvents.registrationId))
-    .where(and(eq(ebookPromoEvents.promoId, promoId), eq(ebookPromoEvents.kind, "download")));
+    .where(and(eq(ebookPromoEvents.promoId, promoId), eq(ebookPromoEvents.kind, "download"), isNotNull(ebookPromoRegistrations.clientId)));
   out.uniqueClients = Number(u?.n ?? 0);
+  const [rv] = await d
+    .select({ n: sql<number>`count(*)` })
+    .from(ebookPromoEvents)
+    .innerJoin(ebookPromoRegistrations, eq(ebookPromoRegistrations.id, ebookPromoEvents.registrationId))
+    .where(and(eq(ebookPromoEvents.promoId, promoId), eq(ebookPromoEvents.kind, "download"), isNull(ebookPromoRegistrations.clientId)));
+  out.downloadsInReview = Number(rv?.n ?? 0);
   const [g] = await d
     .select({ n: sql<number>`count(*)`, review: sql<number>`sum(${ebookPromoRegistrations.status} = 'review')` })
     .from(ebookPromoRegistrations)
@@ -101,6 +110,31 @@ export const promosAdminRouter = router({
     const now = Date.now();
     const promos = await d.select().from(ebookPromos).orderBy(desc(ebookPromos.endsAt));
     return Promise.all(promos.map(async (p) => ({ ...p, state: promoState(p, now), stats: await promoStats(p.id) })));
+  }),
+
+  /** Registros pendientes de identificar (varias fichas posibles): con los candidatos para elegir. */
+  reviews: adminProcedure.input(z.object({ promoId: z.number().int() })).query(async ({ input }) => {
+    const d = await db();
+    const regs = await d.select().from(ebookPromoRegistrations).where(and(eq(ebookPromoRegistrations.promoId, input.promoId), eq(ebookPromoRegistrations.status, "review"), isNull(ebookPromoRegistrations.clientId))).orderBy(desc(ebookPromoRegistrations.id));
+    const ids = Array.from(new Set(regs.flatMap((r) => (r.candidates ?? "").split(",").map(Number).filter(Boolean))));
+    const cands = ids.length ? await d.select({ id: clients.id, firstName: clients.firstName, lastName: clients.lastName, email: clients.email, phone: clients.phone }).from(clients).where(inArray(clients.id, ids)) : [];
+    return regs.map((r) => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      phone: r.phone,
+      createdAt: r.createdAt,
+      candidates: (r.candidates ?? "").split(",").map(Number).filter(Boolean).map((id) => cands.find((c) => c.id === id)).filter(Boolean),
+    }));
+  }),
+
+  /** Vincula un registro en revisión a la ficha elegida: categoría, recurso y clientes únicos. */
+  linkRegistration: adminProcedure.input(z.object({ registrationId: z.number().int(), clientId: z.number().int() })).mutation(async ({ input }) => {
+    try {
+      return await linkRegistrationToClient(input.registrationId, input.clientId);
+    } catch (e) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: (e as Error).message });
+    }
   }),
 
   get: adminProcedure.input(z.object({ id: z.number().int() })).query(async ({ input }) => {

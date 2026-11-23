@@ -51,7 +51,7 @@ export default function PromoMetrics({ stats }: { stats: PromoStats }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Tile n={stats.views} title="Visitas a la ficha" hint="Aperturas de la página pública de la promoción" />
         <Tile n={stats.downloads} title="Descargas totales" hint="Entregas válidas del PDF, incluidas las repetidas de un mismo cliente" accent />
-        <Tile n={stats.uniqueClients} title="Clientes únicos que descargaron" hint="Una vez por cliente y promoción" accent />
+        <Tile n={stats.uniqueClients} title={`Clientes únicos que descargaron${stats.downloadsInReview ? ` (+${stats.downloadsInReview} descargas en revisión)` : ""}`} hint="Una vez por ficha del CRM y promoción; las descargas en revisión se suman al vincularlas a una ficha" accent />
         <Tile n={stats.registrations} title={`Formularios completados${stats.review ? ` (${stats.review} por revisar)` : ""}`} />
       </div>
       <div className="grid sm:grid-cols-2 gap-3">

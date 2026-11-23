@@ -142,8 +142,11 @@ d("servidor con base de datos de pruebas", () => {
         const part = await fetch(`${url}/api/promos/${tag}-activa/descarga?t=${TOK_A}`, { headers: { Range: "bytes=5-" } });
         expect(part.status).toBe(206);
         await fetch(`${url}/api/promos/${tag}-activa/descarga?t=${TOK_A}`, { method: "HEAD" });
-        const dl1 = await conn.select().from(s.ebookPromoEvents).where(eq(s.ebookPromoEvents.promoId, pa.id));
-        expect(dl1.filter((e) => e.kind === "download")).toHaveLength(1);
+        // La descarga se anota cuando el servidor TERMINA de servir el PDF (asíncrono tras «finish»)
+        const dlCount = async () => (await conn.select().from(s.ebookPromoEvents).where(eq(s.ebookPromoEvents.promoId, pa.id))).filter((e) => e.kind === "download").length;
+        await vi.waitFor(async () => expect(await dlCount()).toBe(1));
+        await new Promise((r) => setTimeout(r, 300));
+        expect(await dlCount()).toBe(1);
         // Pasada la ventana de repetición, otra descarga válida del mismo cliente SÍ suma
         const later = vi.spyOn(Date, "now").mockReturnValue(Date.now() + 120_000);
         try {
@@ -151,7 +154,7 @@ d("servidor con base de datos de pruebas", () => {
         } finally {
           later.mockRestore();
         }
-        expect((await conn.select().from(s.ebookPromoEvents).where(eq(s.ebookPromoEvents.promoId, pa.id))).filter((e) => e.kind === "download")).toHaveLength(2);
+        await vi.waitFor(async () => expect(await dlCount()).toBe(2));
         for (const slug of ["borrador", "programada", "terminada", "no-existe"]) {
           const r = await fetch(`${url}/api/promos/${tag}-${slug}/descarga?t=${TOK_T}`);
           expect(r.status, slug).toBe(410);
@@ -188,7 +191,7 @@ d("servidor con base de datos de pruebas", () => {
         await fetch(`${url}/api/promos/${tag}-activa/event`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "share", source: "directo", channel: "amigo_enlace" }) });
         const { promoStats } = await import("./routers/promosAdmin");
         const st = await promoStats(pa.id);
-        expect(st).toMatchObject({ views: 1, downloads: 2, uniqueClients: 1, registrations: 1, review: 0 });
+        expect(st).toMatchObject({ views: 1, downloads: 2, uniqueClients: 0, downloadsInReview: 2, registrations: 1, review: 0 }); // el registro de la prueba no tiene ficha: suma al total, no a clientes únicos
         expect(st.networks).toEqual({ red_nativo: { count: 1, confirmed: 1 } });
         expect(st.friends).toEqual({ amigo_whatsapp: { count: 1, confirmed: 0 }, amigo_enlace: { count: 1, confirmed: 0 } });
         expect(st.bySource.instagram).toEqual({ views: 0, downloads: 2 });

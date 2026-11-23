@@ -1008,6 +1008,8 @@ export const ebookPromoRegistrations = mysqlTable("ebook_promo_registrations", {
   /** ids de fichas candidatas separados por coma (solo en revisión) */
   candidates: varchar("candidates", { length: 200 }),
   token: varchar("token", { length: 64 }).notNull().unique(),
+  /** ms de la última entrega reservada: cierra la puerta de forma atómica a las peticiones repetidas o simultáneas */
+  lastDownloadAt: bigint("lastDownloadAt", { mode: "number" }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type EbookPromoRegistration = typeof ebookPromoRegistrations.$inferSelect;
