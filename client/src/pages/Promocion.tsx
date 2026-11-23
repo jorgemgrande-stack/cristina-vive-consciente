@@ -29,6 +29,31 @@ function Countdown({ remaining }: { remaining: number }) {
   );
 }
 
+/** Copia al portapapeles: API moderna y, si el navegador no la ofrece o la rechaza, el método clásico. Devuelve si se copió. */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    /* se prueba el método clásico */
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 function CopyRow({ label, value, shown }: { label: string; value: string; shown: string }) {
   return (
     <div className="flex items-center justify-between gap-3 bg-[oklch(0.96_0.012_80)] border border-[oklch(0.9_0.012_78)] px-3 py-2.5">
@@ -38,7 +63,7 @@ function CopyRow({ label, value, shown }: { label: string; value: string; shown:
       </div>
       <button
         type="button"
-        onClick={() => navigator.clipboard?.writeText(value).then(() => toast.success(`${label} copiado`), () => toast.error("No se pudo copiar"))}
+        onClick={async () => ((await copyText(value)) ? toast.success(`${label} copiado`) : toast.error("No se pudo copiar"))}
         className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-2 border border-[oklch(0.52_0.08_148)] text-[oklch(0.52_0.08_148)] text-xs font-body hover:bg-[oklch(0.52_0.08_148)] hover:text-white transition-colors"
         style={{ borderRadius: 0, fontWeight: 500 }}
         aria-label={`Copiar ${label.toLowerCase()}`}
@@ -115,13 +140,14 @@ export default function Promocion() {
 
   const shareText = (channel: string) => promoShareMessage(title, promo.endsAt, withSource(channel));
   /** Acción observada: se anota cuando el navegador confirma la copia o abre el destino, no antes. */
-  const copyLink = () =>
-    navigator.clipboard
-      ? navigator.clipboard.writeText(withSource("amigo_enlace")).then(
-          () => { trackPromo(promo.slug, "share", { channel: "amigo_enlace" }); toast.success("Enlace copiado"); },
-          () => toast.error("No se pudo copiar el enlace"),
-        )
-      : toast.error("Tu navegador no permite copiar el enlace.");
+  const copyLink = async () => {
+    if (await copyText(withSource("amigo_enlace"))) {
+      trackPromo(promo.slug, "share", { channel: "amigo_enlace" }); // solo si la copia se confirma
+      toast.success("Enlace copiado");
+    } else {
+      toast.error("No se pudo copiar el enlace");
+    }
+  };
   /** Menú de compartir del móvil: solo se anota si la plataforma devuelve «compartido» (confirmada). */
   const nativeShare = async () => {
     if (!navigator.share) return toast.error("Tu navegador no tiene menú de compartir: usa Facebook, X o WhatsApp.");
@@ -138,8 +164,14 @@ export default function Promocion() {
       channel === "red_facebook"
         ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`
         : `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText(channel).replace(link, "").trim())}&url=${encodeURIComponent(link)}`;
-    const w = window.open(dest, "_blank", "noopener,noreferrer");
-    if (w) trackPromo(promo.slug, "share", { channel }); // observado: se abrió la ventana (no equivale a publicación confirmada)
+    // Con «noopener» el navegador devuelve siempre null: se abre sin él y se corta el vínculo con esta página a mano
+    const w = window.open(dest, "_blank");
+    if (w) {
+      try { w.opener = null; } catch { /* sin acceso */ }
+      trackPromo(promo.slug, "share", { channel }); // observado: la ventana se abrió (no equivale a publicación confirmada)
+    } else {
+      toast.error("Tu navegador ha bloqueado la ventana. Permite las ventanas emergentes para compartir.");
+    }
   };
 
   return (
