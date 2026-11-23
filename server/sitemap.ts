@@ -10,7 +10,8 @@ import { Router } from "express";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { publishedCustomPaths, noindexSystemPaths } from "./siteDb";
-import { services, waterProducts, oilProducts, blogPosts } from "../drizzle/schema";
+import { services, waterProducts, oilProducts, blogPosts, ebooks } from "../drizzle/schema";
+import { ebookPath } from "../shared/ebookPage";
 
 const SITE_URL = (process.env.SITE_URL ?? "https://cristinaviveconsciente.es").replace(/\/+$/, "");
 
@@ -55,7 +56,7 @@ async function getDynamicEntries(): Promise<SitemapEntry[]> {
   const db = await getDb();
   if (!db) return [];
 
-  const [serviceRows, waterRows, oilRows, postRows] = await Promise.all([
+  const [serviceRows, waterRows, oilRows, postRows, ebookRows] = await Promise.all([
     db
       .select({ slug: services.slug, type: services.type, updatedAt: services.updatedAt })
       .from(services)
@@ -72,6 +73,10 @@ async function getDynamicEntries(): Promise<SitemapEntry[]> {
       .select({ slug: blogPosts.slug, updatedAt: blogPosts.updatedAt })
       .from(blogPosts)
       .where(eq(blogPosts.status, "published")),
+    db
+      .select({ slug: ebooks.slug, updatedAt: ebooks.updatedAt })
+      .from(ebooks)
+      .where(eq(ebooks.status, "active")),
   ]);
 
   const entries: SitemapEntry[] = [];
@@ -81,6 +86,7 @@ async function getDynamicEntries(): Promise<SitemapEntry[]> {
   }
   for (const p of waterRows) entries.push({ path: `/sistemas-agua/${p.slug}`, lastmod: p.updatedAt, changefreq: "monthly", priority: 0.7 });
   for (const p of oilRows) entries.push({ path: `/aceites-esenciales/${p.slug}`, lastmod: p.updatedAt, changefreq: "monthly", priority: 0.6 });
+  for (const p of ebookRows) entries.push({ path: ebookPath(p.slug), lastmod: p.updatedAt, changefreq: "monthly", priority: 0.7 });
   for (const p of postRows) entries.push({ path: `/blog/${p.slug}`, lastmod: p.updatedAt, changefreq: "monthly", priority: 0.7 });
   return entries;
 }

@@ -20,6 +20,7 @@ import Masajes from "./pages/Masajes";
 import SistemasAgua from "./pages/SistemasAgua";
 import AceitesEsenciales from "./pages/AceitesEsenciales";
 import GuiasDigitales from "./pages/GuiasDigitales";
+import EbookDetalle from "./pages/EbookDetalle";
 import Recomendados from "./pages/Recomendados";
 import Contacto from "./pages/Contacto";
 import PoliticaCookies from "./pages/PoliticaCookies";
@@ -104,6 +105,7 @@ function Router() {
       <Route path="/aceites-esenciales/:slug">{() => <CmsRoute legacy={AceiteDetalle} />}</Route>
       <Route path="/mi-consulta" component={MiConsulta} />
       <Route path="/guias-digitales">{() => <CmsRoute legacy={GuiasDigitales} />}</Route>
+      <Route path="/guias-digitales/:slug" component={EbookDetalle} />
       <Route path="/recomendados">{() => <CmsRoute legacy={Recomendados} />}</Route>
       <Route path="/contacto">{() => <CmsRoute legacy={Contacto} />}</Route>
       <Route path="/blog">{() => <CmsRoute legacy={Blog} />}</Route>

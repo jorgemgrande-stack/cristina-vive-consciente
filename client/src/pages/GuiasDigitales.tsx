@@ -1,178 +1,20 @@
 /**
  * Guías Digitales — Cristina Vive Consciente
  * Design: "Luz Botánica"
- * Carrusel de imágenes: 1 grande + 3 packs debajo
- * Datos dinámicos desde BD (tabla ebooks)
+ * Catálogo: una tarjeta compacta por ebook (portada, título, subtítulo, precio y «Ver ebook»).
+ * La compra se hace en la ficha de cada ebook (/guias-digitales/:slug). Datos dinámicos desde BD (tabla ebooks).
  */
 
 import { SITE_IMAGES } from "@/lib/siteImages";
-import { useState } from "react";
-import { Link, useLocation } from "wouter";
-import {
-  ArrowRight, Download, FileText, MessageCircle, ChevronLeft, ChevronRight as ChevronRightIcon
-} from "lucide-react";
-import { toast } from "sonner";
+import { Link } from "wouter";
+import { ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import Layout from "@/components/Layout";
 import PageHero from "@/components/PageHero";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { BIZUM_PHONE_DISPLAY } from "@shared/orders";
+import { ebookImages, ebookPath, ebookPriceLabel } from "@shared/ebookPage";
 
 const HERO = SITE_IMAGES.heroConsultas;
 
-// ── Botón de compra (pago por Bizum, confirmado por Cristina) ────────────────
-function BuyButton({ ebookId, label, price, title }: { ebookId: string; label: string; price: string; title: string }) {
-  const [open, setOpen] = useState(false);
-  const [, navigate] = useLocation();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-
-  const createOrder = trpc.orders.create.useMutation({
-    onSuccess: (order) => {
-      setOpen(false);
-      navigate(`/pedido/${order.reference}`);
-    },
-    onError: (err) => {
-      toast.error(err.message || "No se ha podido crear el pedido. Inténtalo de nuevo o escribe a Cristina.");
-    },
-  });
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    createOrder.mutate({
-      productSlug: ebookId,
-      name: name.trim(),
-      email: email.trim(),
-      phone: phone.trim() || undefined,
-    });
-  };
-
-  return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        className="w-full py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body flex items-center justify-center gap-2"
-        style={{ borderRadius: 0, letterSpacing: "0.1em" }}
-      >
-        <Download size={13} />
-        {label} — {price}
-      </button>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display" style={{ fontWeight: 400 }}>{title}</DialogTitle>
-            <DialogDescription>
-              Pagas por Bizum al {BIZUM_PHONE_DISPLAY}. Cuando Cristina lo confirme, te llega la guía por email.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={submit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="order-name">Nombre</Label>
-              <Input id="order-name" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={120} autoComplete="name" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="order-email">Email (aquí recibirás la guía)</Label>
-              <Input id="order-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="order-phone">Teléfono (opcional)</Label>
-              <Input id="order-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" />
-            </div>
-            <button
-              type="submit"
-              disabled={createOrder.isPending}
-              className="w-full py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body flex items-center justify-center gap-2 disabled:opacity-60"
-              style={{ borderRadius: 0, letterSpacing: "0.1em" }}
-            >
-              {createOrder.isPending ? "Creando pedido..." : `Continuar y pagar ${price}`}
-            </button>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
-// ── Carrusel de imágenes ──────────────────────────────────────────────────────
-function ImageCarousel({ images, title }: { images: string[]; title: string }) {
-  const [activeIdx, setActiveIdx] = useState(0);
-  const validImages = images.filter(Boolean);
-  if (validImages.length === 0) return null;
-
-  const mainImage = validImages[activeIdx] ?? validImages[0];
-  const thumbs = validImages.slice(0, 4); // portada + hasta 3 del carrusel
-
-  return (
-    <div className="space-y-3">
-      {/* Imagen principal grande */}
-      <div className="relative overflow-hidden bg-[oklch(0.94_0.012_80)] aspect-[4/3]">
-        <img
-          src={mainImage}
-          alt={title}
-          className="w-full h-full object-contain transition-all duration-500"
-          key={mainImage}
-        />
-        {/* Navegación flechas si hay más de 1 imagen */}
-        {validImages.length > 1 && (
-          <>
-            <button
-              onClick={() => setActiveIdx((i) => (i - 1 + validImages.length) % validImages.length)}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white flex items-center justify-center transition-colors shadow-sm"
-              style={{ borderRadius: 0 }}
-            >
-              <ChevronLeft size={16} className="text-[oklch(0.38_0.02_55)]" />
-            </button>
-            <button
-              onClick={() => setActiveIdx((i) => (i + 1) % validImages.length)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white flex items-center justify-center transition-colors shadow-sm"
-              style={{ borderRadius: 0 }}
-            >
-              <ChevronRightIcon size={16} className="text-[oklch(0.38_0.02_55)]" />
-            </button>
-          </>
-        )}
-        {/* Indicador de posición */}
-        {validImages.length > 1 && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-            {validImages.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveIdx(i)}
-                className={`w-1.5 h-1.5 rounded-full transition-all ${i === activeIdx ? "bg-white scale-125" : "bg-white/50"}`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Miniaturas (portada + máximo 3) */}
-      {thumbs.length > 1 && (
-        <div className={`grid gap-2 ${thumbs.length > 3 ? "grid-cols-4" : "grid-cols-3"}`}>
-          {thumbs.map((img, i) => (
-            <button
-              key={i}
-              onClick={() => setActiveIdx(i)}
-              className={`aspect-square overflow-hidden transition-all ${
-                i === activeIdx
-                  ? "ring-2 ring-[oklch(0.52_0.08_148)] ring-offset-1"
-                  : "opacity-60 hover:opacity-90"
-              }`}
-              style={{ borderRadius: 0 }}
-            >
-              <img src={img} alt={`${title} ${i + 1}`} className="w-full h-full object-cover" />
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Tarjeta de ebook ─────────────────────────────────────────────────────────
 interface EbookData {
   id: number;
   slug: string;
@@ -183,110 +25,45 @@ interface EbookData {
   coverImage: string | null;
   galleryImages: string | null;
   includesSession: number;
-  priceCents: number;
 }
 
 function EbookCard({ ebook }: { ebook: EbookData }) {
-  let images: string[] = [];
-  try {
-    const parsed = JSON.parse(ebook.galleryImages ?? "[]");
-    if (Array.isArray(parsed)) images = parsed.filter(Boolean);
-  } catch {}
-  // La portada va siempre la primera del carrusel (antes solo se usaba si no había galería)
-  if (ebook.coverImage) images = [ebook.coverImage, ...images.filter((u) => u !== ebook.coverImage)];
-
-  // Incluye items según el ebook
-  const includesItems =
-    ebook.slug === "agua"
-      ? [
-          { icon: <FileText size={13} />, text: "Guía en PDF descargable" },
-          { icon: <MessageCircle size={13} />, text: "Sesión de asesoramiento de 30 min" },
-          { icon: <Download size={13} />, text: "Código descuento en sistemas recomendados" },
-        ]
-      : [
-          { icon: <FileText size={13} />, text: "Guía en PDF descargable" },
-          { icon: <MessageCircle size={13} />, text: "Soporte grupal incluido" },
-          { icon: <ArrowRight size={13} />, text: "Posibilidad de compra a través de mí" },
-        ];
-
+  const href = ebookPath(ebook.slug);
+  const cover = ebookImages(ebook)[0];
   return (
-    <div className="card-natural bg-white overflow-hidden">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-        {/* Columna izquierda: carrusel */}
-        <div className="p-6 md:p-8 bg-[oklch(0.97_0.006_85)]">
-          <ImageCarousel images={images} title={ebook.title} />
-        </div>
-
-        {/* Columna derecha: info */}
-        <div className="p-7 md:p-10 flex flex-col justify-between">
-          {/* Header */}
-          <div>
-            <div className="flex items-center gap-3 mb-3">
-              <span className="px-2.5 py-1 bg-[oklch(0.52_0.08_148)] text-white text-[0.6rem] tracking-widest uppercase font-body" style={{ fontWeight: 500 }}>
-                PDF Digital
-              </span>
-              <span className="flex items-center gap-1 text-[oklch(0.52_0.02_60)] text-xs font-body" style={{ fontWeight: 300 }}>
-                <FileText size={11} />
-                Descarga inmediata
-              </span>
-            </div>
-
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <h2 className="font-display text-[oklch(0.18_0.018_55)]" style={{ fontWeight: 400, fontSize: "clamp(1.2rem, 2.5vw, 1.7rem)" }}>
-                {ebook.title}
-              </h2>
-              <p className="font-display text-[oklch(0.52_0.08_148)] flex-shrink-0" style={{ fontWeight: 400, fontSize: "2rem", lineHeight: 1 }}>
-                {parseFloat(ebook.price).toFixed(0)}€
-              </p>
-            </div>
-
-            {ebook.subtitle && (
-              <p className="text-[oklch(0.52_0.02_60)] text-sm mb-4 font-body italic" style={{ fontWeight: 300 }}>
-                {ebook.subtitle}
-              </p>
-            )}
-
-            <div className="section-divider mb-5" />
-
-            {ebook.description && (
-              <div className="space-y-3 mb-6">
-                {ebook.description.split("\n").filter(Boolean).map((para, i) => (
-                  <p key={i} className="text-[oklch(0.38_0.02_55)] leading-relaxed font-body text-sm" style={{ fontWeight: 300 }}>
-                    {para}
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Incluye + botón */}
-          <div className="space-y-4 mt-4">
-            <div className="p-5 bg-[oklch(0.94_0.012_80)] border border-[oklch(0.88_0.015_75)]">
-              <p className="text-[oklch(0.28_0.025_55)] text-xs tracking-widest uppercase mb-4 font-body" style={{ fontWeight: 500 }}>
-                Esta guía incluye
-              </p>
-              <ul className="space-y-3">
-                {includesItems.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2.5">
-                    <span className="text-[oklch(0.52_0.08_148)] mt-0.5 flex-shrink-0">{item.icon}</span>
-                    <span className="text-[oklch(0.38_0.02_55)] text-sm font-body" style={{ fontWeight: 300 }}>
-                      {item.text}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <BuyButton
-              ebookId={ebook.slug}
-              label="Obtener guía"
-              price={`${parseFloat(ebook.price).toFixed(0)}€`}
-              title={ebook.title}
-            />
-          </div>
+    <article className="card-natural bg-white overflow-hidden flex flex-col" data-testid="ebook-card">
+      {/* La portada y el título también abren la ficha */}
+      <Link href={href} className="block bg-[oklch(0.94_0.012_80)] aspect-[4/3] overflow-hidden" aria-label={`Ver ${ebook.title}`}>
+        {cover ? (
+          <img src={cover} alt={`Portada de ${ebook.title}`} className="w-full h-full object-contain" loading="lazy" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-[oklch(0.52_0.02_60)] text-xs font-body">Guía digital</div>
+        )}
+      </Link>
+      <div className="p-6 flex flex-col flex-1">
+        <span className="self-start px-2.5 py-1 bg-[oklch(0.52_0.08_148)] text-white text-[0.6rem] tracking-widest uppercase font-body mb-3" style={{ fontWeight: 500 }}>
+          PDF Digital
+        </span>
+        <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-2" style={{ fontWeight: 400, fontSize: "1.35rem", lineHeight: 1.25 }}>
+          <Link href={href} className="hover:text-[oklch(0.52_0.08_148)] transition-colors">{ebook.title}</Link>
+        </h2>
+        {ebook.subtitle && (
+          <p className="text-[oklch(0.52_0.02_60)] text-sm mb-4 font-body italic" style={{ fontWeight: 300 }}>{ebook.subtitle}</p>
+        )}
+        <div className="mt-auto pt-4 flex items-center justify-between gap-4">
+          <p className="font-display text-[oklch(0.52_0.08_148)]" style={{ fontWeight: 400, fontSize: "1.75rem", lineHeight: 1 }}>
+            {ebookPriceLabel(ebook.price)}
+          </p>
+          <Link
+            href={href}
+            className="inline-flex items-center gap-2 px-5 py-3 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-colors font-body"
+            style={{ borderRadius: 0, letterSpacing: "0.1em" }}
+          >
+            Ver ebook <ArrowRight size={13} />
+          </Link>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -318,7 +95,7 @@ export default function GuiasDigitales() {
               </p>
             </div>
           ) : (
-            <div className="space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {ebooks.map((ebook) => (
                 <EbookCard key={ebook.id} ebook={ebook} />
               ))}
