@@ -28,6 +28,9 @@ const ebookInput = z.object({
   title: z.string().min(1).max(200),
   subtitle: z.string().max(300).optional().nullable(),
   description: z.string().optional().nullable(),
+  synopsis: z.string().max(1000).optional().nullable(),
+  author: z.string().max(200).optional().nullable(),
+  edition: z.string().max(100).optional().nullable(),
   price: z.string().regex(/^\d+(\.\d{1,2})?$/, "Precio inválido"),
   priceCents: z.number().int().min(1),
   currency: z.string().length(3).default("EUR"),
@@ -85,6 +88,9 @@ export const ebooksAdminRouter = router({
         title: input.title,
         subtitle: input.subtitle ?? null,
         description: input.description ?? null,
+        synopsis: input.synopsis || null,
+        author: input.author || null,
+        edition: input.edition || null,
         price: input.price,
         priceCents: input.priceCents,
         currency: input.currency,
@@ -115,6 +121,7 @@ export const ebooksAdminRouter = router({
       }
       if (input.data.pdfUrl === "") updateData.pdfUrl = null;
       if (input.data.coverImage === "") updateData.coverImage = null;
+      for (const k of ["synopsis", "author", "edition"] as const) if (input.data[k] === "") updateData[k] = null;
       await updateEbook(input.id, updateData);
       return getEbookById(input.id);
     }),

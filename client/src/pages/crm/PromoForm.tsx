@@ -36,7 +36,7 @@ const EMPTY: Form = {
   slug: "",
   ebookId: 0,
   headline: "Hay regalos que\nno se envuelven.",
-  message: "Quiero regalarte mi primer cuento ilustrado para que puedas leerlo en familia.",
+  message: "Quiero regalarte mi primer cuento para que puedas leerlo en familia.",
   bannerText: "Descarga gratis el primer cuento ilustrado de Cristina",
   mode: "draft",
   startsLocal: "",

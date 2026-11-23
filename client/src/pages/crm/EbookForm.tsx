@@ -20,6 +20,9 @@ interface FormData {
   title: string;
   subtitle: string;
   description: string;
+  synopsis: string;
+  author: string;
+  edition: string;
   price: string;
   priceCents: number;
   currency: string;
@@ -39,6 +42,9 @@ const defaultForm: FormData = {
   title: "",
   subtitle: "",
   description: "",
+  synopsis: "",
+  author: "",
+  edition: "",
   price: "",
   priceCents: 0,
   currency: "EUR",
@@ -82,6 +88,9 @@ export default function EbookForm() {
         title: existing.title,
         subtitle: existing.subtitle ?? "",
         description: existing.description ?? "",
+        synopsis: existing.synopsis ?? "",
+        author: existing.author ?? "",
+        edition: existing.edition ?? "",
         price: existing.price,
         priceCents: existing.priceCents,
         currency: existing.currency,
@@ -143,6 +152,9 @@ export default function EbookForm() {
       title: form.title.trim(),
       subtitle: form.subtitle.trim() || null,
       description: form.description.trim() || null,
+      synopsis: form.synopsis.trim() || null,
+      author: form.author.trim() || null,
+      edition: form.edition.trim() || null,
       price: form.price,
       priceCents: form.priceCents,
       currency: form.currency,
@@ -237,6 +249,22 @@ export default function EbookForm() {
                 onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))}
                 placeholder="Transforma el agua que bebes"
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="synopsis">Sinopsis breve (se muestra junto al botón de compra)</Label>
+              <Textarea id="synopsis" value={form.synopsis} onChange={(e) => setForm((f) => ({ ...f, synopsis: e.target.value }))} placeholder="Dos o tres frases que inviten a leerlo…" rows={3} maxLength={1000} />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="author">Autor</Label>
+                <Input id="author" value={form.author} onChange={(e) => setForm((f) => ({ ...f, author: e.target.value }))} placeholder="Cristina Battistelli Lopez de Ayala" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edition">Edición</Label>
+                <Input id="edition" value={form.edition} onChange={(e) => setForm((f) => ({ ...f, edition: e.target.value }))} placeholder="Noviembre de 2026" />
+              </div>
             </div>
 
             <div className="space-y-1.5">

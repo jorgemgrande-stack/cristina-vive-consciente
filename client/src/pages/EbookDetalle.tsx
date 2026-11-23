@@ -124,6 +124,20 @@ export default function EbookDetalle() {
                 ))}
               </ul>
 
+              {(ebook.synopsis || ebook.author || ebook.edition) && (
+                <div className="mt-6 space-y-3" data-testid="ebook-ficha">
+                  {ebook.synopsis && (
+                    <p className="font-display italic text-[oklch(0.28_0.025_55)] leading-relaxed whitespace-pre-line" style={{ fontWeight: 400, fontSize: "1.1rem" }}>{ebook.synopsis}</p>
+                  )}
+                  {(ebook.author || ebook.edition) && (
+                    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm font-body">
+                      {ebook.author && (<><dt className="text-[oklch(0.45_0.02_60)] uppercase tracking-widest text-[0.65rem] pt-0.5" style={{ fontWeight: 500 }}>Autor</dt><dd className="text-[oklch(0.28_0.025_55)]">{ebook.author}</dd></>)}
+                      {ebook.edition && (<><dt className="text-[oklch(0.45_0.02_60)] uppercase tracking-widest text-[0.65rem] pt-0.5" style={{ fontWeight: 500 }}>Edición</dt><dd className="text-[oklch(0.28_0.025_55)]">{ebook.edition}</dd></>)}
+                    </dl>
+                  )}
+                </div>
+              )}
+
               <div className="mt-6 pt-5 border-t border-[oklch(0.9_0.012_78)]">
                 <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-3" style={{ fontWeight: 400, fontSize: "1.4rem" }}>Sobre este ebook</h2>
                 <div className="space-y-3">
