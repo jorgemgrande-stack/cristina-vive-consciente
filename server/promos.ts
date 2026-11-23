@@ -52,7 +52,7 @@ export function publicPromo(row: PromoRow, now: number) {
     donationEnabled: promo.donationEnabled === 1,
     donationConcept: promo.donationConcept,
     ebook: ebook
-      ? { title: ebook.title, subtitle: ebook.subtitle, cover: ebookImages(ebook)[0] ?? null, price: ebookPriceLabel(ebook.price), fichaPath: ebookPath(ebook.slug) }
+      ? { title: ebook.title, synopsis: ebook.synopsis, author: ebook.author, edition: ebook.edition, subtitle: ebook.subtitle, cover: ebookImages(ebook)[0] ?? null, price: ebookPriceLabel(ebook.price), fichaPath: ebookPath(ebook.slug) }
       : null,
   };
 }
