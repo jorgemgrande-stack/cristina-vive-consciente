@@ -519,6 +519,11 @@ export const ebooks = mysqlTable("ebooks", {
   title: varchar("title", { length: 200 }).notNull(),
   subtitle: varchar("subtitle", { length: 300 }),
   description: text("description"),
+  /** Sinopsis breve para la ficha */
+  synopsis: text("synopsis"),
+  /** Autoría y edición, para la ficha (ej. «Noviembre de 2026») */
+  author: varchar("author", { length: 200 }),
+  edition: varchar("edition", { length: 100 }),
   /** Precio en euros (e.g. '12.00') */
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   /** Precio en céntimos para Stripe */
