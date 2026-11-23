@@ -114,7 +114,7 @@ export default function EbookDetalle() {
               <p className="font-display text-[oklch(0.52_0.08_148)] mb-5" style={{ fontWeight: 400, fontSize: "2.4rem", lineHeight: 1 }} data-testid="ebook-price">
                 {price}
               </p>
-              <BuyButton ebookId={ebook.slug} label="Comprar guía" price={price} title={ebook.title} />
+              <BuyButton ebookId={ebook.slug} label="Comprar ebook" price={price} title={ebook.title} />
               <ul className="mt-4 space-y-2 text-sm text-[oklch(0.38_0.02_55)] font-body" style={{ fontWeight: 300 }}>
                 <li className="flex items-start gap-2"><Check size={15} className="mt-0.5 text-[oklch(0.52_0.08_148)] flex-shrink-0" />Pago por Bizum, sin tarjeta ni registro</li>
                 <li className="flex items-start gap-2"><Mail size={15} className="mt-0.5 text-[oklch(0.52_0.08_148)] flex-shrink-0" />Recibes la guía por email cuando Cristina confirma el pago</li>
