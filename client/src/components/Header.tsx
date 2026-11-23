@@ -13,6 +13,7 @@ import { useConsultaCart } from "@/contexts/ConsultaCartContext";
 import { useSiteGlobal, isExternalUrl } from "@/lib/siteGlobal";
 import SiteLink from "@/components/site/SiteLink";
 import AnnouncementBar from "@/components/site/AnnouncementBar";
+import PromoBanner from "@/components/site/PromoBanner";
 import { useSiteAction } from "@/lib/siteActions";
 
 
@@ -57,6 +58,7 @@ export default function Header() {
         }`}
       >
         <AnnouncementBar />
+        <PromoBanner />
         <div className="container">
           <div className="flex items-center h-16 md:h-20">
 

@@ -21,6 +21,7 @@ import SistemasAgua from "./pages/SistemasAgua";
 import AceitesEsenciales from "./pages/AceitesEsenciales";
 import GuiasDigitales from "./pages/GuiasDigitales";
 import EbookDetalle from "./pages/EbookDetalle";
+import Promocion from "./pages/Promocion";
 import Recomendados from "./pages/Recomendados";
 import Contacto from "./pages/Contacto";
 import PoliticaCookies from "./pages/PoliticaCookies";
@@ -77,6 +78,8 @@ import Servicios from "./pages/crm/Servicios";
 import ServicioForm from "./pages/crm/ServicioForm";
 import CRMEbooks from "./pages/crm/Ebooks";
 import EbookForm from "./pages/crm/EbookForm";
+import CRMPromociones from "./pages/crm/Promociones";
+import PromoForm from "./pages/crm/PromoForm";
 import AguaCategorias from "./pages/crm/AguaCategorias";
 import AguaProductos from "./pages/crm/AguaProductos";
 import AguaSolicitudes from "./pages/crm/AguaSolicitudes";
@@ -106,6 +109,7 @@ function Router() {
       <Route path="/mi-consulta" component={MiConsulta} />
       <Route path="/guias-digitales">{() => <CmsRoute legacy={GuiasDigitales} />}</Route>
       <Route path="/guias-digitales/:slug" component={EbookDetalle} />
+      <Route path="/promocion/:slug" component={Promocion} />
       <Route path="/recomendados">{() => <CmsRoute legacy={Recomendados} />}</Route>
       <Route path="/contacto">{() => <CmsRoute legacy={Contacto} />}</Route>
       <Route path="/blog">{() => <CmsRoute legacy={Blog} />}</Route>
@@ -165,6 +169,9 @@ function Router() {
 
       {/* Ebooks CRM */}
       <Route path="/crm/ebooks" component={CRMEbooks} />
+      <Route path="/crm/ebooks/promociones" component={CRMPromociones} />
+      <Route path="/crm/ebooks/promociones/nueva" component={PromoForm} />
+      <Route path="/crm/ebooks/promociones/:id/editar" component={PromoForm} />
       <Route path="/crm/ebooks/nuevo" component={EbookForm} />
       <Route path="/crm/ebooks/:id/editar" component={EbookForm} />
 

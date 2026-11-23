@@ -22,6 +22,7 @@ import { adminSessionCookieOptions, clientIp, loginLimiter, safeEqual } from "./
 import { uploadRouter } from "../upload";
 import { createRedirectMiddleware } from "../redirects";
 import { sitemapRouter } from "../sitemap";
+import { registerPromoRoutes } from "../promos";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -97,6 +98,9 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // ─── Promociones de ebooks (descarga gratuita por tiempo limitado) ───────────
+  registerPromoRoutes(app);
 
   // ─── Factura PDF ─────────────────────────────────────────────────────────────
   // GET /api/invoices/:id/pdf — descarga la factura como PDF (solo admin)

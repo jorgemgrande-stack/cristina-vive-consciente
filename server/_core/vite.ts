@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { registerEbookPages } from "../ebookPages";
+import { registerPromoPages } from "../promos";
 
 export async function setupVite(app: Express, server: Server) {
   // Dynamic import so vite.config (and vite-plugin-manus-runtime) are never
@@ -27,6 +28,10 @@ export async function setupVite(app: Express, server: Server) {
   app.use(vite.middlewares);
   // Fichas de ebooks (404 / SEO) con el index.html que transforma Vite
   registerEbookPages(app, async (req) => {
+    const tpl = await fs.promises.readFile(path.resolve(import.meta.dirname, "../..", "client", "index.html"), "utf-8");
+    return vite.transformIndexHtml(req.originalUrl, tpl);
+  });
+  registerPromoPages(app, async (req) => {
     const tpl = await fs.promises.readFile(path.resolve(import.meta.dirname, "../..", "client", "index.html"), "utf-8");
     return vite.transformIndexHtml(req.originalUrl, tpl);
   });
@@ -69,6 +74,8 @@ export function serveStatic(app: Express) {
 
   // Fichas de ebooks (404 / SEO) antes del fallback
   registerEbookPages(app, () => fs.promises.readFile(path.resolve(distPath, "index.html"), "utf-8"));
+
+  registerPromoPages(app, () => fs.promises.readFile(path.resolve(distPath, "index.html"), "utf-8"));
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {

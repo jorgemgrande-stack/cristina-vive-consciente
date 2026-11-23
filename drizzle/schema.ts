@@ -949,3 +949,38 @@ export const siteRedirects = mysqlTable("site_redirects", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type SiteRedirect = typeof siteRedirects.$inferSelect;
+
+// ─── PROMOCIONES DE EBOOKS (descarga gratuita por tiempo limitado) ───────────
+export const ebookPromos = mysqlTable("ebook_promos", {
+  id: int("id").autoincrement().primaryKey(),
+  /** URL propia: /promocion/:slug */
+  slug: varchar("slug", { length: 120 }).notNull().unique(),
+  /** Nombre interno para Cristina */
+  name: varchar("name", { length: 200 }).notNull(),
+  ebookId: int("ebookId").notNull(),
+  /** Titular; el salto de línea separa la parte normal de la que va en cursiva */
+  headline: varchar("headline", { length: 200 }).notNull(),
+  message: text("message").notNull(),
+  /** Texto del aviso de la portada y de Guías digitales */
+  bannerText: varchar("bannerText", { length: 200 }).notNull(),
+  published: int("published").default(0).notNull(),
+  /** ms UTC; null = desde que se publica */
+  startsAt: bigint("startsAt", { mode: "number" }),
+  /** ms UTC; la descarga gratuita termina exactamente en este instante */
+  endsAt: bigint("endsAt", { mode: "number" }).notNull(),
+  donationEnabled: int("donationEnabled").default(1).notNull(),
+  donationConcept: varchar("donationConcept", { length: 60 }).default("Regalo Tierra").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type EbookPromo = typeof ebookPromos.$inferSelect;
+
+/** Medición agregada y anónima (sin IP, sin correo): visitas, descargas iniciadas y clics en compartir. */
+export const ebookPromoEvents = mysqlTable("ebook_promo_events", {
+  id: int("id").autoincrement().primaryKey(),
+  promoId: int("promoId").notNull(),
+  kind: mysqlEnum("kind", ["view", "download", "share"]).notNull(),
+  channel: varchar("channel", { length: 30 }),
+  source: varchar("source", { length: 30 }).default("directo").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
