@@ -38,6 +38,7 @@ import {
   Settings2,
   Type,
   ArrowRightLeft,
+  Gift,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -54,6 +55,7 @@ const NAV_ITEMS = [
   { href: "/crm/pedidos", label: "Pedidos", icon: ShoppingBag },
   { href: "/crm/catalogo-servicios", label: "Catálogo de fichas", icon: ListTree },
   { href: "/crm/ebooks", label: "Ebooks", icon: BookOpen },
+  { href: "/crm/ebooks/promociones", label: "Promociones", icon: Gift },
   { href: "/crm/automatizaciones", label: "Automatizaciones", icon: Zap },
   { href: "/crm/galeria", label: "Galería", icon: Images },
   { href: "/crm/hero", label: "Hero Inicio", icon: Globe },
@@ -175,7 +177,7 @@ export default function CRMLayout({ children, title }: CRMLayoutProps) {
         {/* Nav */}
         <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-            const isActive = location === href || (href !== "/crm" && location.startsWith(href));
+            const isActive = location === href || (href !== "/crm" && location.startsWith(href) && !(href === "/crm/ebooks" && location.startsWith("/crm/ebooks/promociones")));
             return (
               <Link
                 key={href}

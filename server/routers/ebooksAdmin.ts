@@ -46,7 +46,8 @@ const ebookInput = z.object({
 export const ebooksAdminRouter = router({
   // ── Público: listado de ebooks activos ────────────────────────────────────
   list: publicProcedure.query(async () => {
-    return listEbooks(true); // solo activos
+    // Público: nunca se publica la URL del PDF (solo la reciben los compradores o la promoción activa)
+    return (await listEbooks(true)).map(({ pdfUrl: _pdf, ...pub }) => pub); // solo activos
   }),
 
   // ── Público: obtener un ebook por slug ────────────────────────────────────
@@ -57,7 +58,8 @@ export const ebooksAdminRouter = router({
       if (!ebook || ebook.status !== "active") {
         throw new TRPCError({ code: "NOT_FOUND", message: "Ebook no encontrado" });
       }
-      return ebook;
+      const { pdfUrl: _pdf, ...pub } = ebook;
+      return pub;
     }),
 
   // ── Admin: listado completo (activos e inactivos) ─────────────────────────
