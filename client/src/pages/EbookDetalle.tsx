@@ -5,11 +5,12 @@
  */
 import { useEffect } from "react";
 import { Link, useRoute } from "wouter";
-import { ArrowLeft, Check, FileText, Mail } from "lucide-react";
+import { ArrowLeft, Check, Mail } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import Layout from "@/components/Layout";
 import NotFound from "@/pages/NotFound";
 import { BuyButton, EbookGallery } from "@/components/ebooks/EbookParts";
+import { RelatedCarousel } from "@/components/ebooks/RelatedCarousel";
 import { ebookImages, ebookIncludes, ebookPath, ebookPriceLabel, ebookSeo, matchesEbookSlug } from "@shared/ebookPage";
 
 /** Título, descripción, canonical e imagen para compartir también al navegar dentro de la web (el servidor ya los pone en el HTML inicial). */
@@ -82,14 +83,14 @@ export default function EbookDetalle() {
 
   const images = ebookImages(ebook);
   const price = ebookPriceLabel(ebook.price);
-  const includes = ebookIncludes(ebook);
+  const extras = ebookIncludes(ebook).filter((it) => it.key !== "pdf"); // el PDF ya se dice en la línea de entrega
   const hours = ebook.downloadExpiryHours ?? 72;
   const paragraphs = (ebook.description ?? "").split("\n").map((p) => p.trim()).filter(Boolean);
 
   return (
     <Layout>
       <div className="bg-[oklch(0.985_0.006_85)]">
-        <div className="container pt-24 md:pt-28 pb-6">
+        <div className="container pt-24 md:pt-28 pb-10 md:pb-14">
           <Link href="/guias-digitales" className="inline-flex items-center gap-1.5 text-xs text-[oklch(0.52_0.02_60)] hover:text-[oklch(0.52_0.08_148)] font-body mb-5">
             <ArrowLeft size={13} /> Todos los ebooks
           </Link>
@@ -100,7 +101,7 @@ export default function EbookDetalle() {
               <EbookGallery images={images} title={ebook.title} priority />
             </div>
 
-            {/* Compra: título, precio y botón antes de la descripción larga */}
+            {/* Compra: título, subtítulo, precio, botón, datos breves y descripción completa, todo seguido */}
             <div>
               <span className="inline-block px-2.5 py-1 bg-[oklch(0.52_0.08_148)] text-white text-[0.6rem] tracking-widest uppercase font-body mb-3" style={{ fontWeight: 500 }}>
                 PDF Digital
@@ -109,54 +110,33 @@ export default function EbookDetalle() {
                 {ebook.title}
               </h1>
               {ebook.subtitle && (
-                <p className="text-[oklch(0.52_0.02_60)] text-base mb-4 font-body italic" style={{ fontWeight: 300 }}>{ebook.subtitle}</p>
+                <p className="text-[oklch(0.52_0.02_60)] text-base mb-3 font-body italic" style={{ fontWeight: 300 }}>{ebook.subtitle}</p>
               )}
-              <p className="font-display text-[oklch(0.52_0.08_148)] mb-5" style={{ fontWeight: 400, fontSize: "2.4rem", lineHeight: 1 }} data-testid="ebook-price">
+              <p className="font-display text-[oklch(0.52_0.08_148)] mb-4" style={{ fontWeight: 400, fontSize: "2.2rem", lineHeight: 1 }} data-testid="ebook-price">
                 {price}
               </p>
               <BuyButton ebookId={ebook.slug} label="Comprar ebook" price={price} title={ebook.title} />
-              <ul className="mt-4 space-y-2 text-sm text-[oklch(0.38_0.02_55)] font-body" style={{ fontWeight: 300 }}>
+              <ul className="mt-3 space-y-1.5 text-sm text-[oklch(0.38_0.02_55)] font-body" style={{ fontWeight: 300 }} data-testid="ebook-includes">
                 <li className="flex items-start gap-2"><Check size={15} className="mt-0.5 text-[oklch(0.52_0.08_148)] flex-shrink-0" />Pago por Bizum, sin tarjeta ni registro</li>
-                <li className="flex items-start gap-2"><Mail size={15} className="mt-0.5 text-[oklch(0.52_0.08_148)] flex-shrink-0" />Recibes el ebook por email cuando Cristina confirma el pago</li>
+                <li className="flex items-start gap-2"><Mail size={15} className="mt-0.5 text-[oklch(0.52_0.08_148)] flex-shrink-0" />PDF por email cuando Cristina confirma el pago; enlace de descarga activo {hours} horas</li>
+                {extras.map((it) => (
+                  <li key={it.key} className="flex items-start gap-2"><Check size={15} className="mt-0.5 text-[oklch(0.52_0.08_148)] flex-shrink-0" />{it.text}</li>
+                ))}
               </ul>
+
+              <div className="mt-6 pt-5 border-t border-[oklch(0.9_0.012_78)]">
+                <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-3" style={{ fontWeight: 400, fontSize: "1.4rem" }}>Sobre este ebook</h2>
+                <div className="space-y-3">
+                  {paragraphs.map((p, i) => (
+                    <p key={i} className="text-[oklch(0.38_0.02_55)] leading-relaxed font-body" style={{ fontWeight: 300 }}>{p}</p>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Descripción, contenido incluido y entrega */}
-        <section className="container py-10 md:py-14">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-            <div className="lg:col-span-2">
-              <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-4" style={{ fontWeight: 400, fontSize: "1.5rem" }}>Sobre este ebook</h2>
-              <div className="section-divider mb-5" />
-              <div className="space-y-4">
-                {paragraphs.map((p, i) => (
-                  <p key={i} className="text-[oklch(0.38_0.02_55)] leading-relaxed font-body" style={{ fontWeight: 300 }}>{p}</p>
-                ))}
-              </div>
-            </div>
-            <aside className="space-y-5">
-              <div className="p-5 bg-[oklch(0.94_0.012_80)] border border-[oklch(0.88_0.015_75)]">
-                <p className="text-[oklch(0.28_0.025_55)] text-xs tracking-widest uppercase mb-4 font-body" style={{ fontWeight: 500 }}>Este ebook incluye</p>
-                <ul className="space-y-3" data-testid="ebook-includes">
-                  {includes.map((it) => (
-                    <li key={it.key} className="flex items-start gap-2.5">
-                      <Check size={14} className="mt-0.5 text-[oklch(0.52_0.08_148)] flex-shrink-0" />
-                      <span className="text-[oklch(0.38_0.02_55)] text-sm font-body" style={{ fontWeight: 300 }}>{it.text}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="p-5 border border-[oklch(0.88_0.015_75)] bg-white">
-                <p className="text-[oklch(0.28_0.025_55)] text-xs tracking-widest uppercase mb-3 font-body" style={{ fontWeight: 500 }}>Formato de entrega</p>
-                <p className="flex items-start gap-2.5 text-[oklch(0.38_0.02_55)] text-sm font-body" style={{ fontWeight: 300 }}>
-                  <FileText size={14} className="mt-0.5 text-[oklch(0.52_0.08_148)] flex-shrink-0" />
-                  <span>Archivo PDF por email. El enlace de descarga está activo {hours} horas desde que se confirma el pago.</span>
-                </p>
-              </div>
-            </aside>
-          </div>
-        </section>
+        <RelatedCarousel currentSlug={ebook.slug} />
       </div>
     </Layout>
   );
