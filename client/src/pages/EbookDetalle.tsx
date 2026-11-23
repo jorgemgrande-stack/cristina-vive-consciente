@@ -91,7 +91,7 @@ export default function EbookDetalle() {
       <div className="bg-[oklch(0.985_0.006_85)]">
         <div className="container pt-24 md:pt-28 pb-6">
           <Link href="/guias-digitales" className="inline-flex items-center gap-1.5 text-xs text-[oklch(0.52_0.02_60)] hover:text-[oklch(0.52_0.08_148)] font-body mb-5">
-            <ArrowLeft size={13} /> Todas las guías digitales
+            <ArrowLeft size={13} /> Todos los ebooks
           </Link>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
@@ -117,7 +117,7 @@ export default function EbookDetalle() {
               <BuyButton ebookId={ebook.slug} label="Comprar ebook" price={price} title={ebook.title} />
               <ul className="mt-4 space-y-2 text-sm text-[oklch(0.38_0.02_55)] font-body" style={{ fontWeight: 300 }}>
                 <li className="flex items-start gap-2"><Check size={15} className="mt-0.5 text-[oklch(0.52_0.08_148)] flex-shrink-0" />Pago por Bizum, sin tarjeta ni registro</li>
-                <li className="flex items-start gap-2"><Mail size={15} className="mt-0.5 text-[oklch(0.52_0.08_148)] flex-shrink-0" />Recibes la guía por email cuando Cristina confirma el pago</li>
+                <li className="flex items-start gap-2"><Mail size={15} className="mt-0.5 text-[oklch(0.52_0.08_148)] flex-shrink-0" />Recibes el ebook por email cuando Cristina confirma el pago</li>
               </ul>
             </div>
           </div>
@@ -127,7 +127,7 @@ export default function EbookDetalle() {
         <section className="container py-10 md:py-14">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             <div className="lg:col-span-2">
-              <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-4" style={{ fontWeight: 400, fontSize: "1.5rem" }}>Sobre esta guía</h2>
+              <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-4" style={{ fontWeight: 400, fontSize: "1.5rem" }}>Sobre este ebook</h2>
               <div className="section-divider mb-5" />
               <div className="space-y-4">
                 {paragraphs.map((p, i) => (
@@ -137,7 +137,7 @@ export default function EbookDetalle() {
             </div>
             <aside className="space-y-5">
               <div className="p-5 bg-[oklch(0.94_0.012_80)] border border-[oklch(0.88_0.015_75)]">
-                <p className="text-[oklch(0.28_0.025_55)] text-xs tracking-widest uppercase mb-4 font-body" style={{ fontWeight: 500 }}>Esta guía incluye</p>
+                <p className="text-[oklch(0.28_0.025_55)] text-xs tracking-widest uppercase mb-4 font-body" style={{ fontWeight: 500 }}>Este ebook incluye</p>
                 <ul className="space-y-3" data-testid="ebook-includes">
                   {includes.map((it) => (
                     <li key={it.key} className="flex items-start gap-2.5">

@@ -56,7 +56,7 @@ export function BuyButton({ ebookId, label, price, title }: { ebookId: string; l
           <DialogHeader>
             <DialogTitle className="font-display" style={{ fontWeight: 400 }}>{title}</DialogTitle>
             <DialogDescription>
-              Pagas por Bizum al {BIZUM_PHONE_DISPLAY}. Cuando Cristina lo confirme, te llega la guía por email.
+              Pagas por Bizum al {BIZUM_PHONE_DISPLAY}. Cuando Cristina lo confirme, te llega el ebook por email.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={submit} className="space-y-4">
@@ -65,7 +65,7 @@ export function BuyButton({ ebookId, label, price, title }: { ebookId: string; l
               <Input id="order-name" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={120} autoComplete="name" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="order-email">Email (aquí recibirás la guía)</Label>
+              <Label htmlFor="order-email">Email (aquí recibirás el ebook)</Label>
               <Input id="order-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
             </div>
             <div className="space-y-1.5">

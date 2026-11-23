@@ -37,7 +37,7 @@ export function ebookImages(e: Pick<EbookPageData, "coverImage" | "galleryImages
 
 /** Contenido incluido: solo lo que está configurado para ese ebook. */
 export function ebookIncludes(e: Pick<EbookPageData, "slug" | "includesSession">): { key: string; text: string }[] {
-  const items = [{ key: "pdf", text: "Guía en PDF descargable" }];
+  const items = [{ key: "pdf", text: "Ebook en PDF descargable" }];
   if (e.includesSession === 1) items.push({ key: "session", text: "Sesión de asesoramiento de 30 minutos con Cristina" });
   if (e.slug === "agua") items.push({ key: "discount", text: "Código descuento en sistemas recomendados" });
   return items;
@@ -64,7 +64,7 @@ export function ebookSeo(e: EbookPageData, siteUrl: string): EbookSeo {
   const image = ebookImages(e)[0] ?? null;
   return {
     title: `${e.title} | Cristina Vive Consciente`,
-    description: plainSnippet(e.subtitle ? `${e.subtitle}. ${e.description ?? ""}` : e.description) || `${e.title}: guía digital de Cristina Vive Consciente.`,
+    description: plainSnippet(e.subtitle ? `${e.subtitle}. ${e.description ?? ""}` : e.description) || `${e.title}: ebook de Cristina Vive Consciente.`,
     canonical: base + ebookPath(e.slug),
     image: image ? abs(image) : null,
   };
