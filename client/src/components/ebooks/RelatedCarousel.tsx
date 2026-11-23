@@ -16,9 +16,7 @@ export function RelatedCarousel({ currentSlug }: { currentSlug: string }) {
   const opt = { staleTime: 60 * 1000 };
   const { data: ebooks = [] } = trpc.ebooksAdmin.list.useQuery(undefined, opt);
   const { data: services = [] } = trpc.services.list.useQuery(undefined, opt);
-  const { data: water = [] } = trpc.water.listProducts.useQuery(undefined, opt);
-  const { data: oils = [] } = trpc.oils.listProducts.useQuery(undefined, opt);
-  const items = useMemo(() => buildRelatedItems({ currentSlug, ebooks, services, water, oils }), [currentSlug, ebooks, services, water, oils]);
+  const items = useMemo(() => buildRelatedItems({ currentSlug, ebooks, services }), [currentSlug, ebooks, services]);
 
   const [viewportRef, embla] = useEmblaCarousel({ align: "start", containScroll: "trimSnaps", slidesToScroll: 1 });
   const [canPrev, setCanPrev] = useState(false);
