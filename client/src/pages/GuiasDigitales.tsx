@@ -104,7 +104,7 @@ function ImageCarousel({ images, title }: { images: string[]; title: string }) {
   if (validImages.length === 0) return null;
 
   const mainImage = validImages[activeIdx] ?? validImages[0];
-  const thumbs = validImages.slice(0, 3);
+  const thumbs = validImages.slice(0, 4); // portada + hasta 3 del carrusel
 
   return (
     <div className="space-y-3">
@@ -113,7 +113,7 @@ function ImageCarousel({ images, title }: { images: string[]; title: string }) {
         <img
           src={mainImage}
           alt={title}
-          className="w-full h-full object-cover transition-all duration-500"
+          className="w-full h-full object-contain transition-all duration-500"
           key={mainImage}
         />
         {/* Navegación flechas si hay más de 1 imagen */}
@@ -149,9 +149,9 @@ function ImageCarousel({ images, title }: { images: string[]; title: string }) {
         )}
       </div>
 
-      {/* Miniaturas (máximo 3) */}
+      {/* Miniaturas (portada + máximo 3) */}
       {thumbs.length > 1 && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className={`grid gap-2 ${thumbs.length > 3 ? "grid-cols-4" : "grid-cols-3"}`}>
           {thumbs.map((img, i) => (
             <button
               key={i}
@@ -192,7 +192,8 @@ function EbookCard({ ebook }: { ebook: EbookData }) {
     const parsed = JSON.parse(ebook.galleryImages ?? "[]");
     if (Array.isArray(parsed)) images = parsed.filter(Boolean);
   } catch {}
-  if (images.length === 0 && ebook.coverImage) images = [ebook.coverImage];
+  // La portada va siempre la primera del carrusel (antes solo se usaba si no había galería)
+  if (ebook.coverImage) images = [ebook.coverImage, ...images.filter((u) => u !== ebook.coverImage)];
 
   // Incluye items según el ebook
   const includesItems =
