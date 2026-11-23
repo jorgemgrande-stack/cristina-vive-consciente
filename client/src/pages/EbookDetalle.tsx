@@ -127,7 +127,7 @@ export default function EbookDetalle() {
         <section className="container py-10 md:py-14">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             <div className="lg:col-span-2">
-              <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-4" style={{ fontWeight: 400, fontSize: "1.5rem" }}>Sobre esta guía</h2>
+              <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-4" style={{ fontWeight: 400, fontSize: "1.5rem" }}>Sobre este ebook</h2>
               <div className="section-divider mb-5" />
               <div className="space-y-4">
                 {paragraphs.map((p, i) => (
