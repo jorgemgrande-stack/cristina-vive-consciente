@@ -112,6 +112,15 @@ Igual que la actividad 2, con estas diferencias:
 - **Datos:** nombre y comentario. Si se aprueba, se publica con ese nombre.
 - **Conservación:** _[pendiente]_.
 
+### 8 bis. Descarga de promociones y regalos digitales (/promocion/:slug)
+- **Finalidad:** entregar el recurso gratuito, registrar la descarga en la ficha de clientes (categoría «Recursos gratuitos» y recurso «Descarga de promoción · …», sin pedido, factura ni pago) y medir cada campaña de forma agregada.
+- **Base jurídica:** solicitud de la persona (6.1.b); estadísticas agregadas: interés legítimo (6.1.f). El formulario **no** suscribe a novedades ni activa emails de seguimiento.
+- **Datos:** nombre y apellidos, email y teléfono (obligatorios, validados en el servidor); campaña y canal de procedencia (utm_source / ref); token de descarga. Los enlaces para compartir llevan solo campaña y canal.
+- **Medición:** visitas, descargas (cuando el servidor termina de servir el PDF) y acciones de compartir, sin IP ni datos personales en los eventos.
+- **Identificación en el CRM:** por email y teléfono normalizados; si coincide con varias fichas o con una de nombre distinto, el registro queda «en revisión» y no se modifica ninguna ficha.
+- **Destinatarios:** alojamiento (Railway). El donativo por Bizum se hace en el banco de la persona.
+- **Conservación:** _[pendiente: plazo confirmado por Cristina]_. Supresión de la ficha disponible en el CRM.
+
 ### 9. Cookies y medición
 Ver `/politica-de-cookies`:
 - consentimiento por categorías;

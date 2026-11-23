@@ -15,7 +15,10 @@ import express, { type Express, type Request, type Response } from "express";
 import { and, asc, eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { getUploadDir } from "./storage";
-import { ebookPromoEvents, ebookPromos, ebooks, type EbookPromo } from "../drizzle/schema";
+import { ebookPromoEvents, ebookPromoRegistrations, ebookPromos, ebooks, type EbookPromo } from "../drizzle/schema";
+import { isNull, lte, or } from "drizzle-orm";
+import { findRegistrationByToken, registerPromoDownload, validateRegistration } from "./promoRegistrations";
+import { clientIp } from "./_core/adminAuth";
 import { ebookImages, ebookPath, ebookPriceLabel, ebookUrlSlug } from "../shared/ebookPage";
 import { PROMO_SOURCE_RE, promoPath, promoState, type PromoState } from "../shared/promo";
 import { SITE_URL, injectNoindex, stripGenericSeo, escapeHtml } from "./ebookPages";
@@ -70,18 +73,49 @@ export async function getActivePromo(now: number): Promise<PromoRow | null> {
   return null;
 }
 
-export async function recordPromoEvent(promoId: number, kind: "view" | "download" | "share", source: string, channel?: string | null) {
+export async function recordPromoEvent(promoId: number, kind: "view" | "download" | "share", source: string, channel?: string | null, extra: { registrationId?: number | null; confirmed?: boolean } = {}) {
   const db = await getDb();
   if (!db) return;
   try {
-    await db.insert(ebookPromoEvents).values({ promoId, kind, source, channel: channel ?? null });
+    await db.insert(ebookPromoEvents).values({ promoId, kind, source, channel: channel ?? null, registrationId: extra.registrationId ?? null, confirmed: extra.confirmed ? 1 : 0 });
   } catch (err) {
     console.error("[promos] no se pudo registrar el evento", err);
   }
 }
 
 const cleanSource = (v: unknown) => (typeof v === "string" && PROMO_SOURCE_RE.test(v) ? v : "directo");
-const cleanChannel = (v: unknown) => (typeof v === "string" && /^[a-z]{1,20}$/.test(v) ? v : null);
+/** Canales observables: «red_*» = compartir en redes, «amigo_*» = enviar a un amigo. */
+const cleanChannel = (v: unknown) => (typeof v === "string" && /^(red|amigo)_[a-z]{1,20}$/.test(v) ? v : null);
+
+/** Límite sencillo por IP para el formulario (evita altas masivas): 15 envíos por hora. */
+const attempts = new Map<string, number[]>();
+function tooManyAttempts(key: string, now = Date.now()) {
+  const list = (attempts.get(key) ?? []).filter((t) => now - t < 3_600_000);
+  list.push(now);
+  attempts.set(key, list);
+  return list.length > 15;
+}
+
+/** Ventana en la que repetir la misma entrega (doble clic, reintento técnico) no suma otra descarga. */
+export const DOWNLOAD_DEDUPE_MS = 60_000;
+
+/** Reserva el turno de descarga de un registro: UPDATE condicional atómico. true = esta petición es la que cuenta. */
+export async function claimDownload(registrationId: number, now: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const [r] = await db
+    .update(ebookPromoRegistrations)
+    .set({ lastDownloadAt: now })
+    .where(and(eq(ebookPromoRegistrations.id, registrationId), or(isNull(ebookPromoRegistrations.lastDownloadAt), lte(ebookPromoRegistrations.lastDownloadAt, now - DOWNLOAD_DEDUPE_MS))));
+  return Number((r as { affectedRows?: number }).affectedRows ?? 0) === 1;
+}
+
+/** Devuelve el turno si la entrega falló (solo si sigue siendo el nuestro). */
+export async function releaseDownload(registrationId: number, claimedAt: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(ebookPromoRegistrations).set({ lastDownloadAt: null }).where(and(eq(ebookPromoRegistrations.id, registrationId), eq(ebookPromoRegistrations.lastDownloadAt, claimedAt))).catch(() => undefined);
+}
 
 /** Ruta absoluta del PDF dentro de la carpeta de subidas; null si no es un archivo de subidas válido. */
 export function resolveUploadFile(pdfUrl: string): string | null {
@@ -139,10 +173,34 @@ export function registerPromoRoutes(app: Express) {
     const row = await getPromoBySlug(req.params.slug).catch(() => null);
     const kind = req.body?.kind;
     if (!row || promoState(row.promo, Date.now()) === "draft" || (kind !== "view" && kind !== "share")) return res.status(204).end();
-    await recordPromoEvent(row.promo.id, kind, cleanSource(req.body?.source), kind === "share" ? cleanChannel(req.body?.channel) : null);
+    const channel = kind === "share" ? cleanChannel(req.body?.channel) : null;
+    if (kind === "share" && !channel) return res.status(204).end();
+    await recordPromoEvent(row.promo.id, kind, cleanSource(req.body?.source), channel, { confirmed: kind === "share" && channel === "red_nativo" && req.body?.confirmed === true });
     res.status(204).end();
   });
 
+  /** Formulario: valida en el servidor, da de alta/clasifica en el CRM y entrega el token de descarga de esta promoción. */
+  app.post("/api/promos/:slug/registro", express.json({ limit: "4kb" }), async (req: Request, res: Response) => {
+    res.set(NO_STORE);
+    const row = await getPromoBySlug(req.params.slug).catch(() => null);
+    if (!row || !row.ebook?.pdfUrl || promoState(row.promo, Date.now()) !== "active") return res.status(410).json({ error: "ended", message: "La descarga gratuita ha terminado." });
+    if (tooManyAttempts(clientIp(req as never))) return res.status(429).json({ error: "rate", message: "Demasiados intentos. Prueba más tarde." });
+    const v = validateRegistration(req.body ?? {});
+    if (!v.ok) return res.status(400).json({ error: "invalid", errors: v.errors });
+    try {
+      const r = await registerPromoDownload(row.promo, row.ebook, { name: v.name, email: v.email, phone: v.phone, source: cleanSource(req.body?.source) });
+      res.json({ token: r.token });
+    } catch (err) {
+      console.error("[promos] no se pudo guardar el registro", err);
+      res.status(500).json({ error: "save", message: "No hemos podido guardar tus datos. Inténtalo de nuevo." });
+    }
+  });
+
+  /**
+   * Ruta protegida: exige haber completado el formulario (token) y que la campaña esté ACTIVA en este instante.
+   * Cuenta una descarga solo cuando el servidor entrega el PDF desde el principio: no suman HEAD, peticiones parciales
+   * (Range que no empieza en 0) ni la misma entrega repetida durante un minuto (doble clic, reintento técnico).
+   */
   app.get("/api/promos/:slug/descarga", async (req: Request, res: Response) => {
     res.set(NO_STORE);
     const row = await getPromoBySlug(req.params.slug).catch(() => null);
@@ -151,11 +209,28 @@ export function registerPromoRoutes(app: Express) {
     if (!row || !row.ebook?.pdfUrl || promoState(row.promo, now) !== "active") {
       return res.status(410).type("text/plain; charset=utf-8").send("La descarga gratuita ha terminado.");
     }
+    const reg = await findRegistrationByToken(row.promo.id, typeof req.query.t === "string" ? req.query.t : "").catch(() => null);
+    if (!reg) return res.status(403).type("text/plain; charset=utf-8").send("Completa el formulario para descargar el cuento.");
     const file = resolveUploadFile(row.ebook.pdfUrl);
     if (!file) return res.status(404).type("text/plain; charset=utf-8").send("El archivo no está disponible. Escribe a Cristina.");
-    await recordPromoEvent(row.promo.id, "download", cleanSource(req.query.s));
-    res.set({ "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${ebookUrlSlug(row.ebook.slug)}.pdf"` });
-    fs.createReadStream(file).on("error", () => res.destroy()).pipe(res);
+
+    // Cuenta solo la entrega completa desde el principio (sin Range, o «bytes=0-»): no suman HEAD, peticiones parciales ni repeticiones
+    const range = req.headers.range;
+    const countable = req.method === "GET" && (!range || /^bytes=0-$/.test(range));
+    // Reserva atómica (una sola sentencia UPDATE): de varias peticiones simultáneas solo una obtiene el turno
+    const claimed = countable ? await claimDownload(reg.id, now) : false;
+    if (claimed) {
+      res.once("finish", () => {
+        // «finish»: el servidor terminó de enviar el PDF. Solo una entrega correcta (200, o 206 completa) suma
+        if (res.statusCode === 200 || res.statusCode === 206) void recordPromoEvent(row.promo.id, "download", reg.source, null, { registrationId: reg.id });
+        else void releaseDownload(reg.id, now);
+      });
+      // Conexión cortada antes de terminar (entrega fallida): no suma y se libera el turno para el reintento
+      res.once("close", () => { if (!res.writableFinished) void releaseDownload(reg.id, now); });
+    }
+    res.sendFile(file, { cacheControl: false, headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${ebookUrlSlug(row.ebook.slug)}.pdf"`, ...NO_STORE } }, (err) => {
+      if (err && !res.headersSent) res.status(500).end();
+    });
   });
 }
 

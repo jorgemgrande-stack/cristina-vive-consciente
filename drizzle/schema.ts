@@ -262,7 +262,7 @@ export const clientServices = mysqlTable("client_services", {
   paymentStatus: mysqlEnum("paymentStatus", ["free", "paid", "pending"]).default("free").notNull(),
   receivedAt: bigint("receivedAt", { mode: "number" }).notNull(),
   notes: text("notes"),
-  source: mysqlEnum("source", ["manual", "order"]).default("manual").notNull(),
+  source: mysqlEnum("source", ["manual", "order", "promo"]).default("manual").notNull(),
   orderId: int("orderId"),
   /** «order:123»: una compra se registra una sola vez por ficha */
   sourceKey: varchar("sourceKey", { length: 80 }),
@@ -987,5 +987,29 @@ export const ebookPromoEvents = mysqlTable("ebook_promo_events", {
   kind: mysqlEnum("kind", ["view", "download", "share"]).notNull(),
   channel: varchar("channel", { length: 30 }),
   source: varchar("source", { length: 30 }).default("directo").notNull(),
+  /** Registro (formulario) que hizo la descarga */
+  registrationId: int("registrationId"),
+  /** 1 = la plataforma confirmó la acción (p. ej. el menú de compartir del móvil devolvió «compartido») */
+  confirmed: int("confirmed").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
+
+/** Quien completa el formulario de descarga. El token abre la ruta protegida de descarga de esa promoción. */
+export const ebookPromoRegistrations = mysqlTable("ebook_promo_registrations", {
+  id: int("id").autoincrement().primaryKey(),
+  promoId: int("promoId").notNull(),
+  /** Ficha del CRM; null si la identidad quedó en revisión */
+  clientId: int("clientId"),
+  name: varchar("name", { length: 200 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  phone: varchar("phone", { length: 30 }).notNull(),
+  source: varchar("source", { length: 30 }).default("directo").notNull(),
+  status: mysqlEnum("status", ["linked", "created", "review"]).notNull(),
+  /** ids de fichas candidatas separados por coma (solo en revisión) */
+  candidates: varchar("candidates", { length: 200 }),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  /** ms de la última entrega reservada: cierra la puerta de forma atómica a las peticiones repetidas o simultáneas */
+  lastDownloadAt: bigint("lastDownloadAt", { mode: "number" }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type EbookPromoRegistration = typeof ebookPromoRegistrations.$inferSelect;
