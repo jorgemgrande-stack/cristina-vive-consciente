@@ -75,6 +75,7 @@ export const CONNECTED_SOURCES = [
   { value: "home_masajes", label: "Portada: masajes destacados", note: "Datos de Servicios" },
   { value: "home_agua", label: "Portada: sistemas de agua", note: "Datos de Agua" },
   { value: "home_blog", label: "Portada: últimas entradas del blog", note: "Artículos publicados" },
+  { value: "home_guias", label: "Portada: carrusel de guías digitales", note: "Ebooks activos (Datos de Ebooks)" },
 ] as const;
 export type ConnectedSource = (typeof CONNECTED_SOURCES)[number]["value"];
 export const CONNECTED_VALUES = CONNECTED_SOURCES.map((s) => s.value) as readonly string[];

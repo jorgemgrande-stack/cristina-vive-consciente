@@ -12,6 +12,7 @@ import Layout from "@/components/Layout";
 import BookingModal from "@/components/BookingModal";
 import HomeMasajes from "@/components/HomeMasajes";
 import { HomeSlideshow, HomeWater, HomeBlog, HOME_SLIDESHOW_DEFAULTS } from "@/components/site/HomeSections";
+import { HomeGuias } from "@/components/site/HomeGuias";
 import { trpc } from "@/lib/trpc";
 
 const CONSULTAS_IMG = SITE_IMAGES.heroConsultas;
@@ -326,6 +327,9 @@ export default function Home() {
 
       {/* ── BLOG PREVIEW ─────────────────────────────────────── */}
       <HomeBlog />
+
+      {/* ── GUÍAS DIGITALES (junto al contenido editorial) ─────── */}
+      <HomeGuias />
 
       {/* ── TESTIMONIALS ─────────────────────────────────────── */}
       <section className="section-padding bg-[oklch(0.18_0.018_55)]">

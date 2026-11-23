@@ -60,6 +60,7 @@ const HOME: PageBlock[] = [
   }, { padBottom: "l" }),
   conn("home-agua", "home_agua"),
   conn("home-blog", "home_blog"),
+  conn("home-guias", "home_guias"),
   B("home-testimonios-intro", "heading", { eyebrow: "Testimonios", title: "Lo que dicen mis clientas", subtitle: "", level: "h2", align: "center" }, { background: "dark", padTop: "l" }),
   B("home-testimonios", "testimonials", {
     title: "",
