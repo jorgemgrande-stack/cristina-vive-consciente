@@ -51,7 +51,7 @@ const DATA_LINKS: Record<string, { href: string; label: string }> = {
   consultas: { href: "/crm/servicios", label: "Servicios" }, masajes: { href: "/crm/servicios", label: "Servicios" }, home_masajes: { href: "/crm/servicios", label: "Servicios" },
   sistemas_agua: { href: "/crm/agua/productos", label: "Agua → Productos" }, home_agua: { href: "/crm/agua/productos", label: "Agua → Productos" },
   aceites: { href: "/crm/aceites/productos", label: "Aceites → Productos" }, guias: { href: "/crm/ebooks", label: "Ebooks" }, recomendados: { href: "/crm/afiliados", label: "Afiliados" },
-  blog: { href: "/crm/blog/articulos", label: "Blog → Artículos" }, home_blog: { href: "/crm/blog/articulos", label: "Blog → Artículos" }, home_slideshow: { href: "/crm/hero", label: "Hero Inicio (imágenes)" },
+  blog: { href: "/crm/blog/articulos", label: "Blog → Artículos" }, home_blog: { href: "/crm/blog/articulos", label: "Blog → Artículos" }, home_slideshow: { href: "/crm/hero", label: "Hero Inicio (imágenes)" }, home_guias: { href: "/crm/ebooks", label: "Ebooks" },
   contacto: { href: "/crm/automatizaciones", label: "Automatizaciones" },
 };
 const TEMPLATE_DATA: Record<string, { href: string; label: string }> = {

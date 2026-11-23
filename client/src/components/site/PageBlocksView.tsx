@@ -16,6 +16,7 @@ import { useConsultaCart } from "@/contexts/ConsultaCartContext";
 import { FICHA_REGISTRY } from "./detail";
 import { EmbedProvider } from "./embed";
 import { HomeBlog, HomeSlideshow, HomeWater, HOME_SLIDESHOW_DEFAULTS } from "./HomeSections";
+import { HomeGuias } from "./HomeGuias";
 import BookingModal from "@/components/BookingModal";
 import HomeMasajes from "@/components/HomeMasajes";
 import Consultas from "@/pages/Consultas";
@@ -275,6 +276,7 @@ function Connected({ b, detail, inEditor }: { b: BlockOf<"connected">; detail: D
     case "home_masajes": return <HomeMasajes />;
     case "home_agua": return <HomeWater />;
     case "home_blog": return <HomeBlog />;
+    case "home_guias": return <HomeGuias />;
     case "home_slideshow":
       return (
         <>
