@@ -188,6 +188,16 @@ export default function Promocion() {
                   )}
                 </div>
               )}
+
+              {ebook && (ebook.synopsis || ebook.author || ebook.edition) && (
+                <div className="pt-5 border-t border-[oklch(0.9_0.012_78)] max-w-md space-y-3" data-testid="promo-ficha">
+                  {ebook.synopsis && <p className="font-display italic text-[oklch(0.28_0.025_55)] leading-relaxed whitespace-pre-line" style={{ fontWeight: 400, fontSize: "1.1rem" }}>{ebook.synopsis}</p>}
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm font-body">
+                    {ebook.author && (<><dt className="text-[oklch(0.45_0.02_60)] uppercase tracking-widest text-[0.65rem] pt-0.5" style={{ fontWeight: 500 }}>Autor</dt><dd className="text-[oklch(0.28_0.025_55)]">{ebook.author}</dd></>)}
+                    {ebook.edition && (<><dt className="text-[oklch(0.45_0.02_60)] uppercase tracking-widest text-[0.65rem] pt-0.5" style={{ fontWeight: 500 }}>Edición</dt><dd className="text-[oklch(0.28_0.025_55)]">{ebook.edition}</dd></>)}
+                  </dl>
+                </div>
+              )}
             </div>
           </div>
 

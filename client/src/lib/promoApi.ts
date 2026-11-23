@@ -23,7 +23,7 @@ export interface PublicPromo {
   bannerText: string;
   donationEnabled: boolean;
   donationConcept: string;
-  ebook: { title: string; subtitle: string | null; cover: string | null; price: string; fichaPath: string } | null;
+  ebook: { title: string; synopsis: string | null; author: string | null; edition: string | null; subtitle: string | null; cover: string | null; price: string; fichaPath: string } | null;
 }
 
 async function getJson<T>(url: string): Promise<T | null> {
