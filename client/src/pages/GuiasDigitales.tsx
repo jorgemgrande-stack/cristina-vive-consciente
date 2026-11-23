@@ -37,7 +37,7 @@ function EbookCard({ ebook }: { ebook: EbookData }) {
         {cover ? (
           <img src={cover} alt={`Portada de ${ebook.title}`} className="w-full h-full object-contain" loading="lazy" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[oklch(0.52_0.02_60)] text-xs font-body">Guía digital</div>
+          <div className="w-full h-full flex items-center justify-center text-[oklch(0.52_0.02_60)] text-xs font-body">Ebook</div>
         )}
       </Link>
       <div className="p-6 flex flex-col flex-1">
