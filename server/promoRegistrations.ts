@@ -15,6 +15,7 @@ import { getDb } from "./db";
 import { clientCategories, clients, clientServices, ebookPromoRegistrations, ebookPromos, ebooks, serviceCatalog, type EbookPromo, type Ebook } from "../drizzle/schema";
 import { namesCompatible, normalizeEmail, normalizePhone as normalizePhoneDigits, splitName } from "./clientImport";
 import { normalizePhone } from "../shared/phone";
+import { relinkPromoEmail } from "./promoEmails";
 
 export interface RegistrationInput {
   name: string;
@@ -131,6 +132,7 @@ export function linkRegistrationToClient(registrationId: number, clientId: numbe
     if (!promo || !ebook) throw new Error("Promoción no encontrada");
     const r = await classifyClient(promo, ebook, clientId, reg.source);
     await db.update(ebookPromoRegistrations).set({ clientId, status: "linked" }).where(eq(ebookPromoRegistrations.id, registrationId));
+    await relinkPromoEmail(reg.promoId, reg.email, clientId); // su correo de entrega (si lo hubo) pasa a depender de la ficha
     return r;
   });
 }

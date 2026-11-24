@@ -18,6 +18,7 @@ import { getUploadDir } from "./storage";
 import { ebookPromoEvents, ebookPromoRegistrations, ebookPromos, ebooks, type EbookPromo } from "../drizzle/schema";
 import { isNull, lte, or } from "drizzle-orm";
 import { findRegistrationByToken, registerPromoDownload, validateRegistration } from "./promoRegistrations";
+import { enqueuePromoEmail, kickPromoEmails } from "./promoEmails";
 import { clientIp } from "./_core/adminAuth";
 import { ebookImages, ebookPath, ebookPriceLabel, ebookUrlSlug } from "../shared/ebookPage";
 import { PROMO_SOURCE_RE, promoPath, promoState, type PromoState } from "../shared/promo";
@@ -222,7 +223,13 @@ export function registerPromoRoutes(app: Express) {
     if (claimed) {
       res.once("finish", () => {
         // «finish»: el servidor terminó de enviar el PDF. Solo una entrega correcta (200, o 206 completa) suma
-        if (res.statusCode === 200 || res.statusCode === 206) void recordPromoEvent(row.promo.id, "download", reg.source, null, { registrationId: reg.id });
+        if (res.statusCode === 200 || res.statusCode === 206) {
+          void recordPromoEvent(row.promo.id, "download", reg.source, null, { registrationId: reg.id })
+            // Primera entrega correcta a esa persona: se encola el correo del cuento (sin esperar y sin afectar a la descarga)
+            .then(() => enqueuePromoEmail(row.promo.id, reg.id))
+            .then((queued) => { if (queued) kickPromoEmails(); })
+            .catch((e) => console.error("[promos] no se pudo encolar el correo de entrega", e));
+        }
         else void releaseDownload(reg.id, now);
       });
       // Conexión cortada antes de terminar (entrega fallida): no suma y se libera el turno para el reintento

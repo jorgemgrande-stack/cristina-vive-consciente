@@ -30,9 +30,15 @@ const BASE_URL = "https://cristinaviveconsciente.es";
 const LOGO_URL =
   `${BASE_URL}/logo-bion.png`;
 
+/** Solo para pruebas automáticas: sustituye el SMTP por un transporte en memoria (null lo quita). */
+let testTransport: { sendMail: (opts: unknown) => Promise<unknown> } | null = null;
+export function __setMailTransportForTests(t: typeof testTransport) {
+  testTransport = t;
+}
+
 /** ¿Hay SMTP configurado? Si no, los emails solo se escriben en el log (no se envían). */
 export function isEmailConfigured(): boolean {
-  return !!(SMTP_HOST && SMTP_USER && SMTP_PASS);
+  return !!testTransport || !!(SMTP_HOST && SMTP_USER && SMTP_PASS);
 }
 
 /** ¿Hay buzón de administración al que avisar de nuevas solicitudes? */
@@ -41,6 +47,7 @@ export function isAdminEmailConfigured(): boolean {
 }
 
 function getTransporter() {
+  if (testTransport) return testTransport as unknown as ReturnType<typeof nodemailer.createTransport>;
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
     return null; // modo dev: solo log
   }
@@ -181,7 +188,7 @@ export interface EbookDeliveryEmailData {
 
 // ─── FUNCIÓN DE ENVÍO GENÉRICA ────────────────────────────────────────────────
 
-async function sendEmail(opts: {
+export async function sendEmail(opts: {
   to: string;
   subject: string;
   html: string;

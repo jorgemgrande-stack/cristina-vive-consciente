@@ -93,6 +93,8 @@ export function detectPromoSource(search: string, referrer: string): string {
 export const PROMO_SOURCE_RE = /^[a-z0-9_-]{1,30}$/;
 
 export interface PromoStats {
+  /** Correos de entrega por estado (bandeja de envíos) */
+  emails: Record<"pending" | "sending" | "sent" | "failed" | "skipped", number>;
   views: number;
   downloads: number;
   /** Clientes únicos por ID de ficha del CRM entre quienes descargaron */
