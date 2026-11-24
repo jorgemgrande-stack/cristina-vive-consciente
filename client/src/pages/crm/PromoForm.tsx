@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { PROMO_STATE_LABEL } from "./Promociones";
 import PromoMetrics from "@/components/crm/PromoMetrics";
 import PromoReviews from "@/components/crm/PromoReviews";
+import PromoDownloaders from "@/components/crm/PromoDownloaders";
 import { madridLocalToMs, msToMadridLocal, promoPath } from "@shared/promo";
 
 type Mode = "draft" | "now" | "scheduled";
@@ -133,6 +134,7 @@ export default function PromoForm() {
           <div className="bg-white rounded-lg border border-gray-100 p-5 mb-5">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Métricas de la campaña</h2>
             <PromoMetrics stats={promo.stats} />
+            <div className="mt-3"><PromoDownloaders promoId={promo.id} total={promo.stats.downloads} /></div>
           </div>
         )}
 

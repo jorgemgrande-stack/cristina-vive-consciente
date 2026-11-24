@@ -11,6 +11,7 @@ import CRMLayout from "@/components/CRMLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import PromoMetrics from "@/components/crm/PromoMetrics";
+import PromoDownloaders from "@/components/crm/PromoDownloaders";
 import { formatMadridDeadline, promoPath, type PromoState } from "@shared/promo";
 
 export const PROMO_STATE_LABEL: Record<PromoState, { label: string; cls: string }> = {
@@ -94,6 +95,7 @@ export default function Promociones() {
                       </div>
                     </div>
                     <PromoMetrics stats={p.stats} />
+                    <PromoDownloaders promoId={p.id} total={p.stats.downloads} />
                   </div>
                 );
               })}

@@ -112,6 +112,17 @@ d("conteo de descargas (BD de pruebas)", () => {
         expect(st).toMatchObject({ downloads: 4, uniqueClients: 2, downloadsInReview: 0 });
         expect(await conn.select().from(s.clientServices).where(eq(s.clientServices.clientId, c2))).toHaveLength(1);
         await expect(linkRegistrationToClient(reg(3).id, c1)).rejects.toThrow(/ya está vinculado/);
+        // Informe de personas que descargaron: 2 personas (c1 con dos correos y 3 descargas; c2 con 1, ya vinculada)
+        const { promoDownloaders } = await import("./routers/promosAdmin");
+        const rep = await promoDownloaders(promo.id);
+        expect(rep.registeredWithoutDownload).toBe(0);
+        expect(rep.people).toHaveLength(2);
+        const p1 = rep.people.find((p) => p.clientId === c1)!;
+        expect(p1).toMatchObject({ downloads: 3, inReview: false });
+        expect(p1.emails.sort()).toEqual([`${tag}.uno.b@t.es`, `${tag}.uno@t.es`]);
+        expect(p1.sources.sort()).toEqual(["amigo_enlace", "red_x"]);
+        expect(p1.lastAt).toBeGreaterThanOrEqual(p1.firstAt);
+        expect(rep.people.find((p) => p.clientId === c2)).toMatchObject({ downloads: 1, inReview: false });
         // atribución por canal de las descargas
         expect(st.bySource.red_x?.downloads).toBe(2);
         expect(st.bySource.amigo_enlace?.downloads).toBe(1);
