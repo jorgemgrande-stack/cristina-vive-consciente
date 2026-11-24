@@ -12,7 +12,7 @@ import Layout from "@/components/Layout";
 import NotFound from "@/pages/NotFound";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { promoSource, registerPromo, trackPromo, usePublicPromo, type RegisterErrors } from "@/lib/promoApi";
-import { PROMO_BIZUM_COPY, PROMO_BIZUM_DISPLAY, countdownParts, formatMadridDeadline, promoPath, promoShareMessage, whatsappShareUrl } from "@shared/promo";
+import { PROMO_BIZUM_COPY, PROMO_EMAIL_INVITE_CONSENT, PROMO_BIZUM_DISPLAY, countdownParts, formatMadridDeadline, promoPath, promoShareMessage, whatsappShareUrl } from "@shared/promo";
 
 function Countdown({ remaining }: { remaining: number }) {
   const c = countdownParts(remaining);
@@ -89,6 +89,8 @@ export default function Promocion() {
   const [token, setToken] = useState<string | null>(null);
   /** Solo una indicación personal de la persona: no se envía al servidor, no se guarda en el CRM ni se verifica */
   const [followedIg, setFollowedIg] = useState(false);
+  /** Autorización opcional (desmarcada): el correo del cuento podrá incluir información y promociones. Independiente de «Ya he seguido…». */
+  const [wantsPromos, setWantsPromos] = useState(false);
   const viewed = useRef(false);
 
   useEffect(() => {
@@ -127,7 +129,7 @@ export default function Promocion() {
     e.preventDefault();
     setChecking(true);
     setErrors({});
-    const r = await registerPromo(promo.slug, form); // si falla, lo escrito se conserva para reintentar
+    const r = await registerPromo(promo.slug, { ...form, emailInvite: wantsPromos }); // si falla, lo escrito se conserva para reintentar
     setChecking(false);
     if ("token" in r) {
       setToken(r.token);
@@ -350,9 +352,13 @@ export default function Promocion() {
             </div>
             {errors.form && <p className="text-sm text-red-600 font-body" role="alert" data-testid="promo-form-error">{errors.form}</p>}
             <p className="text-[0.7rem] text-[oklch(0.45_0.02_60)] font-body leading-snug">
-              Recogemos tu nombre y apellidos, correo electrónico y teléfono para gestionar tu descarga y registrarla en la ficha de clientes de Cristina. Este formulario no te suscribe a novedades. Más información en la{" "}
+              Recogemos tu nombre y apellidos, correo electrónico y teléfono para gestionar tu descarga y registrarla en la ficha de clientes de Cristina. Si marcas la casilla, el correo de entrega del cuento podrá incluir información y promociones de Cristina Vive Consciente. Más información en la{" "}
               <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">política de privacidad</a>.
             </p>
+            <label className="flex items-start gap-2 text-sm text-[oklch(0.38_0.02_55)] font-body cursor-pointer">
+              <input type="checkbox" checked={wantsPromos} onChange={(e) => setWantsPromos(e.target.checked)} className="mt-1" data-testid="promo-invite-check" />
+              <span>{PROMO_EMAIL_INVITE_CONSENT.text}</span>
+            </label>
             <button
               type="submit"
               disabled={checking}
