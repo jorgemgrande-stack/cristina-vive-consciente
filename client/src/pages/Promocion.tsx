@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { Link, useRoute } from "wouter";
-import { ArrowDown, Copy, Gift, MessageCircle, Share2 } from "lucide-react";
+import { ArrowDown, Copy, Gift, Instagram, MessageCircle, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
 import NotFound from "@/pages/NotFound";
@@ -332,8 +332,15 @@ export default function Promocion() {
             ))}
             {/* Instagram (opcional): el enlace abre otra pestaña y la página, con lo ya escrito, se queda donde está */}
             <div className="space-y-1.5" data-testid="promo-instagram">
-              <a href="https://www.instagram.com/cristina.viveconsciente/" target="_blank" rel="noopener noreferrer" className="inline-block text-sm text-[oklch(0.3_0.07_148)] underline underline-offset-2 font-body" style={{ fontWeight: 500 }} data-testid="promo-instagram-link">
-                Seguir a Cristina Battistelli en Instagram
+              <a
+                href="https://www.instagram.com/cristina.viveconsciente/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-md bg-[linear-gradient(110deg,#8134af,#ae185d,#a53e21)] px-3 py-2 text-sm font-semibold text-white font-body transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8134af]"
+                data-testid="promo-instagram-link"
+              >
+                <Instagram size={18} className="shrink-0" aria-hidden="true" />
+                <span className="min-w-0 break-words">seguir a @cristina.viveconsciente</span>
               </a>
               <label className="flex items-start gap-2 text-sm text-[oklch(0.38_0.02_55)] font-body cursor-pointer">
                 <input type="checkbox" checked={followedIg} onChange={(e) => setFollowedIg(e.target.checked)} className="mt-1" data-testid="promo-instagram-check" />
