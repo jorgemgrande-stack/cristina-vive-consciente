@@ -13,16 +13,15 @@ describe("También te puede interesar", () => {
       { slug: "otra", name: "Otro", type: "otro", imageUrl: null, price: "5" },
     ],
     water: [{ slug: "sist", title: "Sistema", mainImage: "/w.jpg", priceVisible: "1.200 €" }],
-    oils: [{ slug: "lavanda", name: "Lavanda", imagen: null }],
   };
-  it("excluye el ebook actual (con - o _), no duplica y enlaza a la ficha de cada tipo", () => {
+  it("excluye el ebook actual (con - o _), no duplica, incluye sistemas de agua y deja fuera los aceites", () => {
     const r = buildRelatedItems({ ...src, ebooks: [...src.ebooks, eb("agua", "Guía del agua duplicada")] });
-    expect(r.map((i) => i.href)).toEqual(["/guias-digitales/agua", "/consultas/primera", "/masajes/relax", "/sistemas-agua/sist", "/aceites-esenciales/lavanda"]);
+    expect(r.map((i) => i.href)).toEqual(["/guias-digitales/agua", "/consultas/primera", "/masajes/relax", "/sistemas-agua/sist"]);
     expect(r[0]).toMatchObject({ price: "10€", image: "/c/agua.jpg" });
     expect(r[1].price).toBe("60 €");
     expect(r[2].price).toBeNull();
   });
   it("sin otros artículos devuelve lista vacía (la sección no se pinta)", () => {
-    expect(buildRelatedItems({ currentSlug: "x", ebooks: [eb("x", "X")], services: [], water: [], oils: [] })).toEqual([]);
+    expect(buildRelatedItems({ currentSlug: "x", ebooks: [eb("x", "X")], services: [], water: [] })).toEqual([]);
   });
 });
