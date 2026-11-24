@@ -10,18 +10,21 @@
  *    cliente y promoción (clave única cliente + «promo:ID»). Sin pedido, factura ni pago.
  */
 import crypto from "crypto";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "./db";
-import { clientCategories, clients, clientServices, ebookPromoRegistrations, ebookPromos, ebooks, serviceCatalog, type EbookPromo, type Ebook } from "../drizzle/schema";
+import { clientCategories, clients, commercialConsents, clientServices, ebookPromoRegistrations, ebookPromos, ebooks, serviceCatalog, type EbookPromo, type Ebook } from "../drizzle/schema";
 import { namesCompatible, normalizeEmail, normalizePhone as normalizePhoneDigits, splitName } from "./clientImport";
 import { normalizePhone } from "../shared/phone";
-import { relinkPromoEmail } from "./promoEmails";
+import { grantCommercialConsent, relinkPromoEmail } from "./promoEmails";
+import { promoEmailScope } from "../shared/promo";
 
 export interface RegistrationInput {
   name: string;
   email: string;
   phone: string;
   source: string;
+  /** Casilla opcional: quiere Instagram, consultas y masajes en el correo de ESTA campaña (versión del texto mostrado) */
+  emailInviteVersion?: string | null;
 }
 export type Validated = { ok: true; name: string; email: string; phone: string } | { ok: false; errors: Record<string, string> };
 
@@ -178,6 +181,17 @@ export function registerPromoDownload(promo: EbookPromo, ebook: Ebook, input: Re
     let resourceCreated = false;
     let categoryAdded = false;
     if (clientId != null) ({ resourceCreated, categoryAdded } = await classifyClient(promo, ebook, clientId, input.source));
+
+    // Autorización expresa (casilla opcional), limitada al correo de esta campaña; con fecha, origen y versión del texto mostrado
+    if (input.emailInviteVersion) {
+      const scope = promoEmailScope(promo.id);
+      const [have] = await db
+        .select({ id: commercialConsents.id })
+        .from(commercialConsents)
+        .where(and(isNull(commercialConsents.withdrawnAt), eq(commercialConsents.scope, scope), eq(commercialConsents.email, emailN)))
+        .limit(1);
+      if (!have) await grantCommercialConsent({ clientId, email: emailN, textVersion: input.emailInviteVersion, method: "formulario-promo", scope });
+    }
 
     const token = crypto.randomBytes(32).toString("hex");
     const [reg] = await db.insert(ebookPromoRegistrations).values({

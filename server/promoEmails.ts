@@ -17,7 +17,7 @@ import { and, eq, isNull, lte, or, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { commercialConsents, ebookPromoEmails, ebookPromoRegistrations, ebookPromos, ebooks, type CommercialConsent } from "../drizzle/schema";
 import { ebookImages } from "../shared/ebookPage";
-import { formatMadridDeadline } from "../shared/promo";
+import { formatMadridDeadline, promoEmailScope } from "../shared/promo";
 import { splitName } from "./clientImport";
 import { isEmailConfigured, sendEmail } from "./email";
 import { SITE_URL, escapeHtml } from "./ebookPages";
@@ -38,23 +38,27 @@ const abs = (u: string) => (/^https?:\/\//i.test(u) ? u : SITE_URL + (u.startsWi
 
 // ── Autorización comercial ───────────────────────────────────────────────────
 
-/** Autorización comercial expresa y vigente (no retirada) de esta ficha o este correo. */
-export async function activeCommercialConsent(clientId: number | null, email: string): Promise<CommercialConsent | null> {
+/**
+ * Autorización comercial expresa y vigente (no retirada) de esta ficha o este correo. Con `promoId` también valen las
+ * limitadas al correo de esa campaña; las de otra campaña no. Sin `promoId` solo valen las generales (sin alcance).
+ */
+export async function activeCommercialConsent(clientId: number | null, email: string, promoId?: number): Promise<CommercialConsent | null> {
   const db = await requireDb();
   const e = email.trim().toLowerCase();
+  const scopeOk = promoId != null ? or(isNull(commercialConsents.scope), eq(commercialConsents.scope, promoEmailScope(promoId))) : isNull(commercialConsents.scope);
   const [c] = await db
     .select()
     .from(commercialConsents)
-    .where(and(isNull(commercialConsents.withdrawnAt), clientId != null ? or(eq(commercialConsents.clientId, clientId), eq(commercialConsents.email, e)) : eq(commercialConsents.email, e)))
+    .where(and(isNull(commercialConsents.withdrawnAt), scopeOk, clientId != null ? or(eq(commercialConsents.clientId, clientId), eq(commercialConsents.email, e)) : eq(commercialConsents.email, e)))
     .limit(1);
   return c ?? null;
 }
 
 /** Registra una autorización comercial expresa (la usarán los formularios o el CRM que la recojan). */
-export async function grantCommercialConsent(i: { clientId: number | null; email: string; textVersion: string; method: string }): Promise<CommercialConsent> {
+export async function grantCommercialConsent(i: { clientId: number | null; email: string; textVersion: string; method: string; scope?: string | null }): Promise<CommercialConsent> {
   const db = await requireDb();
   const token = crypto.randomBytes(32).toString("hex");
-  await db.insert(commercialConsents).values({ clientId: i.clientId, email: i.email.trim().toLowerCase(), textVersion: i.textVersion, method: i.method, grantedAt: Date.now(), unsubscribeToken: token });
+  await db.insert(commercialConsents).values({ clientId: i.clientId, email: i.email.trim().toLowerCase(), textVersion: i.textVersion, method: i.method, scope: i.scope ?? null, grantedAt: Date.now(), unsubscribeToken: token });
   const [c] = await db.select().from(commercialConsents).where(eq(commercialConsents.unsubscribeToken, token)).limit(1);
   return c;
 }
@@ -103,7 +107,7 @@ export function enqueuePromoEmail(promoId: number, registrationId: number): Prom
       .where(and(eq(ebookPromoEmails.promoId, promoId), or(eq(ebookPromoEmails.email, email), eq(ebookPromoEmails.dedupeKey, dedupeKey(reg.clientId, email)), reg.clientId != null ? eq(ebookPromoEmails.clientId, reg.clientId) : undefined)))
       .limit(1);
     if (prev) return false;
-    const consent = await activeCommercialConsent(reg.clientId, email);
+    const consent = await activeCommercialConsent(reg.clientId, email, promoId);
     try {
       await db.insert(ebookPromoEmails).values({
         promoId,
@@ -160,7 +164,7 @@ async function deliver(row: typeof ebookPromoEmails.$inferSelect): Promise<void>
     return;
   }
   // La autorización se vuelve a comprobar al enviar: si la retiró entre tanto, no se muestran las tarjetas
-  const consent = await activeCommercialConsent(row.clientId, row.email);
+  const consent = await activeCommercialConsent(row.clientId, row.email, row.promoId);
   const cover = ebookImages(ebook)[0];
   const mail = buildPromoStoryEmail({
     name: splitName(row.name).firstName || row.name,

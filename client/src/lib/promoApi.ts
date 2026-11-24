@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { detectPromoSource, promoState, type PromoState } from "@shared/promo";
+import { PROMO_EMAIL_INVITE_CONSENT, detectPromoSource, promoState, type PromoState } from "@shared/promo";
 
 export interface ActivePromo {
   slug: string;
@@ -120,13 +120,13 @@ export interface RegisterErrors {
 /** Envía el formulario de descarga: el servidor valida, guarda en el CRM y devuelve el token de la ruta protegida. */
 export async function registerPromo(
   slug: string,
-  data: { name: string; email: string; phone: string },
+  data: { name: string; email: string; phone: string; emailInvite?: boolean },
 ): Promise<{ token: string } | { errors: RegisterErrors; ended?: boolean }> {
   try {
     const res = await fetch(`/api/promos/${encodeURIComponent(slug)}/registro`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, source: promoSource(slug) }),
+      body: JSON.stringify({ name: data.name, email: data.email, phone: data.phone, source: promoSource(slug), ...(data.emailInvite ? { emailInvite: true, consentVersion: PROMO_EMAIL_INVITE_CONSENT.version } : {}) }),
     });
     const body = await res.json().catch(() => ({}));
     if (res.ok && typeof body.token === "string") return { token: body.token };

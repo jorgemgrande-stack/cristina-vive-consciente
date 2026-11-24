@@ -1051,6 +1051,8 @@ export const commercialConsents = mysqlTable("commercial_consents", {
   grantedAt: bigint("grantedAt", { mode: "number" }).notNull(),
   withdrawnAt: bigint("withdrawnAt", { mode: "number" }),
   unsubscribeToken: varchar("unsubscribeToken", { length: 64 }).notNull().unique(),
+  /** Alcance: NULL = general; «promo-email:<id>» = solo el correo de esa campaña */
+  scope: varchar("scope", { length: 80 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type CommercialConsent = typeof commercialConsents.$inferSelect;

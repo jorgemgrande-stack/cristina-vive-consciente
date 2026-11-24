@@ -21,7 +21,7 @@ import { findRegistrationByToken, registerPromoDownload, validateRegistration } 
 import { enqueuePromoEmail, kickPromoEmails } from "./promoEmails";
 import { clientIp } from "./_core/adminAuth";
 import { ebookImages, ebookPath, ebookPriceLabel, ebookUrlSlug } from "../shared/ebookPage";
-import { PROMO_SOURCE_RE, promoPath, promoState, type PromoState } from "../shared/promo";
+import { PROMO_EMAIL_INVITE_CONSENT, PROMO_SOURCE_RE, promoPath, promoState, type PromoState } from "../shared/promo";
 import { SITE_URL, injectNoindex, stripGenericSeo, escapeHtml } from "./ebookPages";
 
 const NO_STORE = { "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", Pragma: "no-cache", Expires: "0" };
@@ -189,7 +189,9 @@ export function registerPromoRoutes(app: Express) {
     const v = validateRegistration(req.body ?? {});
     if (!v.ok) return res.status(400).json({ error: "invalid", errors: v.errors });
     try {
-      const r = await registerPromoDownload(row.promo, row.ebook, { name: v.name, email: v.email, phone: v.phone, source: cleanSource(req.body?.source) });
+      // La casilla solo vale si el navegador declara la versión VIGENTE del texto que se mostró
+      const invite = req.body?.emailInvite === true && req.body?.consentVersion === PROMO_EMAIL_INVITE_CONSENT.version;
+      const r = await registerPromoDownload(row.promo, row.ebook, { name: v.name, email: v.email, phone: v.phone, source: cleanSource(req.body?.source), emailInviteVersion: invite ? PROMO_EMAIL_INVITE_CONSENT.version : null });
       res.json({ token: r.token });
     } catch (err) {
       console.error("[promos] no se pudo guardar el registro", err);
