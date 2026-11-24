@@ -56,34 +56,60 @@ export const PROMO_STORY_TEMPLATE = `<!doctype html>
         </td></tr>
         {{#if mostrar_servicios}}
         <tr><td class="content" align="center" style="padding:26px 32px;background-color:#edf1e8;border-top:1px solid #e7ddcf;">
-          <h2 style="margin:0 0 9px;font:400 26px/1.25 Georgia,serif;color:#24482c;">Nos vemos en Instagram</h2>
+          <h2 style="margin:0 0 9px;font:400 26px/1.25 Georgia,serif;color:#24482c;">Sígueme en Instagram</h2>
           <p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#28221a;">Allí comparto recursos y reflexiones para vivir de forma más consciente.</p>
           <table role="presentation" align="center" cellspacing="0" cellpadding="0">
-            <tr><td align="center" bgcolor="#315839" style="mso-padding-alt:14px 22px;">
-              <a href="https://www.instagram.com/cristina.viveconsciente/" style="display:inline-block;padding:14px 22px;background-color:#315839;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none;mso-padding-alt:0;">Seguir a Cristina en Instagram</a>
+            <tr><td align="center" bgcolor="#902461" style="background-color:#902461;background-image:linear-gradient(110deg,#8134af,#ae185d,#a53e21);mso-padding-alt:14px 22px;">
+              <a href="https://www.instagram.com/cristina.viveconsciente/" style="display:inline-block;padding:14px 22px;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none;mso-padding-alt:0;">Seguir a Cristina en Instagram</a>
             </td></tr>
           </table>
           <p style="margin:10px 0 0;font-size:13px;line-height:1.4;color:#3e4a3b;">@cristina.viveconsciente</p>
         </td></tr>
-        <tr><td class="content" style="padding:26px 32px 20px;border-top:1px solid #e7ddcf;">
-          <h2 style="margin:0 0 16px;font:400 25px/1.25 Georgia,serif;color:#24482c;">¿Te apetece conocer mi trabajo?</h2>
+        <tr><td class="content" style="padding:26px 32px 15px;border-top:1px solid #e7ddcf;">
+          <h2 style="margin:0 0 16px;font:400 26px/1.25 Georgia,serif;color:#24482c;">Conoce mi trabajo</h2>
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-            <tr>
-              <td class="column service" width="50%" valign="top" style="padding-right:6px;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#edf1e8;"><tr><td style="padding:16px;">
-                  <h3 style="margin:0 0 6px;font:400 22px/1.25 Georgia,serif;">Consultas</h3>
-                  <p style="margin:0 0 10px;font-size:14px;line-height:1.55;">Sesiones individuales para revisar tus hábitos y encontrar pasos que encajen en tu día a día.</p>
-                  <a href="https://cristinaviveconsciente.es/consultas" style="font-size:14px;font-weight:bold;color:#24482c;text-decoration:underline;">Ver consultas</a>
-                </td></tr></table>
-              </td>
-              <td class="column service" width="50%" valign="top" style="padding-left:6px;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#edf1e8;"><tr><td style="padding:16px;">
-                  <h3 style="margin:0 0 6px;font:400 22px/1.25 Georgia,serif;">Masajes</h3>
-                  <p style="margin:0 0 10px;font-size:14px;line-height:1.55;">Un rato para ti, con sesiones de masaje y aceites esenciales.</p>
-                  <a href="https://cristinaviveconsciente.es/masajes" style="font-size:14px;font-weight:bold;color:#24482c;text-decoration:underline;">Ver masajes</a>
-                </td></tr></table>
-              </td>
-            </tr>
+            <tr><td style="padding:0 0 10px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#edf1e8" style="background-color:#edf1e8;">
+                <tr>
+                  <td class="service-photo" width="160" valign="middle" style="padding:16px 0 16px 16px;">
+                    <img src="https://cristinaviveconsciente.es/site/email/masajes.jpg" alt="Sesión de masaje integrativo" width="160" style="display:block;width:100%;max-width:160px;height:auto;border-radius:4px;font-size:12px;color:#28221a;">
+                  </td>
+                  <td class="service-copy" valign="middle" style="padding:16px 18px;">
+                    <h3 style="margin:0 0 6px;font:400 21px/1.25 Georgia,serif;color:#28221a;">Masajes integrativos</h3>
+                    <p style="margin:0 0 8px;font-size:14px;line-height:1.55;color:#28221a;">Sesiones de masaje y bienestar corporal con aceites esenciales.</p>
+                    <a href="https://cristinaviveconsciente.es/masajes" style="display:inline-block;padding:4px 0;font-size:14px;font-weight:bold;color:#24482c;text-decoration:underline;">Ver masajes</a>
+                  </td>
+                </tr>
+              </table>
+            </td></tr>
+            <tr><td style="padding:0 0 10px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#edf1e8" style="background-color:#edf1e8;">
+                <tr>
+                  <td class="service-photo" width="160" valign="middle" style="padding:16px 0 16px 16px;">
+                    <img src="https://cristinaviveconsciente.es/site/email/consultas.jpg" alt="Consultas de Cristina Vive Consciente" width="160" style="display:block;width:100%;max-width:160px;height:auto;border-radius:4px;font-size:12px;color:#28221a;">
+                  </td>
+                  <td class="service-copy" valign="middle" style="padding:16px 18px;">
+                    <h3 style="margin:0 0 6px;font:400 21px/1.25 Georgia,serif;color:#28221a;">Consultas</h3>
+                    <p style="margin:0 0 8px;font-size:14px;line-height:1.55;color:#28221a;">Sesiones individuales para revisar tus hábitos y encontrar pasos que encajen en tu día a día.</p>
+                    <a href="https://cristinaviveconsciente.es/consultas" style="display:inline-block;padding:4px 0;font-size:14px;font-weight:bold;color:#24482c;text-decoration:underline;">Ver consultas</a>
+                  </td>
+                </tr>
+              </table>
+            </td></tr>
+            <tr><td style="padding:0 0 10px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#edf1e8" style="background-color:#edf1e8;">
+                <tr>
+                  <td class="service-photo" width="160" valign="middle" style="padding:16px 0 16px 16px;">
+                    <img src="https://cristinaviveconsciente.es/site/email/sistemas-agua.jpg" alt="Sistemas de agua para el hogar" width="160" style="display:block;width:100%;max-width:160px;height:auto;border-radius:4px;font-size:12px;color:#28221a;">
+                  </td>
+                  <td class="service-copy" valign="middle" style="padding:16px 18px;">
+                    <h3 style="margin:0 0 6px;font:400 21px/1.25 Georgia,serif;color:#28221a;">Asesoramiento en máquinas de ósmosis</h3>
+                    <p style="margin:0 0 8px;font-size:14px;line-height:1.55;color:#28221a;">Te ayudo a comparar sistemas de ósmosis para el agua de casa y a elegir el que mejor encaje contigo.</p>
+                    <a href="https://cristinaviveconsciente.es/sistemas-agua" style="display:inline-block;padding:4px 0;font-size:14px;font-weight:bold;color:#24482c;text-decoration:underline;">Ver asesoramiento</a>
+                  </td>
+                </tr>
+              </table>
+            </td></tr>
           </table>
         </td></tr>
         {{/if}}
@@ -155,7 +181,7 @@ export function buildPromoStoryEmail(i: PromoStoryInput): { subject: string; htm
     "Un abrazo,",
     "Cristina",
     "",
-    ...(i.showServices ? ["Nos vemos en Instagram", "Allí comparto recursos y reflexiones para vivir de forma más consciente.", "Seguir a Cristina en Instagram: https://www.instagram.com/cristina.viveconsciente/", "", "¿Te apetece conocer mi trabajo?", "Consultas: https://cristinaviveconsciente.es/consultas", "Masajes: https://cristinaviveconsciente.es/masajes", ""] : []),
+    ...(i.showServices ? ["Sígueme en Instagram", "Allí comparto recursos y reflexiones para vivir de forma más consciente.", "Seguir a Cristina en Instagram: https://www.instagram.com/cristina.viveconsciente/", "", "Conoce mi trabajo", "Masajes integrativos (sesiones de masaje y bienestar corporal con aceites esenciales): https://cristinaviveconsciente.es/masajes", "Consultas (sesiones individuales para revisar tus hábitos): https://cristinaviveconsciente.es/consultas", "Asesoramiento en máquinas de ósmosis: https://cristinaviveconsciente.es/sistemas-agua", ""] : []),
     "Recibes este correo porque solicitaste el cuento en Cristina Vive Consciente.",
     "Política de privacidad: https://cristinaviveconsciente.es/privacidad",
     ...(i.showServices && i.unsubscribeUrl ? [`Dejar de recibir información comercial: ${i.unsubscribeUrl}`] : []),
