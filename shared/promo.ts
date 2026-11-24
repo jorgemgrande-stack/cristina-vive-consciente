@@ -126,3 +126,14 @@ export interface PromoDownloader {
   /** true = el registro sigue en revisión (sin ficha vinculada) */
   inReview: boolean;
 }
+
+/**
+ * Casilla opcional del formulario: invitación a Instagram y enlaces a consultas y masajes EN EL CORREO DEL CUENTO.
+ * El texto y su versión viven aquí para que el servidor guarde exactamente lo que se mostró; si se cambia el texto, hay que subir la versión.
+ */
+export const PROMO_EMAIL_INVITE_CONSENT = {
+  version: "promo-email-invite-v1",
+  text: "Quiero que el correo con mi cuento incluya una invitación a seguir a Cristina en Instagram y enlaces a sus consultas y masajes",
+} as const;
+/** Alcance de esa autorización: solo el correo de esta campaña. */
+export const promoEmailScope = (promoId: number) => `promo-email:${promoId}`;

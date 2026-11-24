@@ -221,6 +221,47 @@ d("bandeja de envíos (BD de pruebas)", () => {
       await pe.processPromoEmails({ now: now + 5_000 });
       expect((await rows(closed.id))[0]).toMatchObject({ status: "skipped" });
 
+      // 6 bis) Casilla del formulario: autorización guardada en el servidor (fecha, origen, versión, alcance) y solo para esta campaña
+      const { PROMO_EMAIL_INVITE_CONSENT, promoEmailScope } = await import("../shared/promo");
+      const appF = express();
+      registerPromoRoutes(appF);
+      const srvF = http.createServer(appF);
+      await new Promise<void>((r) => srvF.listen(0, r));
+      const bF = `http://127.0.0.1:${(srvF.address() as AddressInfo).port}`;
+      const post = (slug: string, body: Record<string, unknown>) => fetch(`${bF}/api/promos/${slug}/registro`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: "Rosa Tena Gil", phone: "677000071", ...body }) });
+      const promoB = await mkPromo("b");
+      try {
+        const okInvite = await post(`${tag}-a`, { email: `${tag}.si@t.es`, emailInvite: true, consentVersion: PROMO_EMAIL_INVITE_CONSENT.version });
+        const okNo = await post(`${tag}-a`, { email: `${tag}.no@t.es`, name: "Pablo Mena Ruiz", phone: "677000072" });
+        const okBadVersion = await post(`${tag}-a`, { email: `${tag}.mal@t.es`, name: "Irene Costa Lara", phone: "677000073", emailInvite: true, consentVersion: "otra-version" });
+        expect([okInvite.status, okNo.status, okBadVersion.status]).toEqual([200, 200, 200]);
+        const consents = await conn.select().from(s.commercialConsents).where(like(s.commercialConsents.email, `${tag}.%`));
+        const mine = consents.filter((c) => c.scope === promoEmailScope(promo.id));
+        expect(mine).toHaveLength(1);
+        expect(mine[0]).toMatchObject({ email: `${tag}.si@t.es`, textVersion: PROMO_EMAIL_INVITE_CONSENT.version, method: "formulario-promo", withdrawnAt: null });
+        expect(mine[0].grantedAt).toBeGreaterThan(now - 1000);
+        expect(mine[0].clientId).not.toBeNull();
+        const regs2 = await conn.select().from(s.ebookPromoRegistrations).where(like(s.ebookPromoRegistrations.email, `${tag}.%`));
+        for (const r of regs2) if (r.clientId) clientIds.push(r.clientId);
+        // el correo de cada persona: con casilla lleva el bloque; sin casilla (o con versión desconocida) va solo el cuento
+        const sentBefore2 = sent.length;
+        for (const r of regs2.filter((x) => /\.(si|no|mal)@/.test(x.email))) await pe.enqueuePromoEmail(promo.id, r.id);
+        await pe.processPromoEmails();
+        const mailOf = (e: string) => sent.slice(sentBefore2).find((m) => m.to === e)!;
+        expect(mailOf(`${tag}.si@t.es`).html).toContain("Seguir a Cristina en Instagram");
+        expect(mailOf(`${tag}.si@t.es`).html).toContain(`/baja?t=${mine[0].unsubscribeToken}`);
+        expect(mailOf(`${tag}.no@t.es`).html).not.toContain("instagram.com");
+        expect(mailOf(`${tag}.mal@t.es`).html).not.toContain("instagram.com");
+        // el alcance es esta campaña: en otra, la misma persona no tiene autorización
+        expect(await pe.activeCommercialConsent(mine[0].clientId, `${tag}.si@t.es`, promoB.id)).toBeNull();
+        expect(await pe.activeCommercialConsent(mine[0].clientId, `${tag}.si@t.es`, promo.id)).not.toBeNull();
+        // volver a marcar la casilla no duplica la autorización
+        await post(`${tag}-a`, { email: `${tag}.si@t.es`, emailInvite: true, consentVersion: PROMO_EMAIL_INVITE_CONSENT.version });
+        expect((await conn.select().from(s.commercialConsents).where(like(s.commercialConsents.email, `${tag}.si@%`))).filter((c) => c.scope === promoEmailScope(promo.id))).toHaveLength(1);
+      } finally {
+        await new Promise<void>((r) => srvF.close(() => r()));
+      }
+
       // 7) Disparo desde la descarga real: interrumpida → nada; completa → un correo; la descarga no depende del correo
       const app = express();
       registerPromoRoutes(app);
@@ -268,6 +309,7 @@ d("bandeja de envíos (BD de pruebas)", () => {
       }
       if (clientIds.length) {
         await conn.delete(s.commercialConsents).where(inArray(s.commercialConsents.clientId, clientIds));
+        await conn.delete(s.commercialConsents).where(like(s.commercialConsents.email, `${tag}.%`));
         await conn.delete(s.clientServices).where(inArray(s.clientServices.clientId, clientIds));
         await conn.delete(s.clientCategories).where(inArray(s.clientCategories.clientId, clientIds));
         await conn.delete(s.clients).where(inArray(s.clients.id, clientIds));
