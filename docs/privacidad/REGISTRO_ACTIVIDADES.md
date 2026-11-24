@@ -119,7 +119,7 @@ Igual que la actividad 2, con estas diferencias:
 - **Medición:** visitas, descargas (cuando el servidor termina de servir el PDF) y acciones de compartir, sin IP ni datos personales en los eventos.
 - **Identificación en el CRM:** por email y teléfono normalizados; si coincide con varias fichas o con una de nombre distinto, el registro queda «en revisión» y no se modifica ninguna ficha.
 - **Destinatarios:** alojamiento (Railway). El donativo por Bizum se hace en el banco de la persona.
-- **Conservación:** _[pendiente: plazo confirmado por Cristina]_. Supresión de la ficha disponible en el CRM.
+- **Conservación:** «Conservaremos tu nombre y apellidos, correo electrónico y teléfono mientras sean necesarios para gestionar la descarga y resolver las incidencias de la promoción. Cuando dejen de ser necesarios para esos fines, los suprimiremos o anonimizaremos, salvo que exista una obligación legal de conservarlos. Si ya eres cliente, los datos necesarios para gestionar tus servicios se rigen por los criterios de conservación de la ficha de cliente.» Supresión de la ficha disponible en el CRM.
 
 ### 9. Cookies y medición
 Ver `/politica-de-cookies`:
