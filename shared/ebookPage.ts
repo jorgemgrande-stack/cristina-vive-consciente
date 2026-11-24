@@ -7,6 +7,9 @@ export interface EbookPageData {
   title: string;
   subtitle: string | null;
   description: string | null;
+  synopsis?: string | null;
+  author?: string | null;
+  edition?: string | null;
   price: string | number;
   coverImage: string | null;
   galleryImages: string | null;

@@ -11,10 +11,10 @@ import { ebookPath, ebookSeo, ebookUrlSlug, matchesEbookSlug, type EbookPageData
 
 export const SITE_URL = (process.env.SITE_URL || "https://cristinaviveconsciente.es").replace(/\/+$/, "");
 
-const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+export const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /** Quita las etiquetas de SEO genéricas del index.html para sustituirlas por las del ebook. */
-function stripGenericSeo(html: string): string {
+export function stripGenericSeo(html: string): string {
   return html
     .replace(/<title>[\s\S]*?<\/title>\s*/i, "")
     .replace(/<meta\s+name="description"[^>]*>\s*/gi, "")
@@ -26,19 +26,19 @@ function stripGenericSeo(html: string): string {
 export function injectEbookSeo(html: string, ebook: EbookPageData): string {
   const seo = ebookSeo(ebook, SITE_URL);
   const tags = [
-    `<title>${esc(seo.title)}</title>`,
-    `<meta name="description" content="${esc(seo.description)}" />`,
-    `<link rel="canonical" href="${esc(seo.canonical)}" />`,
+    `<title>${escapeHtml(seo.title)}</title>`,
+    `<meta name="description" content="${escapeHtml(seo.description)}" />`,
+    `<link rel="canonical" href="${escapeHtml(seo.canonical)}" />`,
     `<meta property="og:type" content="product" />`,
     `<meta property="og:site_name" content="Cristina Vive Consciente" />`,
-    `<meta property="og:title" content="${esc(seo.title)}" />`,
-    `<meta property="og:description" content="${esc(seo.description)}" />`,
-    `<meta property="og:url" content="${esc(seo.canonical)}" />`,
-    ...(seo.image ? [`<meta property="og:image" content="${esc(seo.image)}" />`] : []),
+    `<meta property="og:title" content="${escapeHtml(seo.title)}" />`,
+    `<meta property="og:description" content="${escapeHtml(seo.description)}" />`,
+    `<meta property="og:url" content="${escapeHtml(seo.canonical)}" />`,
+    ...(seo.image ? [`<meta property="og:image" content="${escapeHtml(seo.image)}" />`] : []),
     `<meta name="twitter:card" content="${seo.image ? "summary_large_image" : "summary"}" />`,
-    `<meta name="twitter:title" content="${esc(seo.title)}" />`,
-    `<meta name="twitter:description" content="${esc(seo.description)}" />`,
-    ...(seo.image ? [`<meta name="twitter:image" content="${esc(seo.image)}" />`] : []),
+    `<meta name="twitter:title" content="${escapeHtml(seo.title)}" />`,
+    `<meta name="twitter:description" content="${escapeHtml(seo.description)}" />`,
+    ...(seo.image ? [`<meta name="twitter:image" content="${escapeHtml(seo.image)}" />`] : []),
     `<script type="application/ld+json">${JSON.stringify({
       "@context": "https://schema.org",
       "@type": "Product",

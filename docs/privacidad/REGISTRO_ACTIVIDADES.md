@@ -112,6 +112,16 @@ Igual que la actividad 2, con estas diferencias:
 - **Datos:** nombre y comentario. Si se aprueba, se publica con ese nombre.
 - **Conservación:** _[pendiente]_.
 
+### 8 bis. Descarga de promociones y regalos digitales (/promocion/:slug)
+- **Finalidad:** entregar el recurso gratuito, registrar la descarga en la ficha de clientes (categoría «Recursos gratuitos» y recurso «Descarga de promoción · …», sin pedido, factura ni pago) y medir cada campaña de forma agregada.
+- **Base jurídica:** solicitud de la persona (6.1.b); estadísticas agregadas: interés legítimo (6.1.f). El formulario **no** suscribe a novedades ni activa emails de seguimiento.
+- **Datos:** nombre y apellidos, email y teléfono (obligatorios, validados en el servidor); campaña y canal de procedencia (utm_source / ref); token de descarga. Los enlaces para compartir llevan solo campaña y canal.
+- **Autorización opcional (casilla del formulario):** información y promociones (Instagram, masajes, consultas y ósmosis) en el correo del cuento; texto «Acepto que el correo con mi cuento incluya información y promociones de Cristina Vive Consciente.» (versión `promo-email-promociones-v1`), sin alta en newsletters. Se guarda en `commercial_consents` con fecha, origen («formulario-promo»), versión del texto mostrado y alcance `promo-email:<campaña>`; se retira con el enlace de baja del correo. Sin casilla, el correo del cuento va sin ese bloque.
+- **Medición:** visitas, descargas (cuando el servidor termina de servir el PDF) y acciones de compartir, sin IP ni datos personales en los eventos.
+- **Identificación en el CRM:** por email y teléfono normalizados; si coincide con varias fichas o con una de nombre distinto, el registro queda «en revisión» y no se modifica ninguna ficha.
+- **Destinatarios:** alojamiento (Railway). El donativo por Bizum se hace en el banco de la persona.
+- **Conservación:** «Conservaremos tu nombre y apellidos, correo electrónico y teléfono mientras sean necesarios para gestionar la descarga y resolver las incidencias de la promoción. Cuando dejen de ser necesarios para esos fines, los suprimiremos o anonimizaremos, salvo que exista una obligación legal de conservarlos. Si ya eres cliente, los datos necesarios para gestionar tus servicios se rigen por los criterios de conservación de la ficha de cliente.» Supresión de la ficha disponible en el CRM.
+
 ### 9. Cookies y medición
 Ver `/politica-de-cookies`:
 - consentimiento por categorías;

@@ -22,6 +22,8 @@ import { adminSessionCookieOptions, clientIp, loginLimiter, safeEqual } from "./
 import { uploadRouter } from "../upload";
 import { createRedirectMiddleware } from "../redirects";
 import { sitemapRouter } from "../sitemap";
+import { registerPromoRoutes } from "../promos";
+import { processPromoEmails, registerUnsubscribeRoutes } from "../promoEmails";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -97,6 +99,12 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // ─── Promociones de ebooks (descarga gratuita por tiempo limitado) ───────────
+  registerPromoRoutes(app);
+  registerUnsubscribeRoutes(app);
+  // Reintentos del correo de entrega de promociones (los fallos transitorios se reintentan con espera creciente)
+  setInterval(() => { void processPromoEmails().catch((e) => console.error("[promoEmails] bandeja", e)); }, 60_000);
 
   // ─── Factura PDF ─────────────────────────────────────────────────────────────
   // GET /api/invoices/:id/pdf — descarga la factura como PDF (solo admin)

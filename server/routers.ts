@@ -11,6 +11,7 @@ import { affiliatesRouter } from "./routers/affiliates";
 import { automationsRouter } from "./routers/automations";
 import { servicesRouter } from "./routers/services";
 import { ebooksAdminRouter } from "./routers/ebooksAdmin";
+import { promosAdminRouter } from "./routers/promosAdmin";
 import { waterRouter } from "./routers/water";
 import { oilsRouter } from "./routers/oils";
 import { blogRouter } from "./routers/blog";
@@ -43,6 +44,7 @@ export const appRouter = router({
   automations: automationsRouter,
   services: servicesRouter,
   ebooksAdmin: ebooksAdminRouter,
+  promosAdmin: promosAdminRouter,
   water: waterRouter,
   oils: oilsRouter,
   blog: blogRouter,

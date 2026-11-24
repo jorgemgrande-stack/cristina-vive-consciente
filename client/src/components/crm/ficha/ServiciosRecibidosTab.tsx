@@ -149,6 +149,7 @@ export default function ServiciosRecibidosTab({ clientId, openNewSession, onNewS
                   <p className="text-[0.7rem] text-[oklch(0.52_0.02_60)] font-body mt-0.5">
                     {new Date(r.receivedAt).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Madrid" })}
                     {r.source === "order" && " · compra en la web"}
+                    {r.source === "promo" && " · descarga de promoción (recurso gratuito, sin pedido ni pago)"}
                   </p>
                   {r.notes && <p className="text-sm text-[oklch(0.28_0.025_55)] font-body whitespace-pre-line mt-1" style={{ fontWeight: 300 }}>{r.notes}</p>}
                   {r.orderId && (

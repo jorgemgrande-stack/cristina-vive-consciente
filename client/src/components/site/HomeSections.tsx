@@ -8,6 +8,7 @@ import { Link } from "wouter";
 import { ArrowRight, Droplets, Calendar, Clock, CheckCircle, ChevronRight, Star, Leaf, BookOpen } from "lucide-react";
 import { ReservaModal as WaterReservaModal } from "@/pages/SistemasAgua";
 import { trpc } from "@/lib/trpc";
+import { useActivePromo } from "@/lib/promoApi";
 
 const HERO_IMG = SITE_IMAGES.heroMain;
 const BLOG_FALLBACK = "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80";
@@ -17,6 +18,53 @@ export const HOME_SLIDESHOW_DEFAULTS: HomeSlideshowText = {
   eyebrow: "Consulta naturópata", title: "VIVE CONSCIENTE", subtitle: "Diseño hojas de ruta personalizadas para tu salud.",
   primaryLabel: "Reservar consulta", secondaryLabel: "Conocer servicios", secondaryUrl: "/consultas",
 };
+
+const LAUNCH_SLUG = "los-cuatro-regalos-de-la-tierra";
+
+/**
+ * Pieza de lanzamiento de «Los cuatro regalos de la Tierra». Vive en una capa común de la cabecera (fuera de los slides), así
+ * que no se mueve al cambiar de imagen y se va con la cabecera al hacer scroll. Solo aparece mientras el SERVIDOR dice que la
+ * campaña está activa (mismo estado que la banda verde). Sin tarjeta ni fondo: va directa sobre la imagen, con sombra de texto.
+ */
+function HomePromoLaunch({ variant }: { variant: "desktop" | "mobile" }) {
+  const promo = useActivePromo();
+  if (!promo || promo.slug !== LAUNCH_SLUG) return null;
+  const shadow = { textShadow: "0 1px 3px rgba(0,0,0,.55), 0 2px 18px rgba(0,0,0,.5)" } as const;
+  const mobile = variant === "mobile";
+  return (
+    <div
+      className={mobile ? "md:hidden mt-8 flex items-center gap-3.5 pr-12" : "hidden md:flex items-center gap-8 justify-end"}
+      data-testid={`home-promo-${variant}`}
+    >
+      <div className={mobile ? "min-w-0 order-2" : "min-w-0 text-left"}>
+        <p className="flex items-center gap-2.5 font-body uppercase text-[oklch(0.82_0.08_85)] text-[0.58rem] md:text-xs tracking-[0.16em] md:tracking-[0.22em] mb-1.5 md:mb-3" style={{ fontWeight: 500, ...shadow }}>
+          <span aria-hidden className="inline-block h-px w-5 md:w-7 bg-[oklch(0.82_0.08_85)]" />
+          Promoción de lanzamiento
+        </p>
+        <p className="font-display text-[oklch(0.96_0.02_85)] text-[clamp(1.05rem,5.2vw,1.45rem)] leading-[1.1] md:text-[2.6rem] md:leading-[1.05] mb-3 md:mb-5" style={{ fontWeight: 400, ...shadow }}>
+          Los cuatro regalos<br />de la Tierra
+        </p>
+        <Link
+          href={promo.path}
+          className="inline-flex items-center gap-2 border-b border-[oklch(0.96_0.02_85)] pb-0.5 font-body text-sm md:text-base text-[oklch(0.96_0.02_85)] no-underline hover:opacity-85"
+          style={{ fontWeight: 500, ...shadow }}
+          data-testid={`home-promo-link-${variant}`}
+        >
+          Descargar gratis <ArrowRight size={16} aria-hidden />
+        </Link>
+      </div>
+      <Link href={promo.path} aria-label="Descargar gratis «Los cuatro regalos de la Tierra»" className={mobile ? "shrink-0 order-1" : "shrink-0"}>
+        <img
+          src="/site/promo-cuatro-regalos-libro.webp"
+          alt="Portada de Los cuatro regalos de la Tierra"
+          width={480}
+          height={670}
+          className={mobile ? "w-[72px] h-auto" : "w-[210px] lg:w-[230px] h-auto"}
+        />
+      </Link>
+    </div>
+  );
+}
 
 export function HomeSlideshow({ eyebrow, title, subtitle, primaryLabel, secondaryLabel, secondaryUrl, onBook }: HomeSlideshowText & { onBook: () => void }) {
   const [activeIdx, setActiveIdx] = useState(0);
@@ -139,6 +187,17 @@ export function HomeSlideshow({ eyebrow, title, subtitle, primaryLabel, secondar
               >
                 {secondaryLabel}
               </Link>
+            </div>
+            {/* Móvil: fila compacta bajo los botones del mensaje principal */}
+            <HomePromoLaunch variant="mobile" />
+          </div>
+        </div>
+
+        {/* Escritorio: capa común de la cabecera (fuera de los slides), lado derecho, sin tarjeta */}
+        <div className="hidden md:block absolute inset-0 z-10 pointer-events-none">
+          <div className="container h-full flex items-center justify-end pt-20">
+            <div className="pointer-events-auto">
+              <HomePromoLaunch variant="desktop" />
             </div>
           </div>
         </div>
