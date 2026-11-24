@@ -32,6 +32,7 @@ interface Form {
   endsLocal: string;
   donationEnabled: boolean;
   donationConcept: string;
+  sendDeliveryEmail: boolean;
 }
 
 const EMPTY: Form = {
@@ -46,6 +47,7 @@ const EMPTY: Form = {
   endsLocal: "",
   donationEnabled: true,
   donationConcept: "Regalo Tierra",
+  sendDeliveryEmail: false,
 };
 
 const slugify = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 100);
@@ -75,6 +77,7 @@ export default function PromoForm() {
       endsLocal: msToMadridLocal(promo.endsAt),
       donationEnabled: promo.donationEnabled === 1,
       donationConcept: promo.donationConcept,
+      sendDeliveryEmail: promo.sendDeliveryEmail === 1,
     });
   }, [promo]);
 
@@ -111,6 +114,7 @@ export default function PromoForm() {
       endsAt,
       donationEnabled: f.donationEnabled,
       donationConcept: f.donationConcept.trim() || "Regalo Tierra",
+      sendDeliveryEmail: f.sendDeliveryEmail,
     };
     if (id != null) update.mutate({ id, data });
     else create.mutate(data);
@@ -202,6 +206,16 @@ export default function PromoForm() {
                 <Input type="datetime-local" value={f.endsLocal} onChange={(e) => set("endsLocal", e.target.value)} />
                 <p className="text-xs text-gray-500 mt-1">A esa hora exacta se bloquea la descarga gratuita, aunque alguien tenga la página abierta.</p>
               </div>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100 pt-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Enviar el cuento por correo</Label>
+                <p className="text-xs text-gray-500">Un correo por persona en su primera descarga válida, con la plantilla del cuento y un enlace personal. Solo para nuevas descargas.</p>
+              </div>
+              <Switch checked={f.sendDeliveryEmail} onCheckedChange={(v) => set("sendDeliveryEmail", v)} />
             </div>
           </div>
 

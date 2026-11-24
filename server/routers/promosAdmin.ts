@@ -7,7 +7,7 @@ import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { clients, ebookPromoEvents, ebookPromoRegistrations, ebookPromos } from "../../drizzle/schema";
+import { clients, ebookPromoEmails, ebookPromoEvents, ebookPromoRegistrations, ebookPromos } from "../../drizzle/schema";
 import { linkRegistrationToClient } from "../promoRegistrations";
 import { promoState, type PromoDownloader, type PromoStats } from "../../shared/promo";
 
@@ -28,12 +28,14 @@ const promoInput = z.object({
   endsAt: z.number().int(),
   donationEnabled: z.boolean(),
   donationConcept: z.string().min(1).max(60),
+  sendDeliveryEmail: z.boolean(),
 });
 
 const toRow = (i: z.infer<typeof promoInput>) => ({
   ...i,
   published: i.published ? 1 : 0,
   donationEnabled: i.donationEnabled ? 1 : 0,
+  sendDeliveryEmail: i.sendDeliveryEmail ? 1 : 0,
 });
 
 async function db() {
@@ -71,7 +73,7 @@ export async function promoStats(promoId: number): Promise<PromoStats> {
     .from(ebookPromoEvents)
     .where(eq(ebookPromoEvents.promoId, promoId))
     .groupBy(ebookPromoEvents.kind, ebookPromoEvents.channel, ebookPromoEvents.source);
-  const out: PromoStats = { views: 0, downloads: 0, uniqueClients: 0, downloadsInReview: 0, registrations: 0, review: 0, networks: {}, friends: {}, bySource: {} };
+  const out: PromoStats = { emails: { pending: 0, sending: 0, sent: 0, failed: 0, skipped: 0 }, views: 0, downloads: 0, uniqueClients: 0, downloadsInReview: 0, registrations: 0, review: 0, networks: {}, friends: {}, bySource: {} };
   for (const r of rows) {
     const n = Number(r.n);
     out.bySource[r.source] ??= { views: 0, downloads: 0 };
@@ -98,6 +100,8 @@ export async function promoStats(promoId: number): Promise<PromoStats> {
     .select({ n: sql<number>`count(*)`, review: sql<number>`sum(${ebookPromoRegistrations.status} = 'review')` })
     .from(ebookPromoRegistrations)
     .where(eq(ebookPromoRegistrations.promoId, promoId));
+  const em = await d.select({ status: ebookPromoEmails.status, n: sql<number>`count(*)` }).from(ebookPromoEmails).where(eq(ebookPromoEmails.promoId, promoId)).groupBy(ebookPromoEmails.status);
+  for (const r of em) out.emails[r.status] = Number(r.n);
   out.registrations = Number(g?.n ?? 0);
   out.review = Number(g?.review ?? 0);
   return out;
@@ -234,6 +238,7 @@ export const promosAdminRouter = router({
       endsAt: p.endsAt,
       donationEnabled: p.donationEnabled,
       donationConcept: p.donationConcept,
+      sendDeliveryEmail: p.sendDeliveryEmail,
     });
     return { id: Number((r as { insertId: number }).insertId), slug };
   }),

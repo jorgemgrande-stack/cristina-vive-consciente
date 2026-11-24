@@ -975,6 +975,8 @@ export const ebookPromos = mysqlTable("ebook_promos", {
   endsAt: bigint("endsAt", { mode: "number" }).notNull(),
   donationEnabled: int("donationEnabled").default(1).notNull(),
   donationConcept: varchar("donationConcept", { length: 60 }).default("Regalo Tierra").notNull(),
+  /** 1 = a la primera descarga válida de cada persona se le envía por correo el cuento (plantilla de la promoción) */
+  sendDeliveryEmail: int("sendDeliveryEmail").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1013,3 +1015,42 @@ export const ebookPromoRegistrations = mysqlTable("ebook_promo_registrations", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type EbookPromoRegistration = typeof ebookPromoRegistrations.$inferSelect;
+
+/**
+ * Bandeja de envíos del correo de entrega: un registro por persona y promoción (clave: ficha del CRM si está identificada,
+ * correo normalizado mientras esté pendiente de vincular). Guarda el estado y los reintentos.
+ */
+export const ebookPromoEmails = mysqlTable("ebook_promo_emails", {
+  id: int("id").autoincrement().primaryKey(),
+  promoId: int("promoId").notNull(),
+  /** Registro (formulario) cuya primera descarga disparó el envío; su token abre el enlace personal */
+  registrationId: int("registrationId").notNull(),
+  clientId: int("clientId"),
+  /** «c:<id de ficha>» o «e:<correo>»; única por promoción */
+  dedupeKey: varchar("dedupeKey", { length: 340 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  status: mysqlEnum("status", ["pending", "sending", "sent", "failed", "skipped"]).default("pending").notNull(),
+  attempts: int("attempts").default(0).notNull(),
+  nextAttemptAt: bigint("nextAttemptAt", { mode: "number" }),
+  lastError: varchar("lastError", { length: 300 }),
+  sentAt: bigint("sentAt", { mode: "number" }),
+  showServices: int("showServices").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type EbookPromoEmail = typeof ebookPromoEmails.$inferSelect;
+
+/** Autorización comercial expresa (recibir información sobre consultas, masajes…). Retirable con el enlace de baja. */
+export const commercialConsents = mysqlTable("commercial_consents", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId"),
+  email: varchar("email", { length: 320 }).notNull(),
+  textVersion: varchar("textVersion", { length: 40 }).notNull(),
+  method: varchar("method", { length: 40 }).notNull(),
+  grantedAt: bigint("grantedAt", { mode: "number" }).notNull(),
+  withdrawnAt: bigint("withdrawnAt", { mode: "number" }),
+  unsubscribeToken: varchar("unsubscribeToken", { length: 64 }).notNull().unique(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type CommercialConsent = typeof commercialConsents.$inferSelect;

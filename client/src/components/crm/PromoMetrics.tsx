@@ -54,6 +54,11 @@ export default function PromoMetrics({ stats }: { stats: PromoStats }) {
         <Tile n={stats.uniqueClients} title={`Clientes únicos que descargaron${stats.downloadsInReview ? ` (+${stats.downloadsInReview} descargas en revisión)` : ""}`} hint="Una vez por ficha del CRM y promoción; las descargas en revisión se suman al vincularlas a una ficha" accent />
         <Tile n={stats.registrations} title={`Formularios completados${stats.review ? ` (${stats.review} por revisar)` : ""}`} />
       </div>
+      {(stats.emails.sent + stats.emails.pending + stats.emails.sending + stats.emails.failed + stats.emails.skipped) > 0 && (
+        <p className="text-xs text-gray-600 bg-gray-50 rounded p-3" data-testid="promo-email-stats">
+          Correos de entrega del cuento: {stats.emails.sent} enviados · {stats.emails.pending + stats.emails.sending} pendientes · {stats.emails.failed} fallidos{stats.emails.skipped ? ` · ${stats.emails.skipped} omitidos` : ""}
+        </p>
+      )}
       <div className="grid sm:grid-cols-2 gap-3">
         <Breakdown title="Acciones de compartir en redes" note="Acciones observadas por canal; no son publicaciones confirmadas." data={stats.networks} confirmable />
         <Breakdown title="Acciones de enviar a un amigo" note="Apertura de WhatsApp y enlace copiado (acciones observadas, no mensajes confirmados)." data={stats.friends} />

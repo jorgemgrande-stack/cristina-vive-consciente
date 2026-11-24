@@ -87,6 +87,8 @@ export default function Promocion() {
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
   const [errors, setErrors] = useState<RegisterErrors>({});
   const [token, setToken] = useState<string | null>(null);
+  /** Solo una indicación personal de la persona: no se envía al servidor, no se guarda en el CRM ni se verifica */
+  const [followedIg, setFollowedIg] = useState(false);
   const viewed = useRef(false);
 
   useEffect(() => {
@@ -328,6 +330,17 @@ export default function Promocion() {
                 {errors[k] && <p className="text-xs text-red-600 font-body mt-1" role="alert">{errors[k]}</p>}
               </div>
             ))}
+            {/* Instagram (opcional): el enlace abre otra pestaña y la página, con lo ya escrito, se queda donde está */}
+            <div className="space-y-1.5" data-testid="promo-instagram">
+              <a href="https://www.instagram.com/cristina.viveconsciente/" target="_blank" rel="noopener noreferrer" className="inline-block text-sm text-[oklch(0.3_0.07_148)] underline underline-offset-2 font-body" style={{ fontWeight: 500 }} data-testid="promo-instagram-link">
+                Seguir a Cristina Battistelli en Instagram
+              </a>
+              <label className="flex items-start gap-2 text-sm text-[oklch(0.38_0.02_55)] font-body cursor-pointer">
+                <input type="checkbox" checked={followedIg} onChange={(e) => setFollowedIg(e.target.checked)} className="mt-1" data-testid="promo-instagram-check" />
+                <span>Ya he seguido la cuenta de Instagram</span>
+              </label>
+              <p className="text-[0.7rem] text-[oklch(0.45_0.02_60)] font-body leading-snug">Opcional. Puedes descargar el cuento sin seguir la cuenta.</p>
+            </div>
             {errors.form && <p className="text-sm text-red-600 font-body" role="alert" data-testid="promo-form-error">{errors.form}</p>}
             <p className="text-[0.7rem] text-[oklch(0.45_0.02_60)] font-body leading-snug">
               Recogemos tu nombre y apellidos, correo electrónico y teléfono para gestionar tu descarga y registrarla en la ficha de clientes de Cristina. Este formulario no te suscribe a novedades. Más información en la{" "}
