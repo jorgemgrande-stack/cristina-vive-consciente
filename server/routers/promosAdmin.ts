@@ -9,7 +9,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { clients, ebookPromoEvents, ebookPromoRegistrations, ebookPromos } from "../../drizzle/schema";
 import { linkRegistrationToClient } from "../promoRegistrations";
-import { promoState, type PromoStats } from "../../shared/promo";
+import { promoState, type PromoDownloader, type PromoStats } from "../../shared/promo";
 
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
@@ -103,7 +103,55 @@ export async function promoStats(promoId: number): Promise<PromoStats> {
   return out;
 }
 
+/**
+ * Informe: personas que descargaron la publicación. Se agrupa por ficha del CRM (varios correos de la misma ficha = una persona);
+ * los registros en revisión (sin ficha) se agrupan por correo. Solo cuentan las descargas válidas (las mismas del contador).
+ */
+export async function promoDownloaders(promoId: number): Promise<{ people: PromoDownloader[]; registeredWithoutDownload: number }> {
+  const d = await db();
+  const rows = await d
+    .select({
+      id: ebookPromoRegistrations.id,
+      clientId: ebookPromoRegistrations.clientId,
+      name: ebookPromoRegistrations.name,
+      email: ebookPromoRegistrations.email,
+      phone: ebookPromoRegistrations.phone,
+      source: ebookPromoRegistrations.source,
+      downloads: sql<number>`count(${ebookPromoEvents.id})`,
+      firstAt: sql<number>`min(unix_timestamp(${ebookPromoEvents.createdAt})) * 1000`,
+      lastAt: sql<number>`max(unix_timestamp(${ebookPromoEvents.createdAt})) * 1000`,
+    })
+    .from(ebookPromoRegistrations)
+    .leftJoin(ebookPromoEvents, and(eq(ebookPromoEvents.registrationId, ebookPromoRegistrations.id), eq(ebookPromoEvents.kind, "download")))
+    .where(eq(ebookPromoRegistrations.promoId, promoId))
+    .groupBy(ebookPromoRegistrations.id);
+  const clientIds = Array.from(new Set(rows.map((r) => r.clientId).filter((x): x is number => x != null)));
+  const cs = clientIds.length ? await d.select({ id: clients.id, firstName: clients.firstName, lastName: clients.lastName }).from(clients).where(inArray(clients.id, clientIds)) : [];
+  const byPerson = new Map<string, PromoDownloader>();
+  let registeredWithoutDownload = 0;
+  for (const r of rows) {
+    const n = Number(r.downloads);
+    if (n === 0) { registeredWithoutDownload++; continue; }
+    const key = r.clientId != null ? `c:${r.clientId}` : `e:${r.email}`;
+    const c = r.clientId != null ? cs.find((x) => x.id === r.clientId) : undefined;
+    const p = byPerson.get(key);
+    if (!p) {
+      byPerson.set(key, { clientId: r.clientId, name: c ? `${c.firstName} ${c.lastName}`.trim() : r.name, emails: [r.email], phone: r.phone, sources: [r.source], downloads: n, firstAt: Number(r.firstAt), lastAt: Number(r.lastAt), inReview: r.clientId == null });
+    } else {
+      if (!p.emails.includes(r.email)) p.emails.push(r.email);
+      if (!p.sources.includes(r.source)) p.sources.push(r.source);
+      p.downloads += n;
+      p.firstAt = Math.min(p.firstAt, Number(r.firstAt));
+      p.lastAt = Math.max(p.lastAt, Number(r.lastAt));
+    }
+  }
+  return { people: Array.from(byPerson.values()).sort((a, b) => b.lastAt - a.lastAt), registeredWithoutDownload };
+}
+
 export const promosAdminRouter = router({
+  /** Informe de la promoción: quién descargó, cuántas veces, por qué canal y cuándo. */
+  downloaders: adminProcedure.input(z.object({ promoId: z.number().int() })).query(({ input }) => promoDownloaders(input.promoId)),
+
   /** Campañas con su estado actual (según la hora del servidor) y su medición. */
   list: adminProcedure.query(async () => {
     const d = await db();

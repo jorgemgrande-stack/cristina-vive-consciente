@@ -108,3 +108,19 @@ export interface PromoStats {
   /** Visitas y descargas por origen (los enlaces compartidos llevan red_* / amigo_*) */
   bySource: Record<string, { views: number; downloads: number }>;
 }
+
+/** Una persona que descargó la publicación de una promoción (informe del CRM). */
+export interface PromoDownloader {
+  /** Ficha del CRM; null si el registro sigue en revisión */
+  clientId: number | null;
+  name: string;
+  emails: string[];
+  phone: string;
+  /** Canales por los que llegó (utm_source / ref), sin repetir */
+  sources: string[];
+  downloads: number;
+  firstAt: number;
+  lastAt: number;
+  /** true = el registro sigue en revisión (sin ficha vinculada) */
+  inReview: boolean;
+}
