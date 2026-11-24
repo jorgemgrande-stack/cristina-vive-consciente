@@ -30,7 +30,7 @@ describe("plantilla del correo", () => {
     expect(m.html).toContain("jueves 26 de noviembre a las 23:59");
     expect(m.html).toContain('<em style="color:#315839;">no se envuelven.</em>');
     expect(m.html).toContain("background-color:#f3eee5"); // fondo crema de la plantilla
-    expect(m.html).not.toContain("¿Te apetece conocer mi trabajo?");
+    expect(m.html).not.toContain("Conoce mi trabajo");
     expect(m.html).not.toContain("Ver consultas");
     expect(m.html).not.toContain("instagram.com"); // Instagram, tarjetas y baja solo con autorización comercial
     expect(m.text).not.toContain("instagram");
@@ -38,15 +38,20 @@ describe("plantilla del correo", () => {
     expect(m.html).not.toMatch(/\{\{|\}\}/);
     expect(m.text).toContain("Descargar mi cuento:");
   });
-  it("con autorización: tarjetas de consultas y masajes y enlace de baja", () => {
+  it("con autorización: Instagram, tres tarjetas con foto JPEG (masajes, consultas, ósmosis) y enlace de baja", () => {
     const m = buildPromoStoryEmail({ ...base, showServices: true, unsubscribeUrl: "https://cristinaviveconsciente.es/baja?t=zzz" });
-    expect(m.html).toContain("¿Te apetece conocer mi trabajo?");
+    expect(m.html).toContain("Conoce mi trabajo");
+    expect(m.html).toContain("https://cristinaviveconsciente.es/sistemas-agua");
+    // Una foto por servicio, en JPEG (Outlook de escritorio no pinta WebP) y sin WebP en el correo
+    for (const n of ["masajes", "consultas", "sistemas-agua"]) expect(m.html).toContain(`https://cristinaviveconsciente.es/site/email/${n}.jpg`);
+    expect(m.html).not.toContain(".webp");
+    expect(m.text).toContain("sistemas-agua");
     expect(m.html).toContain("https://cristinaviveconsciente.es/consultas");
     expect(m.html).toContain("https://cristinaviveconsciente.es/masajes");
     expect(m.html).toContain("https://cristinaviveconsciente.es/baja?t=zzz");
     expect(m.html).toContain("Seguir a Cristina en Instagram");
     expect(m.html).toContain("https://www.instagram.com/cristina.viveconsciente/");
-    // Orden: botón del cuento → firma → Instagram → Consultas y Masajes → baja
+    // Orden: botón del cuento → firma → Instagram → Masajes, Consultas, Ósmosis → baja
     const at = (t: string) => m.html.indexOf(t);
     expect(at("Descargar mi cuento")).toBeLessThan(at("Un abrazo"));
     expect(at("Un abrazo")).toBeLessThan(at("Seguir a Cristina en Instagram"));
@@ -159,7 +164,7 @@ d("bandeja de envíos (BD de pruebas)", () => {
       expect(m1.attachments ?? []).toHaveLength(0);
       expect(m1.html).toContain(`/api/promos/${tag}-a/descarga?t=${r1.token}`);
       expect(m1.html).toContain("hasta el");
-      expect(m1.html).not.toContain("¿Te apetece conocer mi trabajo?");
+      expect(m1.html).not.toContain("Conoce mi trabajo");
       expect(m1.html).not.toContain("instagram.com");
       expect((await rows(promo.id)).every((r) => r.status === "sent" && r.attempts === 1)).toBe(true);
       expect((await pe.processPromoEmails()).sent).toBe(0); // nada que reenviar
@@ -193,7 +198,7 @@ d("bandeja de envíos (BD de pruebas)", () => {
       await pe.enqueuePromoEmail(promo.id, r5.id);
       await pe.processPromoEmails();
       const m5 = sent.find((m) => m.to === `${tag}.c5@t.es`)!;
-      expect(m5.html).toContain("¿Te apetece conocer mi trabajo?");
+      expect(m5.html).toContain("Conoce mi trabajo");
       expect(m5.html).toContain("Seguir a Cristina en Instagram");
       expect(m5.html).toContain(`/baja?t=${consent.unsubscribeToken}`);
       // retirada por el enlace de baja (GET solo confirma; POST retira) → la siguiente persona de esa ficha ya no las ve
