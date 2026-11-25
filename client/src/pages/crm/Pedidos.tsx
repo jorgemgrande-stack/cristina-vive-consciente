@@ -13,7 +13,7 @@ import CRMLayout from "@/components/CRMLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PRINTED_STORY_SHIPS_AT, PRINTED_STORY_SHIPS_FROM, PRINTED_STORY_TYPE } from "@shared/printedStory";
-import { ORDER_STATUS_LABELS, formatEuros, type OrderStatus } from "@shared/orders";
+import { ORDER_STATUS_LABELS, formatEuros, formatEurosFixed, type OrderStatus } from "@shared/orders";
 
 type Filter = "pending" | "paid" | "cancelled" | "all";
 const FILTERS: Array<{ key: Filter; label: string }> = [
@@ -157,7 +157,7 @@ export default function Pedidos() {
                         <div className="text-xs text-gray-600 mt-2 space-y-1">
                           <p>{o.shippingAddress.street}{o.shippingAddress.details && `, ${o.shippingAddress.details}`}</p>
                           <p>{o.shippingAddress.postalCode} {o.shippingAddress.city} ({o.shippingAddress.province}), {o.shippingAddress.country}</p>
-                          <p>Gastos de envío {formatEuros(o.shippingCents ?? 0)}</p>
+                          <p>Gastos de envío {formatEurosFixed(o.shippingCents ?? 0)}</p>
                           {o.status === "paid" && (
                             <p>{o.shippedAt ? `Enviado el ${fmtDate(o.shippedAt)}` : `Pendiente de envío a partir del ${PRINTED_STORY_SHIPS_FROM}`}{o.shippingTracking && ` · Seguimiento ${o.shippingTracking}`}</p>
                           )}

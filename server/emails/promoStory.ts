@@ -3,7 +3,7 @@
  * El PDF NO se adjunta: el botón abre el enlace personal de la promoción.
  */
 import { PRINTED_STORY_EBOOK_SLUG, PRINTED_STORY_PRICE_CENTS, PRINTED_STORY_SHIPS_FROM } from "../../shared/printedStory";
-import { formatEuros } from "../../shared/orders";
+import { formatEurosFixed } from "../../shared/orders";
 import { escapeHtml } from "../ebookPages";
 
 export const PROMO_STORY_TEMPLATE = `<!doctype html>
@@ -179,7 +179,7 @@ export function buildPromoStoryEmail(i: PromoStoryInput): { subject: string; htm
   const showPrinted = i.showServices && i.printedShippingCents != null;
   const printedUrl = `https://cristinaviveconsciente.es/guias-digitales/${PRINTED_STORY_EBOOK_SLUG}#edicion-impresa`;
   const printedDetail = i.printedShippingCents == null ? "" :
-    `${formatEuros(PRINTED_STORY_PRICE_CENTS)} + ${formatEuros(i.printedShippingCents)} de envío a España peninsular. Envíos desde Segovia a partir del ${PRINTED_STORY_SHIPS_FROM}.`;
+    `${formatEurosFixed(PRINTED_STORY_PRICE_CENTS)} + ${formatEurosFixed(i.printedShippingCents)} de envío a España peninsular. Envíos desde Segovia a partir del ${PRINTED_STORY_SHIPS_FROM}.`;
   const html = renderTemplate(tpl, {
     portada_url: i.coverUrl ?? "",
     descarga_url: i.downloadUrl,

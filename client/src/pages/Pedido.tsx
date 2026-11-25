@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import Layout from "@/components/Layout";
 import { PRINTED_STORY_SHIPS_FROM } from "@shared/printedStory";
-import { formatEuros } from "@shared/orders";
+import { formatEurosFixed } from "@shared/orders";
 import { CRISTINA_WHATSAPP_NUMBER } from "@shared/booking";
 
 function CopyRow({ label, value, copyValue }: { label: string; value: string; copyValue?: string }) {
@@ -96,7 +96,7 @@ export default function Pedido() {
 
               {order.isPrinted && order.shippingCents !== null && (
                 <p className="font-body text-sm mb-4">
-                  Libro {formatEuros(order.amountCents - order.shippingCents)} · Envío {formatEuros(order.shippingCents)}.
+                  Libro {formatEurosFixed(order.amountCents - order.shippingCents)} · Envío {formatEurosFixed(order.shippingCents)}.
                   Envíos a partir del {PRINTED_STORY_SHIPS_FROM}.
                 </p>
               )}

@@ -1,5 +1,6 @@
 import { PrintedStoryOffer } from "@/components/ebooks/EbookParts";
 import { PRINTED_STORY_EBOOK_SLUG } from "@shared/printedStory";
+import { matchesEbookSlug } from "@shared/ebookPage";
 /**
  * Promoción de descarga gratuita de un ebook (/promocion/:slug) — Cristina Vive Consciente
  * Design: "Luz Botánica". Móvil: titular, portada, plazo y botón. El estado (activa / programada / terminada) lo decide
@@ -249,7 +250,7 @@ export default function Promocion() {
                 </div>
               )}
 
-              {promo.slug === PRINTED_STORY_EBOOK_SLUG && ebook && (
+              {matchesEbookSlug(promo.slug, PRINTED_STORY_EBOOK_SLUG) && ebook && (
                 <PrintedStoryOffer ebookId={PRINTED_STORY_EBOOK_SLUG} title={ebook.title} />
               )}
 

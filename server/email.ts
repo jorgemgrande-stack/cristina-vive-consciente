@@ -14,7 +14,7 @@ import { PRINTED_STORY_SHIPS_FROM } from "../shared/printedStory";
 
 import nodemailer from "nodemailer";
 import { immediateConfirmationWhatsAppUrl } from "../shared/booking";
-import { BIZUM_PHONE_DISPLAY, bizumAmount, formatEuros } from "../shared/orders";
+import { BIZUM_PHONE_DISPLAY, bizumAmount, formatEuros, formatEurosFixed } from "../shared/orders";
 
 const SMTP_HOST = process.env.SMTP_HOST ?? "";
 const SMTP_PORT = parseInt(process.env.SMTP_PORT ?? "25", 10);
@@ -454,7 +454,7 @@ const escHtml = (v: string) =>
 export async function sendOrderReceivedEmail(data: OrderEmailData): Promise<void> {
   const firstName = escHtml(data.customerName.split(" ")[0] || "Hola");
   const url = `${BASE_URL}/pedido/${data.reference}`;
-  const amount = formatEuros(data.amountCents);
+  const amount = data.printed ? formatEurosFixed(data.amountCents) : formatEuros(data.amountCents);
   const next = data.printed
     ? `Cuando Cristina confirme el pago, recibirás la confirmación de la reserva. Los envíos empiezan el ${PRINTED_STORY_SHIPS_FROM}.`
     : "En cuanto Cristina lo compruebe, te llegará el enlace de descarga a este mismo email.";
@@ -470,8 +470,8 @@ export async function sendOrderReceivedEmail(data: OrderEmailData): Promise<void
         </p>
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F2EC;border-left:3px solid #8B7355;margin-bottom:24px;">
           <tr><td style="padding:16px 24px;"><table width="100%" cellpadding="0" cellspacing="0">
-            ${data.printed ? row("Libro", formatEuros(data.amountCents - (data.shippingCents ?? 0))) + row("Envío", formatEuros(data.shippingCents ?? 0)) : ""}
-            ${row("Importe", escHtml(amount))}
+            ${data.printed ? row("Libro", formatEurosFixed(data.amountCents - (data.shippingCents ?? 0))) + row("Envío", formatEurosFixed(data.shippingCents ?? 0)) : ""}
+            ${row("Importe", escHtml(data.printed ? formatEurosFixed(data.amountCents) : amount))}
             ${row("Bizum al", escHtml(BIZUM_PHONE_DISPLAY) + " (Cristina)")}
             ${row("Concepto", escHtml(data.reference))}
           </table></td></tr>
@@ -492,7 +492,7 @@ export async function sendOrderReceivedEmail(data: OrderEmailData): Promise<void
 Producto: ${data.productTitle}
 Haz un Bizum de ${amount} (${bizumAmount(data.amountCents)}) al ${BIZUM_PHONE_DISPLAY} con el concepto: ${data.reference}
 
-${data.printed ? `Libro: ${formatEuros(data.amountCents - (data.shippingCents ?? 0))} · Envío: ${formatEuros(data.shippingCents ?? 0)}\n` : ""}${next}
+${data.printed ? `Libro: ${formatEurosFixed(data.amountCents - (data.shippingCents ?? 0))} · Envío: ${formatEurosFixed(data.shippingCents ?? 0)}\n` : ""}${next}
 Ver pedido: ${url}
 
 Con cariño,
@@ -503,7 +503,7 @@ Cristina — BION`;
 /** Confirma el Bizum de la edición impresa sin emitir acceso digital. */
 export async function sendPrintedStoryConfirmation(data: OrderEmailData): Promise<void> {
   const subject = `Reserva confirmada — ${data.reference}`;
-  const details = `Hemos confirmado tu pago de ${formatEuros(data.amountCents)}. Los envíos empiezan el ${PRINTED_STORY_SHIPS_FROM}.`;
+  const details = `Hemos confirmado tu pago de ${formatEurosFixed(data.amountCents)}. Los envíos empiezan el ${PRINTED_STORY_SHIPS_FROM}.`;
   const url = `${BASE_URL}/pedido/${data.reference}`;
   const html = wrapEmail(`
     ${emailHeader()}

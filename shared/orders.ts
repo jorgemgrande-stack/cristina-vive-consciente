@@ -42,6 +42,11 @@ export function formatEuros(cents: number): string {
   return `${txt} €`;
 }
 
+/** 2000 → "20,00 €": siempre con dos decimales (reserva impresa, donde se muestra el desglose). */
+export function formatEurosFixed(cents: number): string {
+  return `${(cents / 100).toFixed(2).replace(".", ",")} €`;
+}
+
 /** Importe para pedir en el Bizum: siempre con dos decimales y punto, como lo teclea la app del banco ("12.00"). */
 export function bizumAmount(cents: number): string {
   return (cents / 100).toFixed(2);

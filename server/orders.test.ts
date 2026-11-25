@@ -16,8 +16,8 @@ import { PRINTED_STORY_EBOOK_SLUG } from "../shared/printedStory";
 
 vi.mock("./db", () => ({
   getDb: vi.fn(async () => null),
-  getEbookBySlug: vi.fn(async () => ({
-    slug: PRINTED_STORY_EBOOK_SLUG, status: "active", title: "Los cuatro regalos de la Tierra", priceCents: 990,
+  getEbookBySlug: vi.fn(async (slug: string) => slug !== "los_cuatro_regalos_de_la_tierra" ? null : ({
+    slug: "los_cuatro_regalos_de_la_tierra", status: "active", title: "Los cuatro regalos de la Tierra", priceCents: 990,
   })),
 }));
 

@@ -26,6 +26,7 @@ import {
   BIZUM_PHONE_DISPLAY,
   bizumAmount,
   formatEuros,
+  formatEurosFixed,
   generateOrderReference,
   isValidOrderReference,
 } from "../../shared/orders";
@@ -44,6 +45,11 @@ const shippingInput = z.object({
   city: addressField,
   province: addressField,
 });
+
+/** El slug de la BD lleva «_» (los_cuatro_regalos_de_la_tierra) y el de la URL «-»: se prueban ambos. */
+async function resolvePrintedStoryEbook() {
+  return (await resolveEbook(PRINTED_STORY_EBOOK_SLUG)) ?? (await resolveEbook(PRINTED_STORY_EBOOK_SLUG.replace(/-/g, "_")));
+}
 
 function printedStoryShippingCents() {
   return parsePrintedStoryShippingCents(process.env.PRINTED_STORY_SHIPPING_CENTS);
@@ -139,7 +145,7 @@ function publicView(o: Order) {
     shippingCents: o.shippingCents,
     shipped: !!o.shippedAt,
     amountCents: o.amountCents,
-    amountLabel: formatEuros(o.amountCents),
+    amountLabel: o.productType === PRINTED_STORY_TYPE ? formatEurosFixed(o.amountCents) : formatEuros(o.amountCents),
     bizumAmount: bizumAmount(o.amountCents),
     bizumPhone: BIZUM_PHONE,
     bizumPhoneDisplay: BIZUM_PHONE_DISPLAY,
@@ -193,7 +199,7 @@ export const ordersRouter = router({
   printedStoryOffer: publicProcedure.query(async () => {
     const shippingCents = printedStoryShippingCents();
     if (shippingCents === null) return null;
-    const ebook = await resolveEbook(PRINTED_STORY_EBOOK_SLUG);
+    const ebook = await resolvePrintedStoryEbook();
     return ebook ? { shippingCents } : null;
   }),
 
@@ -210,7 +216,9 @@ export const ordersRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const ebook = await resolveEbook(input.productSlug);
+      const ebook = input.printed && matchesEbookSlug(input.productSlug, PRINTED_STORY_EBOOK_SLUG)
+        ? await resolvePrintedStoryEbook()
+        : await resolveEbook(input.productSlug);
       if (!ebook) throw new TRPCError({ code: "NOT_FOUND", message: "Esta guía no está disponible." });
       if (ebook.priceCents <= 0) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Esta guía no tiene precio." });
 
