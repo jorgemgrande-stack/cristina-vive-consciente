@@ -84,8 +84,8 @@ export default function ClienteForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.firstName.trim() || !form.lastName.trim()) {
-      toast.error("Nombre y apellido son obligatorios");
+    if (!form.firstName.trim()) {
+      toast.error("El nombre es obligatorio");
       return;
     }
     if (isEdit && clientId) {
@@ -137,7 +137,7 @@ export default function ClienteForm() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {field("Nombre", "firstName", "text", true)}
-              {field("Apellido", "lastName", "text", true)}
+              {field("Apellido", "lastName")}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
