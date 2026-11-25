@@ -1,3 +1,4 @@
+import { PRINTED_STORY_TYPE } from "../shared/printedStory";
 /**
  * Servicios recibidos — catálogo, registro por clienta, vínculo de pedidos y sesiones desde citas.
  * Todo es idempotente: una compra o una cita realizada deja UNA sola entrada en el historial.
@@ -143,23 +144,26 @@ export async function deleteClientService(id: number, clientId: number) {
 
 // ─── Pedidos → ficha y Servicios recibidos ───────────────────────────────────
 
-/** Artículo del catálogo de una guía: por ebookSlug; si no existe, se crea en Productos → Ebooks. */
-async function ensureEbookNode(order: Pick<Order, "productSlug" | "productTitle" | "amountCents">): Promise<number> {
+/** Crea el artículo del pedido bajo la familia que corresponde a su formato. */
+async function ensureEbookNode(order: Pick<Order, "productSlug" | "productTitle" | "amountCents" | "productType" | "shippingCents">): Promise<number> {
   const db = await requireDb();
   const [found] = await db.select().from(serviceCatalog).where(eq(serviceCatalog.ebookSlug, order.productSlug)).limit(1);
   if (found) return found.id;
-  let [ebooksGroup] = await db.select().from(serviceCatalog).where(eq(serviceCatalog.slug, "productos-ebooks")).limit(1);
-  if (!ebooksGroup) {
+  const printed = order.productType === PRINTED_STORY_TYPE;
+  const groupSlug = printed ? "productos-libros-impresos" : "productos-ebooks";
+  const groupName = printed ? "Libros impresos" : "Ebooks";
+  let [group] = await db.select().from(serviceCatalog).where(eq(serviceCatalog.slug, groupSlug)).limit(1);
+  if (!group) {
     let [productos] = await db.select().from(serviceCatalog).where(eq(serviceCatalog.slug, "productos")).limit(1);
     if (!productos) {
       const [p] = await db.insert(serviceCatalog).values({ parentId: null, kind: "category", name: "Productos", slug: "productos", sortOrder: 2 });
       productos = { id: (p as any).insertId } as any;
     }
-    const [g] = await db.insert(serviceCatalog).values({ parentId: productos.id, kind: "group", name: "Ebooks", slug: "productos-ebooks", sortOrder: 2 });
-    ebooksGroup = { id: (g as any).insertId } as any;
+    const [g] = await db.insert(serviceCatalog).values({ parentId: productos.id, kind: "group", name: groupName, slug: groupSlug, sortOrder: 2 });
+    group = { id: (g as any).insertId } as any;
   }
-  const slug = await uniqueSlug(`ebook-${slugify(order.productSlug)}`);
-  const [i] = await db.insert(serviceCatalog).values({ parentId: ebooksGroup.id, kind: "item", name: order.productTitle, slug, ebookSlug: order.productSlug, priceCents: order.amountCents });
+  const slug = await uniqueSlug(`${printed ? "libro" : "ebook"}-${slugify(order.productSlug)}`);
+  const [i] = await db.insert(serviceCatalog).values({ parentId: group.id, kind: "item", name: order.productTitle, slug, ebookSlug: order.productSlug, priceCents: order.amountCents - (order.shippingCents ?? 0) });
   return (i as any).insertId as number;
 }
 

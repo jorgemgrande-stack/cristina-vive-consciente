@@ -1,7 +1,9 @@
+import type { ShippingAddress } from "../shared/printedStory";
 import {
   int,
   mysqlEnum,
   mysqlTable,
+  json,
   text,
   timestamp,
   varchar,
@@ -805,6 +807,11 @@ export const orders = mysqlTable("orders", {
   productType: varchar("productType", { length: 20 }).default("ebook").notNull(),
   productSlug: varchar("productSlug", { length: 100 }).notNull(),
   productTitle: varchar("productTitle", { length: 200 }).notNull(),
+  shippingAddress: json("shippingAddress").$type<ShippingAddress>(),
+  shippingCents: int("shippingCents"),
+  shippedAt: bigint("shippedAt", { mode: "number" }),
+  shippingTracking: varchar("shippingTracking", { length: 120 }),
+  pendingPrintKey: varchar("pendingPrintKey", { length: 64 }).unique(),
   amountCents: int("amountCents").notNull(),
   currency: varchar("currency", { length: 3 }).default("EUR").notNull(),
   customerName: varchar("customerName", { length: 200 }).notNull(),

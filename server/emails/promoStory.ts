@@ -2,6 +2,8 @@
  * Correo de entrega del cuento de una promoción (plantilla de Cristina, HTML tal cual con marcadores {{…}} y {{#if …}}).
  * El PDF NO se adjunta: el botón abre el enlace personal de la promoción.
  */
+import { PRINTED_STORY_EBOOK_SLUG, PRINTED_STORY_PRICE_CENTS, PRINTED_STORY_SHIPS_FROM } from "../../shared/printedStory";
+import { formatEurosFixed } from "../../shared/orders";
 import { escapeHtml } from "../ebookPages";
 
 export const PROMO_STORY_TEMPLATE = `<!doctype html>
@@ -54,6 +56,19 @@ export const PROMO_STORY_TEMPLATE = `<!doctype html>
           <p style="margin:0 0 12px;">Ojalá encontréis un ratito tranquilo para leerlo juntos.</p>
           <p style="margin:0;">Un abrazo,<br><strong>Cristina</strong></p>
         </td></tr>
+        {{#if mostrar_impreso}}
+        <tr>
+          <td style="background-color:#e7eee4;padding:25px 32px;border-top:1px solid #d5dfd1;">
+            <p style="margin:0 0 7px;color:#315839;font:700 11px/1.4 Arial,sans-serif;letter-spacing:1.5px;text-transform:uppercase;">Reserva abierta</p>
+            <h2 style="margin:0 0 8px;color:#24482c;font:400 26px/1.2 Georgia,serif;">El cuento, también en papel</h2>
+            <p style="margin:0 0 17px;color:#293b2b;font:15px/1.5 Arial,sans-serif;">{{impreso_detalle}}</p>
+            <table role="presentation" cellpadding="0" cellspacing="0"><tr><td bgcolor="#24482c" style="padding:13px 18px;">
+              <a href="{{impreso_url}}" style="color:#ffffff;text-decoration:none;font:700 14px/1.4 Arial,sans-serif;">Reservar la edición impresa</a>
+            </td></tr></table>
+          </td>
+        </tr>
+        {{/if}}
+
         {{#if mostrar_servicios}}
         <tr><td class="content" align="center" style="padding:26px 32px;background-color:#edf1e8;border-top:1px solid #e7ddcf;">
           <h2 style="margin:0 0 9px;font:400 26px/1.25 Georgia,serif;color:#24482c;">Sígueme en Instagram</h2>
@@ -144,6 +159,7 @@ export interface PromoStoryInput {
   /** Texto con la fecha o el plazo real de validez del enlace; vacío si no caduca */
   expiryText: string;
   showServices: boolean;
+  printedShippingCents?: number | null;
   unsubscribeUrl?: string;
 }
 
@@ -160,12 +176,19 @@ export function buildPromoStoryEmail(i: PromoStoryInput): { subject: string; htm
     );
   // Sin portada, la celda de la imagen no se pinta (no se deja un hueco roto)
   if (!i.coverUrl) tpl = tpl.replace(/<td class="column cover"[\s\S]*?<\/td>\s*/, "");
+  const showPrinted = i.showServices && i.printedShippingCents != null;
+  const printedUrl = `https://cristinaviveconsciente.es/guias-digitales/${PRINTED_STORY_EBOOK_SLUG}#edicion-impresa`;
+  const printedDetail = i.printedShippingCents == null ? "" :
+    `${formatEurosFixed(PRINTED_STORY_PRICE_CENTS)} + ${formatEurosFixed(i.printedShippingCents)} de envío a España peninsular. Envíos desde Segovia a partir del ${PRINTED_STORY_SHIPS_FROM}.`;
   const html = renderTemplate(tpl, {
     portada_url: i.coverUrl ?? "",
     descarga_url: i.downloadUrl,
     caducidad_texto: i.expiryText,
     nombre: i.name,
     mostrar_servicios: i.showServices,
+    mostrar_impreso: showPrinted,
+    impreso_url: printedUrl,
+    impreso_detalle: printedDetail,
     baja_url: i.unsubscribeUrl ?? "",
   });
   const text = [
@@ -181,6 +204,7 @@ export function buildPromoStoryEmail(i: PromoStoryInput): { subject: string; htm
     "Un abrazo,",
     "Cristina",
     "",
+    ...(showPrinted ? ["El cuento, también en papel", printedDetail, `Reservar la edición impresa: ${printedUrl}`, ""] : []),
     ...(i.showServices ? ["Sígueme en Instagram", "Allí comparto recursos y reflexiones para vivir de forma más consciente.", "Seguir a Cristina en Instagram: https://www.instagram.com/cristina.viveconsciente/", "", "Conoce mi trabajo", "Masajes integrativos (sesiones de masaje y bienestar corporal con aceites esenciales): https://cristinaviveconsciente.es/masajes", "Consultas (sesiones individuales para revisar tus hábitos): https://cristinaviveconsciente.es/consultas", "Asesoramiento en máquinas de ósmosis: https://cristinaviveconsciente.es/sistemas-agua", ""] : []),
     "Recibes este correo porque solicitaste el cuento en Cristina Vive Consciente.",
     "Política de privacidad: https://cristinaviveconsciente.es/privacidad",

@@ -2,23 +2,48 @@
  * Piezas compartidas de las guías digitales: botón de compra (pedido + pago por Bizum, el mismo flujo de siempre)
  * y galería con miniaturas y ampliación.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BIZUM_PHONE_DISPLAY } from "@shared/orders";
+import { BIZUM_PHONE_DISPLAY, formatEurosFixed } from "@shared/orders";
+import { PRINTED_STORY_PRICE_CENTS, PRINTED_STORY_SHIPS_FROM } from "@shared/printedStory";
 
 // ── Botón de compra (pago por Bizum, confirmado por Cristina) ────────────────
-export function BuyButton({ ebookId, label, price, title }: { ebookId: string; label: string; price: string; title: string }) {
+export function PrintedStoryOffer({ ebookId, title, className = "" }: { ebookId: string; title: string; className?: string }) {
+  const { data: offer } = trpc.orders.printedStoryOffer.useQuery();
+  const section = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (offer && window.location.hash === "#edicion-impresa") section.current?.scrollIntoView();
+  }, [offer]);
+  if (!offer) return null;
+  return (
+    <section ref={section} id="edicion-impresa" className={`border border-[oklch(0.79_0.04_148)] bg-[oklch(0.95_0.025_148)] p-5 sm:p-6 scroll-mt-24 ${className}`}>
+      <h2 className="font-display text-2xl mb-1">Reserva tu edición impresa</h2>
+      <p className="text-sm mb-1">Lanzamiento el {PRINTED_STORY_SHIPS_FROM}. Envíos desde Segovia a partir de ese día.</p>
+      <p className="text-sm mb-4">{formatEurosFixed(PRINTED_STORY_PRICE_CENTS)} + {formatEurosFixed(offer.shippingCents)} de envío a domicilio en España peninsular.</p>
+      <BuyButton ebookId={ebookId} title={`${title} · Edición impresa`} label="Reservar la edición impresa"
+        price={formatEurosFixed(PRINTED_STORY_PRICE_CENTS + offer.shippingCents)} shippingCents={offer.shippingCents} />
+    </section>
+  );
+}
+
+export function BuyButton({ ebookId, label, price, title, shippingCents }: {
+  ebookId: string; label: string; price: string; title: string; shippingCents?: number;
+}) {
+  const printed = shippingCents !== undefined;
+  const id = useId();
   const [open, setOpen] = useState(false);
   const [, navigate] = useLocation();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+
+  const [shipping, setShipping] = useState({ street: "", details: "", postalCode: "", city: "", province: "" });
 
   const createOrder = trpc.orders.create.useMutation({
     onSuccess: (order) => {
@@ -37,6 +62,7 @@ export function BuyButton({ ebookId, label, price, title }: { ebookId: string; l
       name: name.trim(),
       email: email.trim(),
       phone: phone.trim() || undefined,
+      ...(printed ? { printed: true, shipping: { ...shipping, details: shipping.details.trim() || undefined } } : {}),
     });
   };
 
@@ -47,38 +73,64 @@ export function BuyButton({ ebookId, label, price, title }: { ebookId: string; l
         className="w-full py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body flex items-center justify-center gap-2"
         style={{ borderRadius: 0, letterSpacing: "0.1em" }}
       >
-        <Download size={13} />
+        {printed ? <BookOpen size={15} /> : <Download size={13} />}
         {label} — {price}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display" style={{ fontWeight: 400 }}>{title}</DialogTitle>
             <DialogDescription>
-              Pagas por Bizum al {BIZUM_PHONE_DISPLAY}. Cuando Cristina lo confirme, te llega el ebook por email.
+              {printed
+                ? `Pago por Bizum al ${BIZUM_PHONE_DISPLAY}, confirmado por Cristina. Envíos desde el ${PRINTED_STORY_SHIPS_FROM}.`
+                : `Pagas por Bizum al ${BIZUM_PHONE_DISPLAY}. Cuando Cristina lo confirme, te llega el ebook por email.`}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="order-name">Nombre</Label>
-              <Input id="order-name" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={120} autoComplete="name" />
+              <Label htmlFor={`${id}-name`}>{printed ? "Nombre y apellidos del destinatario" : "Nombre"}</Label>
+              <Input id={`${id}-name`} value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={120} autoComplete="name" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="order-email">Email (aquí recibirás el ebook)</Label>
-              <Input id="order-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+              <Label htmlFor={`${id}-email`}>{printed ? "Correo electrónico" : "Email (aquí recibirás el ebook)"}</Label>
+              <Input id={`${id}-email`} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="order-phone">Teléfono (opcional)</Label>
-              <Input id="order-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" />
+              <Label htmlFor={`${id}-phone`}>{printed ? "Teléfono de entrega" : "Teléfono (opcional)"}</Label>
+              <Input id={`${id}-phone`} type="tel" required={printed} value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" />
             </div>
+            {printed && (
+              <fieldset className="space-y-2">
+                <legend className="mb-1 font-medium">Dirección postal · España peninsular</legend>
+                {([
+                  ["street", "Calle y número", "address-line1"],
+                  ["details", "Piso, puerta u otros datos (opcional)", "address-line2"],
+                  ["postalCode", "Código postal", "postal-code"],
+                  ["city", "Localidad", "address-level2"],
+                  ["province", "Provincia", "address-level1"],
+                ] as const).map(([key, label, autocomplete]) => (
+                  <div key={key} className="space-y-1">
+                    <Label htmlFor={`${id}-${key}`}>{label}</Label>
+                    <Input id={`${id}-${key}`} value={shipping[key]}
+                      onChange={e => setShipping(prev => ({ ...prev, [key]: e.target.value }))}
+                      required={key !== "details"} autoComplete={autocomplete}
+                      inputMode={key === "postalCode" ? "numeric" : undefined}
+                      pattern={key === "postalCode" ? "[0-9]{5}" : undefined}
+                      maxLength={key === "postalCode" ? 5 : 160} />
+                  </div>
+                ))}
+                <p className="text-xs">Libro {formatEurosFixed(PRINTED_STORY_PRICE_CENTS)} · Envío {formatEurosFixed(shippingCents)} · Total {price}</p>
+                <p className="text-xs">Usamos tus datos para gestionar el pedido y su entrega. <a href="/privacidad" target="_blank" rel="noreferrer" className="underline">Política de privacidad</a></p>
+              </fieldset>
+            )}
             <button
               type="submit"
               disabled={createOrder.isPending}
               className="w-full py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body flex items-center justify-center gap-2 disabled:opacity-60"
               style={{ borderRadius: 0, letterSpacing: "0.1em" }}
             >
-              {createOrder.isPending ? "Creando pedido..." : `Continuar y pagar ${price}`}
+              {createOrder.isPending ? "Creando pedido..." : printed ? `Reservar con obligación de pago · ${price}` : `Continuar y pagar ${price}`}
             </button>
           </form>
         </DialogContent>

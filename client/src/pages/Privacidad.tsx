@@ -57,6 +57,12 @@ const TREATMENTS: Array<{ title: string; data: string; purpose: string; basis: R
     basis: "Ejecución del contrato (art. 6.1.b RGPD) y obligaciones legales de facturación (art. 6.1.c RGPD).",
   },
   {
+    title: "Reservas de libros impresos",
+    data: "Nombre y apellidos, email, teléfono, dirección postal de entrega, producto, importe y estado del pedido y del envío.",
+    purpose: "Gestionar la reserva, comprobar el pago por Bizum y enviar el libro a la dirección indicada.",
+    basis: "Ejecución del contrato (art. 6.1.b RGPD) y obligaciones legales de facturación (art. 6.1.c RGPD).",
+  },
+  {
     title: "Comentarios del blog",
     data: "El nombre que indiques y el comentario.",
     purpose: "Moderar y, si se aprueba, publicar el comentario con ese nombre.",
@@ -66,7 +72,7 @@ const TREATMENTS: Array<{ title: string; data: string; purpose: string; basis: R
     title: "Descarga de promociones y regalos digitales",
     data: "Nombre y apellidos, correo electrónico y teléfono, y la campaña y el canal por el que llegaste (por ejemplo, Instagram o WhatsApp). Los enlaces para compartir solo llevan la campaña y el canal, nunca datos personales.",
     purpose:
-      "Gestionar tu descarga del recurso gratuito y registrarla en tu ficha de clientes (categoría «Recursos gratuitos»). Este formulario no te suscribe a novedades ni a emails de seguimiento. También se cuentan, de forma agregada, las visitas, descargas y acciones de compartir de cada campaña. Si marcas la casilla opcional del formulario, el correo con tu cuento incluirá además información y promociones de Cristina Vive Consciente (invitación a Instagram y enlaces a masajes, consultas y asesoramiento en máquinas de ósmosis); solo vale para ese correo de esa campaña, no te da de alta en ninguna newsletter y puedes retirarla con el enlace de baja que lo acompaña. Si Cristina tuviera ya una ficha tuya, se reutiliza; si tus datos coincidieran con varias fichas, se deja para que ella lo revise y no se mezcla ninguna.",
+      "Gestionar tu descarga del recurso gratuito y registrarla en tu ficha de clientes (categoría «Recursos gratuitos»). Este formulario no te suscribe a novedades ni a emails de seguimiento. También se cuentan, de forma agregada, las visitas, descargas y acciones de compartir de cada campaña. Si marcas la casilla opcional del formulario, el correo con tu cuento incluirá además información y promociones de Cristina Vive Consciente (reserva de la edición impresa, invitación a Instagram y enlaces a masajes, consultas y asesoramiento en máquinas de ósmosis); solo vale para ese correo de esa campaña, no te da de alta en ninguna newsletter y puedes retirarla con el enlace de baja que lo acompaña. Si Cristina tuviera ya una ficha tuya, se reutiliza; si tus datos coincidieran con varias fichas, se deja para que ella lo revise y no se mezcla ninguna.",
     basis: "Tu solicitud de la descarga (art. 6.1.b RGPD) y, para las estadísticas agregadas, el interés legítimo de Cristina (art. 6.1.f RGPD).",
   },
   {
@@ -175,6 +181,7 @@ export default function Privacidad() {
                 <Link href="/politica-de-cookies" className="text-[oklch(0.52_0.08_148)] underline">política de cookies</Link>); nunca
                 se les envía tu nombre, email, teléfono ni lo que escribes. Las tipografías se sirven desde la propia web.
               </li>
+              <li>Para entregar un libro impreso, el transportista recibe el nombre de la persona destinataria, su dirección postal y, cuando sea necesario para la entrega, su teléfono.</li>
               <li>Pagos por Bizum: se hacen desde tu banco, fuera de esta web.</li>
               <li>Administraciones públicas, cuando exista una obligación legal (por ejemplo, fiscal).</li>
             </ul>

@@ -12,7 +12,14 @@ import {
   isValidOrderReference,
 } from "../shared/orders";
 
-vi.mock("./db", () => ({ getDb: vi.fn(async () => null) }));
+import { PRINTED_STORY_EBOOK_SLUG } from "../shared/printedStory";
+
+vi.mock("./db", () => ({
+  getDb: vi.fn(async () => null),
+  getEbookBySlug: vi.fn(async (slug: string) => slug !== "los_cuatro_regalos_de_la_tierra" ? null : ({
+    slug: "los_cuatro_regalos_de_la_tierra", status: "active", title: "Los cuatro regalos de la Tierra", priceCents: 990,
+  })),
+}));
 
 describe("shared/orders", () => {
   it("el Bizum va al mismo número que el WhatsApp de Cristina", () => {
@@ -90,5 +97,32 @@ describe("aviso de pedido por CallMeBot", () => {
     fetchMock.mockResolvedValueOnce(new Response("ERROR: x", { status: 200 }));
     await notifyAdminNewOrder(ORDER).catch((e) => errs.push(String(e.message)));
     expect(errs.join("")).not.toContain("clave-de-prueba-123");
+  });
+});
+
+describe("reserva impresa", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("solo ofrece la reserva al configurar la tarifa", async () => {
+    const { ordersRouter } = await import("./routers/orders");
+    const caller = ordersRouter.createCaller({ user: null, req: { headers: {} }, res: {} } as any);
+    vi.stubEnv("PRINTED_STORY_SHIPPING_CENTS", "");
+    await expect(caller.printedStoryOffer()).resolves.toBeNull();
+    vi.stubEnv("PRINTED_STORY_SHIPPING_CENTS", "795");
+    await expect(caller.printedStoryOffer()).resolves.toEqual({ shippingCents: 795 });
+  });
+
+  it("exige dirección y rechaza destinos fuera de la península antes de crear el pedido", async () => {
+    const { ordersRouter } = await import("./routers/orders");
+    const caller = ordersRouter.createCaller({ user: null, req: { headers: {} }, res: {} } as any);
+    vi.stubEnv("PRINTED_STORY_SHIPPING_CENTS", "795");
+    const input = {
+      productSlug: PRINTED_STORY_EBOOK_SLUG, printed: true as const,
+      name: "Ana Pérez", email: "ana@example.com", phone: "600123456",
+    };
+    await expect(caller.create(input)).rejects.toThrow("dirección completa");
+    await expect(caller.create({ ...input, shipping: {
+      street: "Calle Mayor 1", postalCode: "07001", city: "Palma", province: "Baleares",
+    } })).rejects.toThrow("España peninsular");
   });
 });

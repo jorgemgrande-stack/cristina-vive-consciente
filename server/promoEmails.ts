@@ -16,11 +16,12 @@ import express from "express";
 import { and, eq, isNull, lte, or, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { commercialConsents, ebookPromoEmails, ebookPromoRegistrations, ebookPromos, ebooks, type CommercialConsent } from "../drizzle/schema";
-import { ebookImages } from "../shared/ebookPage";
+import { ebookImages, matchesEbookSlug } from "../shared/ebookPage";
 import { formatMadridDeadline, promoEmailScope } from "../shared/promo";
 import { splitName } from "./clientImport";
 import { isEmailConfigured, sendEmail } from "./email";
 import { SITE_URL, escapeHtml } from "./ebookPages";
+import { PRINTED_STORY_EBOOK_SLUG, parsePrintedStoryShippingCents } from "../shared/printedStory";
 import { buildPromoStoryEmail } from "./emails/promoStory";
 
 /** Esperas entre reintentos (ms) y máximo de intentos por correo. */
@@ -174,6 +175,9 @@ async function deliver(row: typeof ebookPromoEmails.$inferSelect): Promise<void>
     downloadUrl: `${SITE_URL}/api/promos/${promo.slug}/descarga?t=${reg.token}&s=correo`,
     expiryText: `Este enlace funciona hasta el ${formatMadridDeadline(promo.endsAt)} (hora peninsular).`,
     showServices: !!consent,
+    printedShippingCents: ebook.status === "active" && matchesEbookSlug(ebook.slug, PRINTED_STORY_EBOOK_SLUG)
+      ? parsePrintedStoryShippingCents(process.env.PRINTED_STORY_SHIPPING_CENTS)
+      : null,
     unsubscribeUrl: consent ? `${SITE_URL}/baja?t=${consent.unsubscribeToken}` : undefined,
   });
   await sendEmail({ to: row.email, subject: mail.subject, html: mail.html, text: mail.text });

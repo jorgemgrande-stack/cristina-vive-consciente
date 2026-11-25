@@ -12,7 +12,8 @@ import { trpc } from "@/lib/trpc";
 import CRMLayout from "@/components/CRMLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ORDER_STATUS_LABELS, formatEuros, type OrderStatus } from "@shared/orders";
+import { PRINTED_STORY_SHIPS_AT, PRINTED_STORY_SHIPS_FROM, PRINTED_STORY_TYPE } from "@shared/printedStory";
+import { ORDER_STATUS_LABELS, formatEuros, formatEurosFixed, type OrderStatus } from "@shared/orders";
 
 type Filter = "pending" | "paid" | "cancelled" | "all";
 const FILTERS: Array<{ key: Filter; label: string }> = [
@@ -72,15 +73,22 @@ export default function Pedidos() {
     onSuccess: (r) => {
       refresh();
       if (r.alreadyPaid) toast.info("Este pedido ya estaba confirmado.");
-      else if (r.emailSent) toast.success("Pago confirmado y guía enviada al cliente.");
-      else toast.warning(`Pago confirmado, pero la guía NO se envió: ${"error" in r ? r.error : "error de email"}. Usa «Enviar guía» cuando esté resuelto.`);
+      else if (r.emailSent) toast.success(r.printed ? "Pago confirmado. Aviso de reserva enviado." : "Pago confirmado y guía enviada al cliente.");
+      else toast.warning(`Pago confirmado. El correo de confirmación no se envió: ${"error" in r ? r.error : "error de email"}. Puedes reenviarlo cuando esté resuelto.`);
     },
     onError: (e) => toast.error(e.message || "No se pudo confirmar el pago."),
   });
   const resend = trpc.orders.resendDelivery.useMutation({
     onSuccess: (r) => {
       refresh();
-      r.emailSent ? toast.success("Guía enviada.") : toast.error(r.error ?? "No se pudo enviar el email.");
+      r.emailSent ? toast.success(r.printed ? "Confirmación enviada." : "Guía enviada.") : toast.error(r.error ?? "No se pudo enviar el email.");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const ship = trpc.orders.markPrintedShipped.useMutation({
+    onSuccess: () => {
+      refresh();
+      toast.success("Pedido marcado como enviado.");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -98,8 +106,7 @@ export default function Pedidos() {
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-900 mb-1">Pedidos</h1>
           <p className="text-sm text-gray-500">
-            Guías pagadas por Bizum. Comprueba en tu banco que ha llegado el Bizum con la referencia en el concepto y pulsa «Confirmar pago»:
-            solo entonces se envía la guía al cliente.
+            Comprueba en tu banco el importe y la referencia del Bizum antes de pulsar «Confirmar pago».
           </p>
         </div>
 
@@ -121,70 +128,96 @@ export default function Pedidos() {
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
-              {rows.map((o) => (
-                <div key={o.id} className={`p-4 flex flex-col md:flex-row md:items-center gap-3 ${o.id === focusId ? "bg-green-50 ring-1 ring-green-300" : ""}`}>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="font-mono text-sm font-semibold text-gray-900">{o.reference}</span>
-                      <Badge className={STATUS_STYLE[o.status as OrderStatus]}>{ORDER_STATUS_LABELS[o.status as OrderStatus]}</Badge>
-                      {o.clientLinkStatus === "review" ? <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Ficha por revisar</Badge> : null}
-                      {o.status === "pending" && o.customerClaimedAt ? (
-                        <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Dice que ya pagó</Badge>
+              {rows.map((o) => {
+                const printed = o.productType === PRINTED_STORY_TYPE;
+                return (
+                  <div key={o.id} className={`p-4 flex flex-col md:flex-row md:items-center gap-3 ${o.id === focusId ? "bg-green-50 ring-1 ring-green-300" : ""}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="font-mono text-sm font-semibold text-gray-900">{o.reference}</span>
+                        <Badge className={STATUS_STYLE[o.status as OrderStatus]}>{ORDER_STATUS_LABELS[o.status as OrderStatus]}</Badge>
+                        {o.clientLinkStatus === "review" ? <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Ficha por revisar</Badge> : null}
+                        {o.status === "pending" && o.customerClaimedAt ? (
+                          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Dice que ya pagó</Badge>
+                        ) : null}
+                      </div>
+                      <p className="text-sm text-gray-800">
+                        {o.productTitle} · <strong>{formatEuros(o.amountCents)}</strong>
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {o.customerName} · {o.customerEmail}
+                        {o.customerPhone ? ` · ${o.customerPhone}` : ""}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        Pedido: {fmtDate(o.createdAt)}
+                        {o.paidAt ? ` · Pagado: ${fmtDate(o.paidAt)}` : ""}
+                        {o.status === "paid" ? (o.deliveryEmailSentAt ? " · Correo enviado" : " · Correo pendiente de envío") : ""}
+                      </p>
+                      {o.shippingAddress && (
+                        <div className="text-xs text-gray-600 mt-2 space-y-1">
+                          <p>{o.shippingAddress.street}{o.shippingAddress.details && `, ${o.shippingAddress.details}`}</p>
+                          <p>{o.shippingAddress.postalCode} {o.shippingAddress.city} ({o.shippingAddress.province}), {o.shippingAddress.country}</p>
+                          <p>Gastos de envío {formatEurosFixed(o.shippingCents ?? 0)}</p>
+                          {o.status === "paid" && (
+                            <p>{o.shippedAt ? `Enviado el ${fmtDate(o.shippedAt)}` : `Pendiente de envío a partir del ${PRINTED_STORY_SHIPS_FROM}`}{o.shippingTracking && ` · Seguimiento ${o.shippingTracking}`}</p>
+                          )}
+                        </div>
+                      )}
+                      {o.clientId ? (
+                        <Link href={`/crm/clientes/${o.clientId}`} className="text-xs text-[oklch(0.52_0.08_148)] hover:underline no-underline">Ver la ficha de la clienta</Link>
                       ) : null}
+                      {o.clientLinkStatus === "review" && !o.clientId ? <ReviewLink orderId={o.id} onDone={refresh} /> : null}
                     </div>
-                    <p className="text-sm text-gray-800">
-                      {o.productTitle} · <strong>{formatEuros(o.amountCents)}</strong>
-                    </p>
-                    <p className="text-xs text-gray-500 truncate">
-                      {o.customerName} · {o.customerEmail}
-                      {o.customerPhone ? ` · ${o.customerPhone}` : ""}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      Pedido: {fmtDate(o.createdAt)}
-                      {o.paidAt ? ` · Pagado: ${fmtDate(o.paidAt)}` : ""}
-                      {o.status === "paid" ? (o.deliveryEmailSentAt ? " · Guía enviada" : " · ⚠ Guía NO enviada") : ""}
-                    </p>
-                    {o.clientId ? (
-                      <Link href={`/crm/clientes/${o.clientId}`} className="text-xs text-[oklch(0.52_0.08_148)] hover:underline no-underline">Ver la ficha de la clienta</Link>
-                    ) : null}
-                    {o.clientLinkStatus === "review" && !o.clientId ? <ReviewLink orderId={o.id} onDone={refresh} /> : null}
-                  </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    {o.status !== "paid" && (
-                      <Button
-                        size="sm"
-                        className="bg-[oklch(0.52_0.08_148)] hover:bg-[oklch(0.42_0.08_148)] text-white gap-1.5"
-                        disabled={confirm.isPending}
-                        onClick={() => {
-                          if (window.confirm(`¿Has visto en tu banco el Bizum de ${formatEuros(o.amountCents)} con la referencia ${o.reference}? Se enviará la guía a ${o.customerEmail}.`)) {
-                            confirm.mutate({ id: o.id });
-                          }
-                        }}
-                      >
-                        <CheckCircle2 size={14} /> Confirmar pago
-                      </Button>
-                    )}
-                    {o.status === "paid" && (
-                      <Button size="sm" variant="outline" className="gap-1.5" disabled={resend.isPending} onClick={() => resend.mutate({ id: o.id })}>
-                        {o.deliveryEmailSentAt ? <RefreshCw size={14} /> : <Mail size={14} />}
-                        {o.deliveryEmailSentAt ? "Reenviar guía" : "Enviar guía"}
-                      </Button>
-                    )}
-                    {o.status === "pending" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1.5 text-red-600"
-                        disabled={cancel.isPending}
-                        onClick={() => window.confirm(`¿Cancelar el pedido ${o.reference}?`) && cancel.mutate({ id: o.id })}
-                      >
-                        <XCircle size={14} /> Cancelar
-                      </Button>
-                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {(o.status === "pending" || (!printed && o.status !== "paid")) && (
+                        <Button
+                          size="sm"
+                          className="bg-[oklch(0.52_0.08_148)] hover:bg-[oklch(0.42_0.08_148)] text-white gap-1.5"
+                          disabled={confirm.isPending}
+                          onClick={() => {
+                            if (window.confirm(`¿Has visto en tu banco el Bizum de ${formatEuros(o.amountCents)} con la referencia ${o.reference}? Se enviará ${printed ? "la confirmación" : "la guía"} a ${o.customerEmail}.`)) {
+                              confirm.mutate({ id: o.id });
+                            }
+                          }}
+                        >
+                          <CheckCircle2 size={14} /> Confirmar pago
+                        </Button>
+                      )}
+                      {o.status === "paid" && (
+                        <Button size="sm" variant="outline" className="gap-1.5" disabled={resend.isPending} onClick={() => resend.mutate({ id: o.id })}>
+                          {o.deliveryEmailSentAt ? <RefreshCw size={14} /> : <Mail size={14} />}
+                          {printed ? (o.deliveryEmailSentAt ? "Reenviar confirmación" : "Enviar confirmación") : (o.deliveryEmailSentAt ? "Reenviar guía" : "Enviar guía")}
+                        </Button>
+                      )}
+                      {printed && o.status === "paid" && !o.shippedAt && Date.now() >= PRINTED_STORY_SHIPS_AT && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={ship.isPending}
+                          onClick={() => {
+                            const tracking = window.prompt("Introduce el código de seguimiento o deja el campo vacío para marcar el pedido como enviado.");
+                            if (tracking !== null) ship.mutate({ id: o.id, tracking });
+                          }}
+                        >
+                          Marcar como enviado
+                        </Button>
+                      )}
+                      {o.status === "pending" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1.5 text-red-600"
+                          disabled={cancel.isPending}
+                          onClick={() => window.confirm(`¿Cancelar el pedido ${o.reference}?`) && cancel.mutate({ id: o.id })}
+                        >
+                          <XCircle size={14} /> Cancelar
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
