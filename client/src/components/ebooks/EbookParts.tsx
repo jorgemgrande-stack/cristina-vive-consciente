@@ -13,6 +13,27 @@ import { Label } from "@/components/ui/label";
 import { BIZUM_PHONE_DISPLAY, formatEurosFixed } from "@shared/orders";
 import { PRINTED_STORY_PRICE_CENTS, PRINTED_STORY_SHIPS_FROM } from "@shared/printedStory";
 
+function PrintedStoryPrice({ shippingCents, total }: { shippingCents: number; total: string }) {
+  return (
+    <dl className="space-y-2 rounded-sm border border-[oklch(0.85_0.025_148)] bg-white/70 px-4 py-3 text-sm tabular-nums">
+      <div className="flex items-baseline justify-between gap-3">
+        <dt className="font-medium">Cuento impreso</dt>
+        <dd className="shrink-0 font-display text-2xl text-[oklch(0.34_0.07_148)]">
+          {formatEurosFixed(PRINTED_STORY_PRICE_CENTS)}
+        </dd>
+      </div>
+      <div className="flex items-baseline justify-between gap-3">
+        <dt>Gastos de envío <span className="text-xs">(España peninsular)</span></dt>
+        <dd className="shrink-0">{formatEurosFixed(shippingCents)}</dd>
+      </div>
+      <div className="flex items-baseline justify-between gap-3 border-t border-[oklch(0.85_0.025_148)] pt-2">
+        <dt>Total por Bizum</dt>
+        <dd className="shrink-0 font-semibold">{total}</dd>
+      </div>
+    </dl>
+  );
+}
+
 // ── Botón de compra (pago por Bizum, confirmado por Cristina) ────────────────
 export function PrintedStoryOffer({ ebookId, title, className = "" }: { ebookId: string; title: string; className?: string }) {
   const { data: offer } = trpc.orders.printedStoryOffer.useQuery();
@@ -21,13 +42,16 @@ export function PrintedStoryOffer({ ebookId, title, className = "" }: { ebookId:
     if (offer && window.location.hash === "#edicion-impresa") section.current?.scrollIntoView();
   }, [offer]);
   if (!offer) return null;
+  const total = formatEurosFixed(PRINTED_STORY_PRICE_CENTS + offer.shippingCents);
   return (
     <section ref={section} id="edicion-impresa" className={`border border-[oklch(0.79_0.04_148)] bg-[oklch(0.95_0.025_148)] p-5 sm:p-6 scroll-mt-24 ${className}`}>
       <h2 className="font-display text-2xl mb-1">Reserva tu edición impresa</h2>
-      <p className="text-sm mb-1">Lanzamiento el {PRINTED_STORY_SHIPS_FROM}. Envíos desde Segovia a partir de ese día.</p>
-      <p className="text-sm mb-4">{formatEurosFixed(PRINTED_STORY_PRICE_CENTS)} + {formatEurosFixed(offer.shippingCents)} de envío a domicilio en España peninsular.</p>
+      <p className="text-sm mb-4">Lanzamiento el {PRINTED_STORY_SHIPS_FROM}. Envíos a domicilio desde Segovia a partir de ese día.</p>
+      <div className="mb-4">
+        <PrintedStoryPrice shippingCents={offer.shippingCents} total={total} />
+      </div>
       <BuyButton ebookId={ebookId} title={`${title} · Edición impresa`} label="Reservar la edición impresa"
-        price={formatEurosFixed(PRINTED_STORY_PRICE_CENTS + offer.shippingCents)} shippingCents={offer.shippingCents} />
+        price={total} shippingCents={offer.shippingCents} />
     </section>
   );
 }
@@ -74,7 +98,7 @@ export function BuyButton({ ebookId, label, price, title, shippingCents }: {
         style={{ borderRadius: 0, letterSpacing: "0.1em" }}
       >
         {printed ? <BookOpen size={15} /> : <Download size={13} />}
-        {label} — {price}
+        {printed ? label : `${label} — ${price}`}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -87,6 +111,7 @@ export function BuyButton({ ebookId, label, price, title, shippingCents }: {
                 : `Pagas por Bizum al ${BIZUM_PHONE_DISPLAY}. Cuando Cristina lo confirme, te llega el ebook por email.`}
             </DialogDescription>
           </DialogHeader>
+          {printed && <PrintedStoryPrice shippingCents={shippingCents} total={price} />}
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor={`${id}-name`}>{printed ? "Nombre y apellidos del destinatario" : "Nombre"}</Label>
@@ -120,7 +145,6 @@ export function BuyButton({ ebookId, label, price, title, shippingCents }: {
                       maxLength={key === "postalCode" ? 5 : 160} />
                   </div>
                 ))}
-                <p className="text-xs">Libro {formatEurosFixed(PRINTED_STORY_PRICE_CENTS)} · Envío {formatEurosFixed(shippingCents)} · Total {price}</p>
                 <p className="text-xs">Usamos tus datos para gestionar el pedido y su entrega. <a href="/privacidad" target="_blank" rel="noreferrer" className="underline">Política de privacidad</a></p>
               </fieldset>
             )}
