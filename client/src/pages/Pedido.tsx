@@ -11,6 +11,8 @@ import { AlertCircle, CheckCircle2, Clock, Copy, Loader2, ArrowLeft } from "luci
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import Layout from "@/components/Layout";
+import { PRINTED_STORY_SHIPS_FROM } from "@shared/printedStory";
+import { formatEuros } from "@shared/orders";
 import { CRISTINA_WHATSAPP_NUMBER } from "@shared/booking";
 
 function CopyRow({ label, value, copyValue }: { label: string; value: string; copyValue?: string }) {
@@ -86,11 +88,18 @@ export default function Pedido() {
           {order?.status === "pending" && (
             <>
               <h1 className="font-display mb-2" style={{ fontWeight: 400, fontSize: "1.6rem" }}>
-                {order.customerFirstName}, haz tu Bizum
+                {order.customerFirstName ? `${order.customerFirstName}, haz tu Bizum` : "Haz tu Bizum para reservar"}
               </h1>
               <p className="font-body text-sm mb-6" style={{ fontWeight: 300, color: "oklch(0.4 0.02 60)" }}>
                 Pedido <strong>{order.reference}</strong> · {order.productTitle}
               </p>
+
+              {order.isPrinted && order.shippingCents !== null && (
+                <p className="font-body text-sm mb-4">
+                  Libro {formatEuros(order.amountCents - order.shippingCents)} · Envío {formatEuros(order.shippingCents)}.
+                  Envíos a partir del {PRINTED_STORY_SHIPS_FROM}.
+                </p>
+              )}
 
               <div className="bg-white border border-[oklch(0.88_0.015_75)] px-5 mb-5">
                 <CopyRow label="Importe" value={order.amountLabel} copyValue={order.bizumAmount} />
@@ -131,7 +140,11 @@ export default function Pedido() {
               <CheckCircle2 size={40} className="mx-auto mb-4" style={{ color: "oklch(0.38 0.07 148)" }} />
               <h1 className="font-display mb-3" style={{ fontWeight: 400, fontSize: "1.6rem" }}>{L("order.paidTitle")}</h1>
               <p className="font-body text-sm mb-6" style={{ fontWeight: 300 }}>
-                Cristina ha recibido tu Bizum. Te hemos enviado la guía <strong>{order.productTitle}</strong> por email. Si no la ves, revisa la carpeta de spam.
+                {order.isPrinted
+                  ? order.shipped
+                    ? "Tu ejemplar ya está enviado."
+                    : `Tu reserva está confirmada. Los envíos empiezan el ${PRINTED_STORY_SHIPS_FROM}.`
+                  : <>Cristina ha recibido tu Bizum. Te hemos enviado la guía <strong>{order.productTitle}</strong> por email. Si no la ves, revisa la carpeta de spam.</>}
               </p>
               <Link href="/guias-digitales" className="inline-flex items-center gap-2 font-body text-sm underline">
                 <ArrowLeft size={14} /> Volver a las guías

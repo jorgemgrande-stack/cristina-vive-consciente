@@ -106,6 +106,13 @@ Igual que la actividad 2, con estas diferencias:
   - CallMeBot (referencia, producto e importe).
 - **Conservación:** el enlace de descarga caduca; el pedido no se borra. _[Plazos pendientes]_
 
+### 7 bis. Reservas de libros impresos (Bizum)
+- **Finalidad:** gestionar la reserva, el pago, la entrega postal y sus incidencias.
+- **Base jurídica:** contrato (6.1.b) y obligaciones legales (6.1.c).
+- **Datos:** nombre y apellidos, email, teléfono, dirección postal, producto, importe, estado del pedido y del envío.
+- **Destinatarios:** los de pedidos, más el transportista para la entrega (nombre, dirección y teléfono cuando sea necesario).
+- **Conservación:** se aplican los criterios generales de pedidos.
+
 ### 8. Comentarios del blog
 - **Finalidad:** moderar y publicar.
 - **Base jurídica:** consentimiento.
@@ -116,7 +123,7 @@ Igual que la actividad 2, con estas diferencias:
 - **Finalidad:** entregar el recurso gratuito, registrar la descarga en la ficha de clientes (categoría «Recursos gratuitos» y recurso «Descarga de promoción · …», sin pedido, factura ni pago) y medir cada campaña de forma agregada.
 - **Base jurídica:** solicitud de la persona (6.1.b); estadísticas agregadas: interés legítimo (6.1.f). El formulario **no** suscribe a novedades ni activa emails de seguimiento.
 - **Datos:** nombre y apellidos, email y teléfono (obligatorios, validados en el servidor); campaña y canal de procedencia (utm_source / ref); token de descarga. Los enlaces para compartir llevan solo campaña y canal.
-- **Autorización opcional (casilla del formulario):** información y promociones (Instagram, masajes, consultas y ósmosis) en el correo del cuento; texto «Acepto que el correo con mi cuento incluya información y promociones de Cristina Vive Consciente.» (versión `promo-email-promociones-v1`), sin alta en newsletters. Se guarda en `commercial_consents` con fecha, origen («formulario-promo»), versión del texto mostrado y alcance `promo-email:<campaña>`; se retira con el enlace de baja del correo. Sin casilla, el correo del cuento va sin ese bloque.
+- **Autorización opcional (casilla del formulario):** información y promociones (edición impresa, Instagram, masajes, consultas y ósmosis) en el correo del cuento; texto «Acepto que el correo con mi cuento incluya información y promociones de Cristina Vive Consciente.» (versión `promo-email-promociones-v1`), sin alta en newsletters. Se guarda en `commercial_consents` con fecha, origen («formulario-promo»), versión del texto mostrado y alcance `promo-email:<campaña>`; se retira con el enlace de baja del correo. Sin casilla, el correo del cuento va sin ese bloque.
 - **Medición:** visitas, descargas (cuando el servidor termina de servir el PDF) y acciones de compartir, sin IP ni datos personales en los eventos.
 - **Identificación en el CRM:** por email y teléfono normalizados; si coincide con varias fichas o con una de nombre distinto, el registro queda «en revisión» y no se modifica ninguna ficha.
 - **Destinatarios:** alojamiento (Railway). El donativo por Bizum se hace en el banco de la persona.

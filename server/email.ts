@@ -1,3 +1,4 @@
+import { PRINTED_STORY_SHIPS_FROM } from "../shared/printedStory";
 /**
  * Email helper — Cristina Vive Consciente
  * Sistema completo de emails automáticos:
@@ -442,6 +443,8 @@ export interface OrderEmailData {
   customerPhone?: string | null;
   productTitle: string;
   amountCents: number;
+  printed?: boolean;
+  shippingCents?: number | null;
 }
 
 const escHtml = (v: string) =>
@@ -452,6 +455,9 @@ export async function sendOrderReceivedEmail(data: OrderEmailData): Promise<void
   const firstName = escHtml(data.customerName.split(" ")[0] || "Hola");
   const url = `${BASE_URL}/pedido/${data.reference}`;
   const amount = formatEuros(data.amountCents);
+  const next = data.printed
+    ? `Cuando Cristina confirme el pago, recibirás la confirmación de la reserva. Los envíos empiezan el ${PRINTED_STORY_SHIPS_FROM}.`
+    : "En cuanto Cristina lo compruebe, te llegará el enlace de descarga a este mismo email.";
   const row = (k: string, v: string) =>
     `<tr><td style="padding:6px 0;font-size:13px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;width:120px;">${k}</td><td style="padding:6px 0;font-size:14px;color:#1A1208;font-family:'DM Sans',Arial,sans-serif;font-weight:500;">${v}</td></tr>`;
   const html = wrapEmail(`
@@ -460,10 +466,11 @@ export async function sendOrderReceivedEmail(data: OrderEmailData): Promise<void
       <td style="padding:40px 40px 32px;">
         <h1 style="margin:0 0 8px;font-size:24px;font-weight:400;color:#1A1208;font-family:'Georgia',serif;">${firstName}, ya tienes tu pedido reservado 🌿</h1>
         <p style="margin:0 0 24px;font-size:14px;color:#7A6E5E;font-family:'DM Sans',Arial,sans-serif;font-weight:300;line-height:1.6;">
-          Para recibir <strong style="color:#1A1208;">${escHtml(data.productTitle)}</strong>, haz un Bizum con estos datos. En cuanto Cristina lo compruebe, te llegará el enlace de descarga a este mismo email.
+          Para recibir <strong style="color:#1A1208;">${escHtml(data.productTitle)}</strong>, haz un Bizum con estos datos. ${next}
         </p>
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#F5F2EC;border-left:3px solid #8B7355;margin-bottom:24px;">
           <tr><td style="padding:16px 24px;"><table width="100%" cellpadding="0" cellspacing="0">
+            ${data.printed ? row("Libro", formatEuros(data.amountCents - (data.shippingCents ?? 0))) + row("Envío", formatEuros(data.shippingCents ?? 0)) : ""}
             ${row("Importe", escHtml(amount))}
             ${row("Bizum al", escHtml(BIZUM_PHONE_DISPLAY) + " (Cristina)")}
             ${row("Concepto", escHtml(data.reference))}
@@ -485,12 +492,30 @@ export async function sendOrderReceivedEmail(data: OrderEmailData): Promise<void
 Producto: ${data.productTitle}
 Haz un Bizum de ${amount} (${bizumAmount(data.amountCents)}) al ${BIZUM_PHONE_DISPLAY} con el concepto: ${data.reference}
 
-Cuando Cristina lo compruebe recibirás el enlace de descarga en este email.
+${data.printed ? `Libro: ${formatEuros(data.amountCents - (data.shippingCents ?? 0))} · Envío: ${formatEuros(data.shippingCents ?? 0)}\n` : ""}${next}
 Ver pedido: ${url}
 
 Con cariño,
 Cristina — BION`;
   await sendEmail({ to: data.customerEmail, subject: `Tu pedido ${data.reference} — datos para el Bizum`, html, text });
+}
+
+/** Confirma el Bizum de la edición impresa sin emitir acceso digital. */
+export async function sendPrintedStoryConfirmation(data: OrderEmailData): Promise<void> {
+  const subject = `Reserva confirmada — ${data.reference}`;
+  const details = `Hemos confirmado tu pago de ${formatEuros(data.amountCents)}. Los envíos empiezan el ${PRINTED_STORY_SHIPS_FROM}.`;
+  const url = `${BASE_URL}/pedido/${data.reference}`;
+  const html = wrapEmail(`
+    ${emailHeader()}
+    <tr><td style="padding:32px 40px;font-family:Arial,sans-serif;line-height:1.6">
+      <h1 style="font-family:Georgia,serif;font-size:24px;">Tu reserva está confirmada</h1>
+      <p>${escHtml(data.productTitle)}</p>
+      <p>${escHtml(details)}</p>
+      ${ctaButton(url, "Ver mi pedido")}
+    </td></tr>
+    ${emailFooter()}
+  `);
+  await sendEmail({ to: data.customerEmail, subject, html, text: `${data.productTitle}\n${details}\n${url}` });
 }
 
 /** A Cristina: pedido nuevo pendiente de confirmar (con enlace al CRM). */

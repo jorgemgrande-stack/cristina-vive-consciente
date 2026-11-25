@@ -9,9 +9,11 @@ import { ArrowLeft, Check, Mail } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import Layout from "@/components/Layout";
 import NotFound from "@/pages/NotFound";
-import { BuyButton, EbookGallery } from "@/components/ebooks/EbookParts";
+import { BuyButton, EbookGallery, PrintedStoryOffer } from "@/components/ebooks/EbookParts";
 import { RelatedCarousel } from "@/components/ebooks/RelatedCarousel";
 import { ebookImages, ebookIncludes, ebookPath, ebookPriceLabel, ebookSeo, matchesEbookSlug } from "@shared/ebookPage";
+
+import { PRINTED_STORY_EBOOK_SLUG } from "@shared/printedStory";
 
 /** Título, descripción, canonical e imagen para compartir también al navegar dentro de la web (el servidor ya los pone en el HTML inicial). */
 function useEbookMeta(seo: ReturnType<typeof ebookSeo> | null) {
@@ -123,6 +125,10 @@ export default function EbookDetalle() {
                   <li key={it.key} className="flex items-start gap-2"><Check size={15} className="mt-0.5 text-[oklch(0.52_0.08_148)] flex-shrink-0" />{it.text}</li>
                 ))}
               </ul>
+
+              {matchesEbookSlug(ebook.slug, PRINTED_STORY_EBOOK_SLUG) && (
+                <PrintedStoryOffer ebookId={ebook.slug} title={ebook.title} className="mt-6" />
+              )}
 
               {(ebook.synopsis || ebook.author || ebook.edition) && (
                 <div className="mt-6 space-y-3" data-testid="ebook-ficha">

@@ -20,6 +20,21 @@ const base = {
 };
 
 describe("plantilla del correo", () => {
+  it("ofrece la edición impresa solo con autorización y una tarifa activa", () => {
+    const enabled = buildPromoStoryEmail({ ...base, showServices: true, printedShippingCents: 795 });
+    for (const body of [enabled.html, enabled.text]) {
+      expect(body).toContain("Reservar la edición impresa");
+      expect(body).toContain("15,50");
+      expect(body).toContain("7,95");
+      expect(body).toContain("15 de diciembre de 2026");
+      expect(body).toContain("/guias-digitales/los-cuatro-regalos-de-la-tierra#edicion-impresa");
+    }
+    for (const settings of [{ showServices: false, printedShippingCents: 795 }, { showServices: true }]) {
+      const mail = buildPromoStoryEmail({ ...base, ...settings });
+      expect(mail.html).not.toContain("Reservar la edición impresa");
+      expect(mail.text).not.toContain("Reservar la edición impresa");
+    }
+  });
   it("asunto, portada, botón, nota de Cristina y plazo; sin tarjetas ni baja si no hay autorización; sin adjuntos", () => {
     const m = buildPromoStoryEmail({ ...base, showServices: false });
     expect(m.subject).toBe("Tu cuento de regalo · Los cuatro regalos de la Tierra");
