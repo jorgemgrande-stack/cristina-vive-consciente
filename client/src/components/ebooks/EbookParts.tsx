@@ -46,7 +46,7 @@ export function PrintedStoryOffer({ ebookId, title, className = "" }: { ebookId:
   return (
     <section ref={section} id="edicion-impresa" className={`border border-[oklch(0.79_0.04_148)] bg-[oklch(0.95_0.025_148)] p-5 sm:p-6 scroll-mt-24 ${className}`}>
       <h2 className="font-display text-2xl mb-1">Reserva tu edición impresa</h2>
-      <p className="text-sm mb-4">Lanzamiento el {PRINTED_STORY_SHIPS_FROM}. Envíos a domicilio desde Segovia a partir de ese día.</p>
+      <p className="text-sm mb-4">Lanzamiento el {PRINTED_STORY_SHIPS_FROM}. Envíos disponibles a partir de ese día.</p>
       <p className="mb-3 text-sm">Envío a España peninsular aparte. Verás los gastos al completar la dirección.</p>
       <BuyButton ebookId={ebookId} title={`${title} · Edición impresa`} label="Reservar la edición impresa"
         price={total} shippingCents={offer.shippingCents} />
