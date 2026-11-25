@@ -14,6 +14,8 @@ export type ShippingAddress = {
   country: "España";
 };
 
+export const PENINSULAR_POSTAL_CODE = /^(?!07|35|38)(?:0[1-9]|[1-4][0-9]|50)\d{3}$/;
+
 export function parsePrintedStoryShippingCents(value: string | undefined): number | null {
   if (!value || !/^\d+$/.test(value)) return null;
   const cents = Number(value);

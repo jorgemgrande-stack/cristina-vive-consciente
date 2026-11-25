@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BIZUM_PHONE_DISPLAY, formatEurosFixed } from "@shared/orders";
-import { PRINTED_STORY_PRICE_CENTS, PRINTED_STORY_SHIPS_FROM } from "@shared/printedStory";
+import { PENINSULAR_POSTAL_CODE, PRINTED_STORY_PRICE_CENTS, PRINTED_STORY_SHIPS_FROM } from "@shared/printedStory";
 
 function PrintedStoryPrice({ shippingCents, total }: { shippingCents: number; total: string }) {
   return (
@@ -47,9 +47,7 @@ export function PrintedStoryOffer({ ebookId, title, className = "" }: { ebookId:
     <section ref={section} id="edicion-impresa" className={`border border-[oklch(0.79_0.04_148)] bg-[oklch(0.95_0.025_148)] p-5 sm:p-6 scroll-mt-24 ${className}`}>
       <h2 className="font-display text-2xl mb-1">Reserva tu edición impresa</h2>
       <p className="text-sm mb-4">Lanzamiento el {PRINTED_STORY_SHIPS_FROM}. Envíos a domicilio desde Segovia a partir de ese día.</p>
-      <div className="mb-4">
-        <PrintedStoryPrice shippingCents={offer.shippingCents} total={total} />
-      </div>
+      <p className="mb-3 text-sm">Envío a España peninsular aparte. Verás los gastos al completar la dirección.</p>
       <BuyButton ebookId={ebookId} title={`${title} · Edición impresa`} label="Reservar la edición impresa"
         price={total} shippingCents={offer.shippingCents} />
     </section>
@@ -68,6 +66,14 @@ export function BuyButton({ ebookId, label, price, title, shippingCents }: {
   const [phone, setPhone] = useState("");
 
   const [shipping, setShipping] = useState({ street: "", details: "", postalCode: "", city: "", province: "" });
+  const postalCode = shipping.postalCode.trim();
+  const validPostalCode = PENINSULAR_POSTAL_CODE.test(postalCode);
+  const addressReady = validPostalCode && [shipping.street, shipping.city, shipping.province].every(value => {
+    const trimmed = value.trim();
+    return trimmed.length > 0 && /^[^<>\r\n]*$/.test(trimmed);
+  });
+  const postalCodeError = postalCode.length === 5 && !validPostalCode;
+
 
   const createOrder = trpc.orders.create.useMutation({
     onSuccess: (order) => {
@@ -81,6 +87,7 @@ export function BuyButton({ ebookId, label, price, title, shippingCents }: {
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (printed && !addressReady) return;
     createOrder.mutate({
       productSlug: ebookId,
       name: name.trim(),
@@ -98,7 +105,7 @@ export function BuyButton({ ebookId, label, price, title, shippingCents }: {
         style={{ borderRadius: 0, letterSpacing: "0.1em" }}
       >
         {printed ? <BookOpen size={15} /> : <Download size={13} />}
-        {printed ? label : `${label} — ${price}`}
+        {label} — {printed ? formatEurosFixed(PRINTED_STORY_PRICE_CENTS) : price}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -111,7 +118,6 @@ export function BuyButton({ ebookId, label, price, title, shippingCents }: {
                 : `Pagas por Bizum al ${BIZUM_PHONE_DISPLAY}. Cuando Cristina lo confirme, te llega el ebook por email.`}
             </DialogDescription>
           </DialogHeader>
-          {printed && <PrintedStoryPrice shippingCents={shippingCents} total={price} />}
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor={`${id}-name`}>{printed ? "Nombre y apellidos del destinatario" : "Nombre"}</Label>
@@ -142,19 +148,31 @@ export function BuyButton({ ebookId, label, price, title, shippingCents }: {
                       required={key !== "details"} autoComplete={autocomplete}
                       inputMode={key === "postalCode" ? "numeric" : undefined}
                       pattern={key === "postalCode" ? "[0-9]{5}" : undefined}
-                      maxLength={key === "postalCode" ? 5 : 160} />
+                      maxLength={key === "postalCode" ? 5 : 160}
+                      aria-invalid={key === "postalCode" && postalCodeError || undefined}
+                      aria-describedby={key === "postalCode" && postalCodeError ? `${id}-postal-error` : undefined} />
+                    {key === "postalCode" && postalCodeError && (
+                      <p id={`${id}-postal-error`} className="text-xs text-red-700">Introduce un código postal de España peninsular.</p>
+                    )}
                   </div>
                 ))}
                 <p className="text-xs">Usamos tus datos para gestionar el pedido y su entrega. <a href="/privacidad" target="_blank" rel="noreferrer" className="underline">Política de privacidad</a></p>
               </fieldset>
             )}
+            {printed && (
+              <div aria-live="polite">
+                {addressReady
+                  ? <PrintedStoryPrice shippingCents={shippingCents} total={price} />
+                  : <p className="text-sm">Completa la dirección para ver los gastos de envío y el total.</p>}
+              </div>
+            )}
             <button
               type="submit"
-              disabled={createOrder.isPending}
+              disabled={createOrder.isPending || (printed && !addressReady)}
               className="w-full py-3.5 bg-[oklch(0.52_0.08_148)] text-white text-xs tracking-widest uppercase font-medium hover:bg-[oklch(0.38_0.07_148)] transition-all duration-300 font-body flex items-center justify-center gap-2 disabled:opacity-60"
               style={{ borderRadius: 0, letterSpacing: "0.1em" }}
             >
-              {createOrder.isPending ? "Creando pedido..." : printed ? `Reservar con obligación de pago · ${price}` : `Continuar y pagar ${price}`}
+              {createOrder.isPending ? "Creando pedido..." : printed ? `Reservar con obligación de pago${addressReady ? ` · ${price}` : ""}` : `Continuar y pagar ${price}`}
             </button>
           </form>
         </DialogContent>

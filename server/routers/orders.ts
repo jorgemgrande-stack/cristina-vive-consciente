@@ -33,7 +33,7 @@ import {
 
 import { matchesEbookSlug } from "../../shared/ebookPage";
 import {
-  PRINTED_STORY_EBOOK_SLUG, PRINTED_STORY_ORDER_SLUG, PRINTED_STORY_PRICE_CENTS,
+  PENINSULAR_POSTAL_CODE, PRINTED_STORY_EBOOK_SLUG, PRINTED_STORY_ORDER_SLUG, PRINTED_STORY_PRICE_CENTS,
   PRINTED_STORY_SHIPS_AT, PRINTED_STORY_SHIPS_FROM, PRINTED_STORY_TYPE, parsePrintedStoryShippingCents,
 } from "../../shared/printedStory";
 
@@ -41,7 +41,7 @@ const addressField = z.string().trim().min(1).max(160).regex(/^[^<>\r\n]*$/);
 const shippingInput = z.object({
   street: addressField,
   details: addressField.optional(),
-  postalCode: z.string().trim().regex(/^(?:0[1-9]|[1-4][0-9]|50)\d{3}$/, "Introduce un código postal de España peninsular.").refine(code => !/^(07|35|38)/.test(code), "Por ahora solo enviamos a España peninsular."),
+  postalCode: z.string().trim().regex(PENINSULAR_POSTAL_CODE, "Introduce un código postal de España peninsular."),
   city: addressField,
   province: addressField,
 });
