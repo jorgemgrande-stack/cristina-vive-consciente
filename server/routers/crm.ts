@@ -111,7 +111,7 @@ const clientsRouter = router({
     .input(
       z.object({
         firstName: z.string().min(1),
-        lastName: z.string().min(1),
+        lastName: z.string().optional().default(""),
         email: z.string().email().optional().or(z.literal("")),
         phone: z.string().optional(),
         status: z.enum(["active", "inactive", "lead"]).optional(),
@@ -137,7 +137,7 @@ const clientsRouter = router({
       z.object({
         id: z.number(),
         firstName: z.string().min(1).optional(),
-        lastName: z.string().min(1).optional(),
+        lastName: z.string().optional(),
         email: z.string().email().optional().or(z.literal("")),
         phone: z.string().optional(),
         status: z.enum(["active", "inactive", "lead"]).optional(),
