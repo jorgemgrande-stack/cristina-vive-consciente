@@ -179,7 +179,7 @@ export function buildPromoStoryEmail(i: PromoStoryInput): { subject: string; htm
   const showPrinted = i.showServices && i.printedShippingCents != null;
   const printedUrl = `https://cristinaviveconsciente.es/guias-digitales/${PRINTED_STORY_EBOOK_SLUG}#edicion-impresa`;
   const printedDetail = i.printedShippingCents == null ? "" :
-    `${formatEurosFixed(PRINTED_STORY_PRICE_CENTS)} + ${formatEurosFixed(i.printedShippingCents)} de envío a España peninsular. Envíos desde Segovia a partir del ${PRINTED_STORY_SHIPS_FROM}.`;
+    `${formatEurosFixed(PRINTED_STORY_PRICE_CENTS)} + ${formatEurosFixed(i.printedShippingCents)} de envío a España peninsular. Envíos disponibles a partir del ${PRINTED_STORY_SHIPS_FROM}.`;
   const html = renderTemplate(tpl, {
     portada_url: i.coverUrl ?? "",
     descarga_url: i.downloadUrl,
