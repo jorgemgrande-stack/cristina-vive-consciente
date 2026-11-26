@@ -8,7 +8,9 @@ import { Link } from "wouter";
 import { ArrowRight, Droplets, Calendar, Clock, CheckCircle, ChevronRight, Star, Leaf, BookOpen } from "lucide-react";
 import { ReservaModal as WaterReservaModal } from "@/pages/SistemasAgua";
 import { trpc } from "@/lib/trpc";
-import { useActivePromo } from "@/lib/promoApi";
+import { ebookPath, matchesEbookSlug } from "@shared/ebookPage";
+import { formatEurosFixed } from "@shared/orders";
+import { PRINTED_STORY_EBOOK_SLUG, PRINTED_STORY_PRICE_CENTS } from "@shared/printedStory";
 
 const HERO_IMG = SITE_IMAGES.heroMain;
 const BLOG_FALLBACK = "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80";
@@ -19,47 +21,47 @@ export const HOME_SLIDESHOW_DEFAULTS: HomeSlideshowText = {
   primaryLabel: "Reservar consulta", secondaryLabel: "Conocer servicios", secondaryUrl: "/consultas",
 };
 
-const LAUNCH_SLUG = "los-cuatro-regalos-de-la-tierra";
+/** El cuento permanece visible mientras cambian las imágenes de la cabecera. */
+function HomeStoryOffer() {
+  const { data: ebooks } = trpc.ebooksAdmin.list.useQuery();
+  const { data: printedOffer } = trpc.orders.printedStoryOffer.useQuery();
+  const ebook = ebooks?.find((item) => matchesEbookSlug(PRINTED_STORY_EBOOK_SLUG, item.slug));
+  if (!ebook) return null;
 
-/**
- * Pieza de lanzamiento de «Los cuatro regalos de la Tierra». Vive en una capa común de la cabecera (fuera de los slides), así
- * que no se mueve al cambiar de imagen y se va con la cabecera al hacer scroll. Solo aparece mientras el SERVIDOR dice que la
- * campaña está activa (mismo estado que la banda verde). Sin tarjeta ni fondo: va directa sobre la imagen, con sombra de texto.
- */
-function HomePromoLaunch({ variant }: { variant: "desktop" | "mobile" }) {
-  const promo = useActivePromo();
-  if (!promo || promo.slug !== LAUNCH_SLUG) return null;
-  const shadow = { textShadow: "0 1px 3px rgba(0,0,0,.55), 0 2px 18px rgba(0,0,0,.5)" } as const;
-  const mobile = variant === "mobile";
+  const productPath = ebookPath(ebook.slug);
+  const shadow = { textShadow: "0 1px 3px rgba(0,0,0,.55), 0 2px 18px rgba(0,0,0,.5)" };
   return (
-    <div
-      className={mobile ? "md:hidden mt-8 flex items-center gap-3.5 pr-12" : "hidden md:flex items-center gap-8 justify-end"}
-      data-testid={`home-promo-${variant}`}
-    >
-      <div className={mobile ? "min-w-0 order-2" : "min-w-0 text-left"}>
-        <p className="flex items-center gap-2.5 font-body uppercase text-[oklch(0.82_0.08_85)] text-[0.58rem] md:text-xs tracking-[0.16em] md:tracking-[0.22em] mb-1.5 md:mb-3" style={{ fontWeight: 500, ...shadow }}>
-          <span aria-hidden className="inline-block h-px w-5 md:w-7 bg-[oklch(0.82_0.08_85)]" />
-          Promoción de lanzamiento
+    <div className="mt-8 flex items-center gap-4 text-[oklch(0.96_0.02_85)] lg:mt-0 lg:justify-self-end lg:gap-6" data-testid="home-story-offer">
+      <div className="min-w-0 order-2 lg:order-none" style={shadow}>
+        <p className="flex items-center gap-2.5 font-body uppercase text-[oklch(0.82_0.08_85)] text-[0.6rem] lg:text-xs tracking-[0.16em] mb-1.5 lg:mb-3">
+          <span aria-hidden className="inline-block h-px w-5 lg:w-7 bg-current" />
+          Un cuento ilustrado para toda la familia
         </p>
-        <p className="font-display text-[oklch(0.96_0.02_85)] text-[clamp(1.05rem,5.2vw,1.45rem)] leading-[1.1] md:text-[2.6rem] md:leading-[1.05] mb-3 md:mb-5" style={{ fontWeight: 400, ...shadow }}>
+        <p className="font-display text-[clamp(1.1rem,5vw,1.55rem)] leading-[1.1] lg:text-[clamp(1.7rem,2.8vw,2.6rem)] lg:leading-[1.05] mb-3 lg:mb-5">
           Los cuatro regalos<br />de la Tierra
         </p>
-        <Link
-          href={promo.path}
-          className="inline-flex items-center gap-2 border-b border-[oklch(0.96_0.02_85)] pb-0.5 font-body text-sm md:text-base text-[oklch(0.96_0.02_85)] no-underline hover:opacity-85"
-          style={{ fontWeight: 500, ...shadow }}
-          data-testid={`home-promo-link-${variant}`}
-        >
-          Descargar gratis <ArrowRight size={16} aria-hidden />
-        </Link>
+        <div className="flex flex-col items-start gap-2 font-body text-xs sm:text-sm">
+          {printedOffer && (
+            <>
+              <a href={`${productPath}#edicion-impresa`} className="inline-flex items-center gap-2 bg-[oklch(0.52_0.08_148)] px-3 py-2 font-medium text-white no-underline hover:bg-[oklch(0.38_0.07_148)]" style={{ textShadow: "none" }}>
+                Reservar edición impresa · {formatEurosFixed(PRINTED_STORY_PRICE_CENTS)}
+                <ArrowRight size={14} className="shrink-0" aria-hidden />
+              </a>
+              <p className="text-xs">Envío aparte</p>
+            </>
+          )}
+          <Link href={productPath} className="border-b border-current pb-0.5 font-medium no-underline hover:opacity-85">
+            Comprar ebook · {formatEurosFixed(Math.round(Number(ebook.price) * 100))}
+          </Link>
+        </div>
       </div>
-      <Link href={promo.path} aria-label="Descargar gratis «Los cuatro regalos de la Tierra»" className={mobile ? "shrink-0 order-1" : "shrink-0"}>
+      <Link href={productPath} className="shrink-0 order-1 lg:order-none">
         <img
           src="/site/promo-cuatro-regalos-libro.webp"
           alt="Portada de Los cuatro regalos de la Tierra"
           width={480}
           height={670}
-          className={mobile ? "w-[72px] h-auto" : "w-[210px] lg:w-[230px] h-auto"}
+          className="w-[72px] h-auto sm:w-24 lg:w-[clamp(128px,13vw,230px)]"
         />
       </Link>
     </div>
@@ -147,7 +149,7 @@ export function HomeSlideshow({ eyebrow, title, subtitle, primaryLabel, secondar
         </div>
 
         {/* Content */}
-        <div className="container relative z-10 pt-28 pb-20">
+        <div className="container relative z-10 pt-28 pb-20 lg:grid lg:grid-cols-2 lg:items-center lg:gap-8">
           <div className="max-w-xl">
             {/* Eyebrow */}
             <p
@@ -188,18 +190,8 @@ export function HomeSlideshow({ eyebrow, title, subtitle, primaryLabel, secondar
                 {secondaryLabel}
               </Link>
             </div>
-            {/* Móvil: fila compacta bajo los botones del mensaje principal */}
-            <HomePromoLaunch variant="mobile" />
           </div>
-        </div>
-
-        {/* Escritorio: capa común de la cabecera (fuera de los slides), lado derecho, sin tarjeta */}
-        <div className="hidden md:block absolute inset-0 z-10 pointer-events-none">
-          <div className="container h-full flex items-center justify-end pt-20">
-            <div className="pointer-events-auto">
-              <HomePromoLaunch variant="desktop" />
-            </div>
-          </div>
+          <HomeStoryOffer />
         </div>
 
         {/* Scroll indicator */}
