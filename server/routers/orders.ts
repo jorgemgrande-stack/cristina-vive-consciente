@@ -318,6 +318,7 @@ export const ordersRouter = router({
         amountCents: created.amountCents,
         printed,
         shippingCents,
+        shippingAddress,
       };
       const warn = (what: string) => (err: unknown) =>
         console.warn(`[Orders] ${what} (${created.reference}):`, err instanceof Error ? err.message : err);

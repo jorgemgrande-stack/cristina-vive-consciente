@@ -23,6 +23,15 @@ const SMTP_PASS = process.env.SMTP_PASS ?? "";
 const SMTP_FROM = process.env.SMTP_FROM ?? "Cristina Vive Consciente <hola@cristinaviveconsciente.es>";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "";
 
+/** Destinatarios del aviso de pedido nuevo: ADMIN_EMAIL + los de ORDER_NOTIFY_EMAILS (separados por coma), sin repetir. */
+export function orderNotifyRecipients(admin = ADMIN_EMAIL, extra = process.env.ORDER_NOTIFY_EMAILS ?? ""): string[] {
+  const seen = new Set<string>();
+  return [admin, ...extra.split(/[,;\s]+/)]
+    .map((e) => e.trim())
+    .filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))
+    .filter((e) => { const k = e.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+}
+
 // URL base de la web (para enlaces en emails)
 const BASE_URL = "https://cristinaviveconsciente.es";
 
@@ -445,6 +454,7 @@ export interface OrderEmailData {
   amountCents: number;
   printed?: boolean;
   shippingCents?: number | null;
+  shippingAddress?: { street: string; details?: string; postalCode: string; city: string; province: string; country: string } | null;
 }
 
 const escHtml = (v: string) =>
@@ -520,7 +530,8 @@ export async function sendPrintedStoryConfirmation(data: OrderEmailData): Promis
 
 /** A Cristina: pedido nuevo pendiente de confirmar (con enlace al CRM). */
 export async function sendOrderAdminEmail(data: OrderEmailData): Promise<void> {
-  if (!ADMIN_EMAIL) {
+  const recipients = orderNotifyRecipients();
+  if (!recipients.length) {
     console.log("[Email DEV] Order admin notification (no ADMIN_EMAIL configured)");
     return;
   }
@@ -530,22 +541,26 @@ export async function sendOrderAdminEmail(data: OrderEmailData): Promise<void> {
     ${adminBadge("Nuevo pedido — pendiente de Bizum")}
     <tr>
       <td style="padding:32px 40px;font-family:'DM Sans',Arial,sans-serif;font-size:14px;color:#1A1208;line-height:1.7;">
-        <p style="margin:0 0 12px;"><strong>${escHtml(data.productTitle)}</strong> · ${escHtml(formatEuros(data.amountCents))}</p>
+        <p style="margin:0 0 12px;"><strong>${escHtml(data.productTitle)}</strong> · ${escHtml(data.printed ? formatEurosFixed(data.amountCents) : formatEuros(data.amountCents))}</p>
+        ${data.printed ? `<p style="margin:0 0 4px;">Libro ${formatEurosFixed(data.amountCents - (data.shippingCents ?? 0))} + envío ${formatEurosFixed(data.shippingCents ?? 0)}. Envíos a partir del ${PRINTED_STORY_SHIPS_FROM}.</p>` : ""}
         <p style="margin:0 0 4px;">Referencia (concepto del Bizum): <strong>${escHtml(data.reference)}</strong></p>
         <p style="margin:0 0 4px;">Cliente: ${escHtml(data.customerName)} · <a href="mailto:${escHtml(data.customerEmail)}" style="color:#3A5A3A;">${escHtml(data.customerEmail)}</a>${data.customerPhone ? ` · ${escHtml(data.customerPhone)}` : ""}</p>
-        <p style="margin:16px 0 0;font-size:13px;color:#7A6E5E;">Cuando veas el Bizum en tu banco, confírmalo en el CRM y el cliente recibirá la guía automáticamente.</p>
+        ${data.printed && data.shippingAddress ? `<p style="margin:0 0 4px;">Dirección de envío: ${escHtml([data.shippingAddress.street, data.shippingAddress.details].filter(Boolean).join(", "))}, ${escHtml(data.shippingAddress.postalCode)} ${escHtml(data.shippingAddress.city)} (${escHtml(data.shippingAddress.province)}), ${escHtml(data.shippingAddress.country)}</p>` : ""}
+        <p style="margin:16px 0 0;font-size:13px;color:#7A6E5E;">${data.printed ? "Cuando veas el Bizum en tu banco, confírmalo en el CRM y el cliente recibirá la confirmación de su reserva." : "Cuando veas el Bizum en tu banco, confírmalo en el CRM y el cliente recibirá la guía automáticamente."}</p>
         ${ctaButton(crmUrl, "Abrir pedidos")}
       </td>
     </tr>
     ${emailFooter()}
   `);
   const text = `Nuevo pedido pendiente de Bizum
-${data.productTitle} · ${formatEuros(data.amountCents)}
-Referencia: ${data.reference}
+${data.productTitle} · ${data.printed ? formatEurosFixed(data.amountCents) : formatEuros(data.amountCents)}
+${data.printed ? `Libro ${formatEurosFixed(data.amountCents - (data.shippingCents ?? 0))} + envío ${formatEurosFixed(data.shippingCents ?? 0)}
+` : ""}Referencia: ${data.reference}
 Cliente: ${data.customerName} (${data.customerEmail}${data.customerPhone ? `, ${data.customerPhone}` : ""})
-
+${data.printed && data.shippingAddress ? `Envío a: ${[data.shippingAddress.street, data.shippingAddress.details].filter(Boolean).join(", ")}, ${data.shippingAddress.postalCode} ${data.shippingAddress.city} (${data.shippingAddress.province})
+` : ""}
 Confírmalo en: ${crmUrl}`;
-  await sendEmail({ to: ADMIN_EMAIL, subject: `Nuevo pedido ${data.reference} — ${data.productTitle}`, html, text });
+  await sendEmail({ to: recipients.join(", "), subject: `Nuevo pedido ${data.reference} — ${data.productTitle}`, html, text });
 }
 
 // ─── EMAIL 4: BIENVENIDA A NUEVO LEAD ────────────────────────────────────────
