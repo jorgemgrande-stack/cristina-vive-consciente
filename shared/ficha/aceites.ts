@@ -2,7 +2,7 @@
 export interface FichaSectionDef { key: string; label: string }
 export const FICHA_ACEITES: readonly FichaSectionDef[] = [
   { key: "breadcrumb", label: "Migas de pan" },
-  { key: "hero", label: "Cabecera: imagen, beneficios y botones de consulta" },
+  { key: "hero", label: "Cabecera: imagen, beneficios y botones de pedidos" },
   { key: "uso", label: "Información de uso" },
   { key: "faq", label: "Preguntas frecuentes" },
   { key: "cta", label: "Llamada a la acción final" },

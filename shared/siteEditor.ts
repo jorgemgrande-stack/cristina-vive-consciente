@@ -23,11 +23,14 @@ export type OnOff = "on" | "off";
 export const BLOCK_TYPES = [
   "hero", "heading", "text", "image", "gallery", "button", "video", "columns", "section",
   "features", "cards", "faq", "testimonials", "cta", "separator", "form", "connected",
+  "oil_orders", "service_offer", "resources",
 ] as const;
 export type BlockType = (typeof BLOCK_TYPES)[number];
 
 export interface GalleryImage { url: string; alt: string }
-export interface FeatureItem { icon: string; title: string; text: string }
+export interface FeatureItem { icon: string; title: string; text: string; /** Botón opcional bajo el texto */ buttonLabel?: string; buttonUrl?: string }
+/** Recurso digital: el precio y la compra salen del ebook con ese slug (CRM → Ebooks) */
+export interface ResourceItem { ebookSlug: string; title: string; text: string; buttonLabel: string }
 export interface CardItem { imageUrl: string; imageAlt: string; title: string; text: string; buttonLabel: string; buttonUrl: string; /** Etiqueta pequeña sobre la imagen (opcional) */ badge: string }
 export interface FaqItem { question: string; answer: string }
 export interface TestimonialItem { quote: string; author: string; role: string }
@@ -99,6 +102,20 @@ export interface BlockDataMap {
   testimonials: { title: string; items: TestimonialItem[] };
   cta: { title: string; text: string; buttonLabel: string; buttonUrl: string; secondaryLabel: string; secondaryUrl: string };
   separator: { kind: "line" | "space" };
+  /** Pedidos por contacto directo: pedido conjunto (con fecha límite) e individual, y condiciones */
+  oil_orders: {
+    title: string;
+    groupTitle: string; groupText: string; groupMin: string; groupNote: string; groupHint: string;
+    groupOpen: OnOff; groupDeadline: string; groupOpenLabel: string; groupOpenUrl: string; groupClosedLabel: string; groupClosedUrl: string;
+    soloTitle: string; soloText: string; soloMin: string; soloNote: string; soloHint: string; soloLabel: string; soloUrl: string;
+    conditionsTitle: string; /** Una condición por línea */ conditions: string; closing: string;
+  };
+  /** Servicio con lo que incluye, cómo funciona, precio y reserva (sin destino = reserva pendiente) */
+  service_offer: {
+    eyebrow: string; title: string; intro: string; includesTitle: string; /** Un punto por línea */ includes: string;
+    howTitle: string; howText: string; priceLabel: string; priceNote: string; buttonLabel: string; buttonUrl: string; pendingText: string;
+  };
+  resources: { title: string; intro: string; items: ResourceItem[] };
   /** Formulario a medida: cada envío llega a Automatizaciones/CRM como contacto, con todas las respuestas */
   form: { title: string; intro: string; fields: FormFieldItem[]; submitLabel: string; successMessage: string; consentText: string };
   /** Contenido real de otra parte de la web. Los textos solo los usa la presentación de la portada (home_slideshow). */
@@ -183,6 +200,9 @@ export const BLOCK_CATALOG: ReadonlyArray<{ type: BlockType; label: string; desc
   { type: "testimonials", label: "Opiniones", description: "Lo que dicen tus clientes", group: "Contenido" },
   { type: "cta", label: "Llamada a la acción", description: "Un mensaje destacado con botones", group: "Contenido" },
   { type: "form", label: "Formulario", description: "Formulario configurable que llega a tu CRM", group: "Contenido" },
+  { type: "oil_orders", label: "Pedidos de aceites", description: "Pedido conjunto e individual por contacto directo, con condiciones", group: "Contenido" },
+  { type: "service_offer", label: "Servicio con precio", description: "Qué incluye, cómo funciona, precio y botón de reserva", group: "Contenido" },
+  { type: "resources", label: "Guías y recursos", description: "Productos digitales con el precio y la compra de CRM → Ebooks", group: "Contenido" },
   { type: "connected", label: "Contenido conectado", description: "Listados y fichas con los datos reales (servicios, aceites, agua, blog…)", group: "Conectados" },
 ];
 export const blockLabel = (type: string): string => BLOCK_CATALOG.find((b) => b.type === type)?.label ?? type;
@@ -215,6 +235,14 @@ export function defaultBlockData<K extends BlockType>(type: K): BlockDataMap[K] 
     testimonials: { title: "Opiniones", items: [{ quote: "Una opinión.", author: "Nombre", role: "" }] },
     cta: { title: "¿Hablamos?", text: "", buttonLabel: "Contactar", buttonUrl: "/contacto", secondaryLabel: "", secondaryUrl: "" },
     separator: { kind: "line" },
+    oil_orders: {
+      title: "Pedidos", groupTitle: "Pedidos conjuntos", groupText: "", groupMin: "", groupNote: "", groupHint: "",
+      groupOpen: "off", groupDeadline: "", groupOpenLabel: "Solicitar pedido conjunto", groupOpenUrl: "/contacto", groupClosedLabel: "Consultar el próximo pedido", groupClosedUrl: "/contacto",
+      soloTitle: "Pedidos individuales", soloText: "", soloMin: "", soloNote: "", soloHint: "", soloLabel: "Solicitar pedido individual", soloUrl: "/contacto",
+      conditionsTitle: "Condiciones generales", conditions: "", closing: "",
+    },
+    service_offer: { eyebrow: "", title: "Servicio", intro: "", includesTitle: "¿Qué incluye?", includes: "", howTitle: "¿Cómo funciona?", howText: "", priceLabel: "", priceNote: "", buttonLabel: "Reservar", buttonUrl: "", pendingText: "La reserva online todavía no está disponible." },
+    resources: { title: "Guías y recursos", intro: "", items: [] },
     form: { title: "Escríbeme", intro: "", fields: FIELD_DEFAULTS.map((f) => ({ ...f })), submitLabel: "Enviar", successMessage: "Gracias, te responderé lo antes posible.", consentText: "He leído y acepto la política de privacidad." },
     connected: { source: "consultas", section: "", eyebrow: "", title: "", intro: "", buttonLabel: "", secondaryLabel: "", secondaryUrl: "" },
   };
@@ -440,8 +468,6 @@ const BASE_LABELS: readonly LabelDef[] = [
   { key: "booking.successTitle", group: "Reserva de cita", where: "Ventana de reserva de consultas: título tras enviar la solicitud", text: "¡Solicitud recibida!" },
   { key: "booking.successTitleMassage", group: "Reserva de cita", where: "Ventana de reserva de masajes: título tras enviar la solicitud", text: "Solicitud recibida" },
   { key: "booking.submit", group: "Reserva de cita", where: "Botón de enviar la solicitud de cita", text: "Enviar solicitud" },
-  { key: "oils.emptyTitle", group: "Mi consulta (aceites)", where: "Cuando no hay aceites elegidos: título", text: "Tu consulta está vacía" },
-  { key: "oils.emptyText", group: "Mi consulta (aceites)", where: "Cuando no hay aceites elegidos: texto", text: "Explora el catálogo de aceites esenciales y añade los que te interesen. Cristina te orientará sobre cuáles son los más adecuados para ti.", long: true },
   { key: "order.paidTitle", group: "Compra y pedido", where: "Pedido pagado: título", text: "¡Pago confirmado!" },
   { key: "order.claimButton", group: "Compra y pedido", where: "Pedido por Bizum: botón para avisar del pago", text: "Ya he hecho el Bizum" },
   { key: "order.claimed", group: "Compra y pedido", where: "Pedido por Bizum: mensaje tras avisar del pago", text: "Gracias. Cristina ya sabe que has pagado y lo está comprobando. En cuanto lo confirme recibirás la guía en tu email.", long: true },

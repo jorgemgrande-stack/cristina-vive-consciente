@@ -2,26 +2,24 @@
  * Secciones de la ficha de aceites para el editor. Provider carga los datos de la ficha de la ruta actual (misma fuente que la
  * página de siempre); Section pinta una sección por su clave (ver shared/ficha/aceites.ts).
  *
- * NO hay compra directa. NO hay precios. Objetivo: informar y convertir en consulta con Cristina.
+ * NO hay compra directa, carrito ni precios: la ficha informa y enlaza con las modalidades de pedido.
  */
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../../../server/routers";
 import { trpc } from "@/lib/trpc";
-import { useConsultaCart } from "@/contexts/ConsultaCartContext";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import {
-  ArrowLeft, ShoppingBag, Check, Leaf, ArrowRight,
+  ArrowLeft, Leaf, ArrowRight,
   Loader2, AlertTriangle, ChevronDown, ChevronUp
 } from "lucide-react";
 
 const TIPO_LABELS: Record<string, string> = {
   aceite: "Aceite esencial",
-  mezcla: "Mezcla terapéutica",
-  base: "Base y dilución",
-  pack: "Pack y guía",
+  mezcla: "Sinergia",
+  base: "Aceite vegetal y dilución",
+  pack: "Kit o pack",
   accesorio: "Accesorio",
 };
 
@@ -50,12 +48,12 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 }
 
 type AceiteProduct = NonNullable<inferRouterOutputs<AppRouter>["oils"]["getProduct"]>;
-interface AceitesCtx { product: AceiteProduct; inCart: boolean; handleToggleCart: () => void }
+interface AceitesCtx { product: AceiteProduct }
+const ORDERS_URL = "/aceites-esenciales#pedidos";
+const ADVICE_URL = "/aceites-esenciales#asesoramiento";
 const Ctx = createContext<AceitesCtx | null>(null);
 
 export function AceitesProvider({ children, slug }: { children: ReactNode; slug: string }) {
-  const { addItem, removeItem, isInCart } = useConsultaCart();
-
   const { data: product, isLoading, error } = trpc.oils.getProduct.useQuery(
     { slug: slug ?? "" },
     { enabled: !!slug }
@@ -83,27 +81,7 @@ export function AceitesProvider({ children, slug }: { children: ReactNode; slug:
     );
   }
 
-  const inCart = isInCart(product.id);
-
-  function handleToggleCart() {
-    if (inCart) {
-      removeItem(product!.id);
-      toast.success(`"${product!.name}" eliminado de tu consulta`);
-    } else {
-      addItem({
-        id: product!.id,
-        name: product!.name,
-        slug: product!.slug,
-        tipoProducto: product!.tipoProducto,
-        imagen: product!.imagen,
-      });
-      toast.success(`"${product!.name}" añadido a tu consulta`, {
-        action: { label: "Ver consulta", onClick: () => window.location.href = "/mi-consulta" },
-      });
-    }
-  }
-
-  return <Ctx.Provider value={{ product, inCart, handleToggleCart }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ product }}>{children}</Ctx.Provider>;
 }
 
 function Breadcrumb({ product }: AceitesCtx) {
@@ -120,7 +98,7 @@ function Breadcrumb({ product }: AceitesCtx) {
   );
 }
 
-function Hero({ product, inCart, handleToggleCart }: AceitesCtx) {
+function Hero({ product }: AceitesCtx) {
   const beneficios = parseJsonArray(product.beneficios);
   const indicaciones = parseJsonArray(product.indicaciones);
   const tags = parseJsonArray(product.tags);
@@ -128,7 +106,7 @@ function Hero({ product, inCart, handleToggleCart }: AceitesCtx) {
       <section className="max-w-6xl mx-auto px-6 py-12">
         <div className="grid md:grid-cols-2 gap-12 items-start">
           {/* Imagen */}
-          <div className="sticky top-24">
+          <div className="md:sticky md:top-24">
             <div className="aspect-square bg-[oklch(0.97_0.006_85)] flex items-center justify-center overflow-hidden">
               {product.imagen ? (
                 <img
@@ -221,30 +199,10 @@ function Hero({ product, inCart, handleToggleCart }: AceitesCtx) {
               </div>
             </div>
 
-            {/* CTAs */}
+            {/* La ficha es informativa: se pide por contacto directo desde el apartado de pedidos */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button
-                onClick={handleToggleCart}
-                className={`flex-1 font-body text-xs uppercase tracking-wider h-12 gap-2 ${
-                  inCart
-                    ? "bg-[oklch(0.52_0.08_148)] hover:bg-[oklch(0.42_0.08_148)] text-white"
-                    : "bg-[oklch(0.18_0.018_55)] hover:bg-[oklch(0.28_0.018_55)] text-white"
-                }`}
-                style={{ borderRadius: 0 }}
-              >
-                {inCart ? <Check size={14} /> : <ShoppingBag size={14} />}
-                {inCart ? "Añadido a mi consulta" : "Añadir a mi consulta"}
-              </Button>
-              <Link href="/consultas" className="flex-1">
-                <Button
-                  variant="outline"
-                  className="w-full font-body text-xs uppercase tracking-wider h-12 gap-2 border-[oklch(0.52_0.08_148)] text-[oklch(0.42_0.08_148)] hover:bg-[oklch(0.95_0.02_148)]"
-                  style={{ borderRadius: 0 }}
-                >
-                  <ArrowRight size={14} />
-                  Reservar consulta con Cristina
-                </Button>
-              </Link>
+              <a href={ORDERS_URL} className="btn-primary w-full sm:w-auto justify-center text-center" style={{ textDecoration: "none" }}>Consultar pedidos <ArrowRight size={14} /></a>
+              <a href={ADVICE_URL} className="btn-outline w-full sm:w-auto justify-center text-center" style={{ textDecoration: "none" }}>Conocer asesoramiento</a>
             </div>
 
             {/* Mensaje personalizado */}
@@ -291,41 +249,26 @@ function Faq({ product }: AceitesCtx) {
             answer="La consulta incluye una evaluación de tu estado de salud y objetivos, una selección personalizada de aceites, protocolos de uso específicos para ti, y seguimiento para ajustar el protocolo según tu evolución."
           />
           <FAQItem
-            question="¿Cómo funciona el sistema de 'Añadir a mi consulta'?"
-            answer="Puedes añadir todos los aceites que te interesen a tu lista de consulta. Cuando la envíes, Cristina revisará tu selección y te contactará para orientarte sobre cuáles son los más adecuados para ti y cómo usarlos."
+            question="¿Cómo puedo adquirirlo?"
+            answer="Los pedidos se gestionan por contacto directo con Cristina, en pedido conjunto o individual. Cristina confirma la disponibilidad, el importe y las condiciones. No es necesario contratar un asesoramiento para comprar."
           />
         </div>
       </section>
   );
 }
 
-function CtaFinal({ inCart, handleToggleCart }: AceitesCtx) {
+function CtaFinal(_: AceitesCtx) {
   return (
       <section className="bg-[oklch(0.14_0.018_55)] text-white py-12">
         <div className="max-w-3xl mx-auto px-6 text-center space-y-5">
           <Leaf size={28} className="mx-auto text-[oklch(0.72_0.06_148)]" />
-          <h2 className="font-display text-2xl">¿Listo para empezar?</h2>
+          <h2 className="font-display text-2xl text-white">¿Quieres adquirirlo?</h2>
           <p className="font-body text-[oklch(0.78_0.01_80)] leading-relaxed">
-            Añade este aceite a tu consulta o reserva directamente una sesión con Cristina.
+            Consulta las modalidades de pedido o conoce el asesoramiento personalizado de aromaterapia.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            <button
-              onClick={handleToggleCart}
-              className={`text-xs font-body uppercase tracking-wider px-6 py-3 transition-colors flex items-center gap-2 ${
-                inCart
-                  ? "bg-[oklch(0.52_0.08_148)] text-white hover:bg-[oklch(0.42_0.08_148)]"
-                  : "bg-white text-[oklch(0.18_0.018_55)] hover:bg-[oklch(0.92_0.01_80)]"
-              }`}
-              style={{ borderRadius: 0 }}
-            >
-              {inCart ? <Check size={13} /> : <ShoppingBag size={13} />}
-              {inCart ? "Añadido a mi consulta" : "Añadir a mi consulta"}
-            </button>
-            <Link href="/consultas">
-              <button className="text-xs font-body uppercase tracking-wider px-6 py-3 bg-[oklch(0.52_0.08_148)] text-white hover:bg-[oklch(0.42_0.08_148)] transition-colors flex items-center gap-2" style={{ borderRadius: 0 }}>
-                Reservar consulta <ArrowRight size={13} />
-              </button>
-            </Link>
+            <a href={ORDERS_URL} className="btn-primary justify-center" style={{ textDecoration: "none" }}>Consultar pedidos <ArrowRight size={13} /></a>
+            <a href={ADVICE_URL} className="btn-outline justify-center !text-white !border-white/60" style={{ textDecoration: "none" }}>Conocer asesoramiento</a>
           </div>
         </div>
       </section>

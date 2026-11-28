@@ -7,7 +7,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Redirect, Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ScrollToTop from "./components/ScrollToTop";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -43,7 +43,6 @@ import SistemaAguaDetalle from "./pages/SistemaAguaDetalle";
 
 // Oils Pages
 import AceiteDetalle from "./pages/AceiteDetalle";
-import MiConsulta from "./pages/MiConsulta";
 import MasajeDetalle from "./pages/MasajeDetalle";
 import ConsultaDetalle from "./pages/ConsultaDetalle";
 
@@ -53,7 +52,6 @@ import AceiteProductos from "./pages/crm/AceiteProductos";
 import AceiteConsultas from "./pages/crm/AceiteConsultas";
 
 // Contexts
-import { ConsultaCartProvider } from "./contexts/ConsultaCartContext";
 
 import AdminLogin from "./pages/AdminLogin";
 
@@ -106,7 +104,8 @@ function Router() {
       <Route path="/sistemas-agua/:slug">{() => <CmsRoute legacy={SistemaAguaDetalle} />}</Route>
       <Route path="/aceites-esenciales">{() => <CmsRoute legacy={AceitesEsenciales} />}</Route>
       <Route path="/aceites-esenciales/:slug">{() => <CmsRoute legacy={AceiteDetalle} />}</Route>
-      <Route path="/mi-consulta" component={MiConsulta} />
+      {/* «Mi consulta» ya no existe: los enlaces antiguos llevan a las modalidades de pedido */}
+      <Route path="/mi-consulta">{() => <Redirect to="/aceites-esenciales#pedidos" replace />}</Route>
       <Route path="/guias-digitales">{() => <CmsRoute legacy={GuiasDigitales} />}</Route>
       <Route path="/guias-digitales/:slug" component={EbookDetalle} />
       <Route path="/promocion/:slug" component={Promocion} />
@@ -219,7 +218,6 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ConsultaCartProvider>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster
@@ -236,7 +234,6 @@ function App() {
           <Router />
         </TooltipProvider>
       </ThemeProvider>
-      </ConsultaCartProvider>
     </ErrorBoundary>
   );
 }

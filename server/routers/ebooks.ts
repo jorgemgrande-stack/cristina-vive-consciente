@@ -14,7 +14,8 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { ebookPurchases } from "../../drizzle/schema";
+import { ebookPurchases, ebooks } from "../../drizzle/schema";
+import { matchesEbookSlug } from "../../shared/ebookPage";
 import { eq, and, gt } from "drizzle-orm";
 import { getAllEbooks, getEbook } from "../ebooks/products";
 import { getEbookBySlug } from "../db";
@@ -49,6 +50,20 @@ export const ebooksRouter = router({
       includesSession: e.includesSession,
       available: !!e.stripePriceId, // solo disponible si tiene Price en Stripe
     }));
+  }),
+
+  /**
+   * Productos digitales que muestra el bloque «Guías y recursos»: precio efectivo del ebook (el mismo que se cobra) y si
+   * ya se puede comprar (activo y con PDF). Un borrador no expone nada más que título, precio y portada.
+   */
+  resources: publicProcedure.input(z.object({ slugs: z.array(z.string().max(100)).max(30) })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db || !input.slugs.length) return [];
+    const rows = await db.select().from(ebooks);
+    return input.slugs.flatMap((requested) => {
+      const e = rows.find((r) => matchesEbookSlug(requested, r.slug));
+      return e ? [{ requested, slug: e.slug, title: e.title, priceCents: e.priceCents, coverImage: e.coverImage, available: e.status === "active" && !!e.pdfUrl && e.priceCents > 0 }] : [];
+    });
   }),
 
   /**

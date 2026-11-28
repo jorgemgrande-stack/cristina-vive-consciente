@@ -16,7 +16,7 @@ import { inputCls, labelCls } from "./shared";
 // ─── Esquema de campos ──────────────────────────────────────────────────────
 
 export type FieldDef =
-  | { key: string; label: string; kind: "text" | "textarea" | "rich" | "image" | "url"; hint?: string }
+  | { key: string; label: string; kind: "text" | "textarea" | "rich" | "image" | "url" | "date"; hint?: string }
   | { key: string; label: string; kind: "focus"; imageKey: string; xKey: string; yKey: string }
   | { key: string; label: string; kind: "select"; options: ReadonlyArray<readonly [string, string]> }
   | { key: string; label: string; kind: "list"; itemLabel: string; fields: FieldDef[]; max: number; blank: Record<string, unknown> };
@@ -33,7 +33,7 @@ export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
     { key: "imageAlt", label: "Descripción de la imagen (accesibilidad)", kind: "text" },
     { key: "buttonLabel", label: "Texto del botón (opcional)", kind: "text" },
     { key: "buttonUrl", label: "Enlace del botón", kind: "url" },
-    { key: "secondaryLabel", label: "Segundo botón (opcional). En aceites, «{n}» muestra el número de aceites de Mi consulta", kind: "text" },
+    { key: "secondaryLabel", label: "Segundo botón (opcional)", kind: "text" },
     { key: "secondaryUrl", label: "Enlace del segundo botón", kind: "url" },
     { key: "imageX", label: "Encuadre de la imagen en ordenador", kind: "focus", imageKey: "imageUrl", xKey: "imageX", yKey: "imageY" },
     { key: "imageXM", label: "Encuadre de la imagen en móvil", kind: "focus", imageKey: "imageUrl", xKey: "imageXM", yKey: "imageYM" },
@@ -97,7 +97,7 @@ export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
     { key: "title", label: "Título", kind: "text" },
     { key: "intro", label: "Introducción", kind: "textarea" },
     { key: "columns", label: "Columnas en escritorio", kind: "select", options: opt(["2", "2"], ["3", "3"], ["4", "4"]) },
-    { key: "items", label: "Elementos", kind: "list", itemLabel: "Elemento", max: 30, blank: { icon: "leaf", title: "Nuevo", text: "" }, fields: [{ key: "icon", label: "Icono", kind: "select", options: ICON_OPTIONS }, { key: "title", label: "Título", kind: "text" }, { key: "text", label: "Texto", kind: "textarea" }] },
+    { key: "items", label: "Elementos", kind: "list", itemLabel: "Elemento", max: 30, blank: { icon: "leaf", title: "Nuevo", text: "" }, fields: [{ key: "icon", label: "Icono", kind: "select", options: ICON_OPTIONS }, { key: "title", label: "Título", kind: "text" }, { key: "text", label: "Texto", kind: "textarea" }, { key: "buttonLabel", label: "Texto del botón (opcional)", kind: "text" }, { key: "buttonUrl", label: "Enlace del botón", kind: "url" }] },
   ],
   cards: [
     { key: "title", label: "Título", kind: "text" },
@@ -122,6 +122,54 @@ export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
     { key: "secondaryUrl", label: "Enlace del botón secundario", kind: "url" },
   ],
   separator: [{ key: "kind", label: "Tipo", kind: "select", options: opt(["line", "Línea"], ["space", "Espacio en blanco"]) }],
+  oil_orders: [
+    { key: "title", label: "Título del apartado", kind: "text" },
+    { key: "groupTitle", label: "Pedido conjunto · título", kind: "text" },
+    { key: "groupText", label: "Pedido conjunto · texto", kind: "textarea" },
+    { key: "groupOpen", label: "Pedido conjunto · estado", kind: "select", options: opt(["off", "Cerrado"], ["on", "Abierto (hasta la fecha límite)"]) },
+    { key: "groupDeadline", label: "Pedido conjunto · fecha límite (incluida, hora de Madrid)", kind: "date" },
+    { key: "groupMin", label: "Pedido conjunto · importe mínimo", kind: "text" },
+    { key: "groupNote", label: "Pedido conjunto · nota sobre el envío", kind: "text" },
+    { key: "groupHint", label: "Pedido conjunto · frase cuando no está abierto", kind: "text" },
+    { key: "groupOpenLabel", label: "Pedido conjunto · botón cuando está abierto", kind: "text" },
+    { key: "groupOpenUrl", label: "Pedido conjunto · destino cuando está abierto", kind: "url" },
+    { key: "groupClosedLabel", label: "Pedido conjunto · botón cuando está cerrado", kind: "text" },
+    { key: "groupClosedUrl", label: "Pedido conjunto · destino cuando está cerrado", kind: "url" },
+    { key: "soloTitle", label: "Pedido individual · título", kind: "text" },
+    { key: "soloText", label: "Pedido individual · texto", kind: "textarea" },
+    { key: "soloMin", label: "Pedido individual · importe mínimo", kind: "text" },
+    { key: "soloNote", label: "Pedido individual · nota sobre el envío", kind: "text" },
+    { key: "soloHint", label: "Pedido individual · frase final", kind: "text" },
+    { key: "soloLabel", label: "Pedido individual · botón", kind: "text" },
+    { key: "soloUrl", label: "Pedido individual · destino", kind: "url" },
+    { key: "conditionsTitle", label: "Condiciones · título", kind: "text" },
+    { key: "conditions", label: "Condiciones (una por línea)", kind: "textarea" },
+    { key: "closing", label: "Frase de cierre", kind: "textarea" },
+  ],
+  service_offer: [
+    { key: "eyebrow", label: "Antetítulo", kind: "text" },
+    { key: "title", label: "Título", kind: "text" },
+    { key: "intro", label: "Introducción", kind: "textarea" },
+    { key: "includesTitle", label: "Título de «qué incluye»", kind: "text" },
+    { key: "includes", label: "Qué incluye (un punto por línea)", kind: "textarea" },
+    { key: "howTitle", label: "Título de «cómo funciona»", kind: "text" },
+    { key: "howText", label: "Cómo funciona", kind: "textarea" },
+    { key: "priceLabel", label: "Precio (tal como se muestra)", kind: "text" },
+    { key: "priceNote", label: "Qué cubre el precio", kind: "textarea" },
+    { key: "buttonLabel", label: "Texto del botón", kind: "text" },
+    { key: "buttonUrl", label: "Destino de la reserva (vacío = pendiente: el botón queda inactivo)", kind: "url" },
+    { key: "pendingText", label: "Aviso mientras no hay destino", kind: "text" },
+  ],
+  resources: [
+    { key: "title", label: "Título", kind: "text" },
+    { key: "intro", label: "Introducción", kind: "textarea" },
+    { key: "items", label: "Recursos", kind: "list", itemLabel: "Recurso", max: 30, blank: { ebookSlug: "", title: "Nuevo recurso", text: "", buttonLabel: "Adquirir guía" }, fields: [
+      { key: "title", label: "Título", kind: "text" },
+      { key: "text", label: "Descripción", kind: "textarea" },
+      { key: "ebookSlug", label: "Identificador del ebook (CRM → Ebooks). El precio y la compra salen de él", kind: "text" },
+      { key: "buttonLabel", label: "Texto del botón", kind: "text" },
+    ] },
+  ],
   form: [
     { key: "title", label: "Título", kind: "text" },
     { key: "intro", label: "Texto de introducción", kind: "textarea" },
@@ -141,6 +189,14 @@ export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
     { key: "source", label: "Qué contenido muestra", kind: "select", options: CONNECTED_SOURCES.map((s) => [s.value, s.label] as const) },
   ],
 };
+
+/** Textos editables del catálogo de aceites (bloque conectado). */
+const OILS_FIELDS: FieldDef[] = [
+  { key: "title", label: "Título del catálogo", kind: "text" },
+  { key: "intro", label: "Texto introductorio (deja una línea en blanco entre párrafos)", kind: "textarea" },
+  { key: "buttonLabel", label: "Botón general", kind: "text" },
+  { key: "secondaryUrl", label: "Destino del botón general", kind: "url" },
+];
 
 /** Campos extra del bloque conectado de la presentación de la portada. */
 const SLIDESHOW_FIELDS: FieldDef[] = [
@@ -209,6 +265,8 @@ function Field({ def, value, onChange }: { def: FieldDef; value: unknown; onChan
         </div>
       );
     }
+    case "date":
+      return <div><label className={labelCls} htmlFor={id}>{def.label}</label><input id={id} type="date" className={inputCls} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} /></div>;
     case "textarea":
       return <div><label className={labelCls} htmlFor={id}>{def.label}</label><textarea id={id} rows={3} className={inputCls} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} /></div>;
     case "rich":
@@ -255,7 +313,8 @@ function Field({ def, value, onChange }: { def: FieldDef; value: unknown; onChan
 export function ContentFields({ block, onChange, detailKind }: { block: PageBlock; onChange: (data: Record<string, unknown>) => void; detailKind?: string | null }) {
   const data = block.data as unknown as Record<string, unknown>;
   const isSlideshow = block.type === "connected" && data.source === "home_slideshow";
-  const defs = [...BLOCK_FIELDS[block.type], ...(isSlideshow ? SLIDESHOW_FIELDS : [])];
+  const isOils = block.type === "connected" && data.source === "aceites";
+  const defs = [...BLOCK_FIELDS[block.type], ...(isSlideshow ? SLIDESHOW_FIELDS : []), ...(isOils ? OILS_FIELDS : [])];
   const note = block.type === "connected" ? CONNECTED_SOURCES.find((s) => s.value === data.source)?.note : null;
   return (
     <div className="space-y-4">

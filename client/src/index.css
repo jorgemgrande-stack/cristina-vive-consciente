@@ -423,6 +423,9 @@
 
 /* ── Editar web: diseño de bloques (valores de lista cerrada) ─────────────── */
 .cvc-block { padding-top: var(--pt, 0); padding-bottom: var(--pb, 0); position: relative; }
+/* Anclas: el encabezado queda por debajo de la cabecera fija */
+.cvc-block[id] { scroll-margin-top: 84px; }
+@media (min-width: 1024px) { .cvc-block[id] { scroll-margin-top: 100px; } }
 .cvc-bg-soft { background: oklch(0.94 0.012 80); }
 .cvc-bg-brand { background: oklch(0.52 0.08 148); color: #fff; }
 .cvc-bg-dark { background: oklch(0.18 0.018 55); color: #fff; }

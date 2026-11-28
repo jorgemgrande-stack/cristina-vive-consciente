@@ -7,9 +7,8 @@
 
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, ShoppingBag } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import BookingModal from "./BookingModal";
-import { useConsultaCart } from "@/contexts/ConsultaCartContext";
 import { useSiteGlobal, isExternalUrl } from "@/lib/siteGlobal";
 import SiteLink from "@/components/site/SiteLink";
 import AnnouncementBar from "@/components/site/AnnouncementBar";
@@ -46,7 +45,6 @@ export default function Header() {
   };
   const isHome = location === "/";
   const solidBg = scrolled || menuOpen || !isHome;
-  const { count: cartCount } = useConsultaCart();
 
   return (
     <>
@@ -99,20 +97,6 @@ export default function Header() {
 
             {/* CTA */}
             <div className="hidden lg:flex items-center gap-4">
-              {/* Carrito terapéutico */}
-              {cartCount > 0 && (
-                <Link href="/mi-consulta" className="relative">
-                  <button
-                    className={`p-2 transition-colors duration-300 ${solidBg ? "text-[oklch(0.42_0.08_148)]" : "text-white/90 hover:text-white"}`}
-                    aria-label={`Mi consulta (${cartCount} aceites)`}
-                  >
-                    <ShoppingBag size={18} />
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-[oklch(0.52_0.08_148)] text-white text-[0.55rem] font-bold flex items-center justify-center rounded-full">
-                      {cartCount}
-                    </span>
-                  </button>
-                </Link>
-              )}
               {site.header.contactLabel && site.header.contactUrl && (
               <SiteLink
                 href={site.header.contactUrl}
