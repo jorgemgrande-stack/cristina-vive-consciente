@@ -1,16 +1,16 @@
 /**
  * Decisiones de Cristina sobre el catálogo y los pedidos de aceites. Repetible. No publica páginas.
- *  1. Ficha «Guía digital de aceites esenciales»: etiqueta ebook:aceites (precio y compra de ese ebook).
- *  2. «Asesoría para perros»: oculta del catálogo (se conserva y se reactiva desde CRM → Aceites).
- *  3. Crea la ficha «Pack asesoramiento personalizado de aromaterapia + guía básica» (consulta:asesoramiento_aromaterapia).
- *  4. Borrador del editor: pedidos y tarjeta de pedidos, solo donde nadie haya cambiado el texto.
+ *  (El enlace de la ficha «Guía digital de aceites esenciales» con su ebook va aparte: aceites-enlazar-guia.ts.)
+ *  1. «Asesoría para perros»: oculta del catálogo (se conserva y se reactiva desde CRM → Aceites).
+ *  2. Crea la ficha «Pack asesoramiento personalizado de aromaterapia + guía básica» (consulta:asesoramiento_aromaterapia).
+ *  3. Borrador del editor: pedidos y tarjeta de pedidos, solo donde nadie haya cambiado el texto.
  * Uso: DATABASE_URL=… npx tsx scripts/aceites-decisiones.ts [--dry-run]   (después del despliegue)
  */
 import mysql from "mysql2/promise";
 import { config } from "dotenv";
 import { aceitesBlocks } from "../shared/aceitesPage";
 import { AROMA_SERVICE_SLUG } from "../shared/aromaService";
-import { oilLink } from "../shared/oilLinks";
+import { migrateOrdersBlock } from "../shared/oilOrdersMigration";
 import { normalizePageContent } from "../server/siteContent";
 
 export const PACK_SLUG = "pack-asesoramiento-aromaterapia-guia";
@@ -23,18 +23,6 @@ const note = (s: string, writes = true) => console.log(`${s}${dry && writes ? " 
 const q = async (sql: string, p: unknown[] = []) => (await conn.query(sql, p))[0] as any;
 try {
   note(`Base de datos: ${(await q("SELECT DATABASE() AS db"))[0].db}${dry ? " (dry-run)" : ""}`, false);
-
-  const [ebook] = await q("SELECT slug, priceCents, status, pdfUrl FROM ebooks WHERE slug = 'aceites'");
-  if (!ebook) throw new Error("No existe el ebook «aceites»: no se enlaza nada.");
-  note(`Ebook «aceites»: ${ebook.priceCents / 100} €, ${ebook.status}, ${ebook.pdfUrl ? "con" : "SIN"} PDF (no se modifica).`, false);
-
-  const [guide] = await q("SELECT id, tags, tipoProducto FROM oil_products WHERE slug = 'guia-digital-aceites-esenciales'");
-  if (!guide) note("Guía del catálogo: NO existe la ficha.", false);
-  else if (oilLink(guide.tags)) note(`Guía del catálogo (#${guide.id}): ya enlazada, tipo ${guide.tipoProducto}.`, false);
-  else {
-    note(`Guía del catálogo (#${guide.id}, ${guide.tipoProducto}): se añade la etiqueta ebook:aceites.`);
-    if (!dry) await q("UPDATE oil_products SET tags = ? WHERE id = ?", [JSON.stringify([...JSON.parse(guide.tags || "[]"), "ebook:aceites"]), guide.id]);
-  }
 
   const [dogs] = await q("SELECT id, visibleEnPublico FROM oil_products WHERE slug = 'asesoria-aceites-esenciales-perros'");
   if (!dogs) note("Asesoría para perros: NO existe la ficha.", false);
@@ -77,20 +65,10 @@ try {
     const changed: string[] = [], kept: string[] = [];
 
     const orders = json.blocks.find((b: any) => b.id === "ac-pedidos");
-    if (orders && "groupMin" in orders.data) {
-      // Textos de la versión anterior: un campo que ya no los tenga se considera editado por Cristina y se conserva
-      const before: Record<string, string> = {
-        title: "Pedidos de aceites esenciales", groupTitle: "Pedidos conjuntos",
-        groupText: "A lo largo del año organizo pedidos agrupados de aceites esenciales y accesorios. Esta modalidad permite realizar compras de menor importe y centralizar la preparación de los envíos.",
-        groupHint: "Consulta cuándo realizamos el próximo pedido", soloTitle: "Pedidos individuales",
-        soloText: "Si necesitas adquirir o reponer tus aceites esenciales fuera de las fechas de pedidos conjuntos, puedes solicitar un pedido individual a partir de un importe mínimo de compra.",
-        soloHint: "Si ya conoces los aceites que necesitas, no es necesario contratar un asesoramiento previo", soloLabel: "Solicitar pedido individual",
-        closing: "Todos los pedidos se gestionarán mediante contacto directo conmigo, previa confirmación de disponibilidad, importe y condiciones",
-      };
-      const data = { ...next("ac-pedidos") };
-      for (const [key, old] of Object.entries(before)) if (orders.data[key] !== undefined && orders.data[key] !== old) { data[key] = orders.data[key]; kept.push(`pedidos.${key}`); }
-      orders.data = data;
-      changed.push("bloque de pedidos");
+    if (orders) {
+      const r = migrateOrdersBlock(orders.data, next("ac-pedidos"));
+      if (r.changed) { orders.data = r.data; changed.push("bloque de pedidos"); }
+      kept.push(...r.kept.map((k) => `pedidos.${k}`));
     }
 
     const cards = json.blocks.find((b: any) => b.id === "ac-servicios");
