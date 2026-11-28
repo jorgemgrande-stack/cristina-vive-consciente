@@ -25,6 +25,7 @@ describe("contenido de serie", () => {
   it("importes, precio, canal oficial y reserva pendiente", () => {
     const o = block("ac-pedidos");
     expect([o.groupMin, o.soloMin, o.groupOpen, o.groupDeadline]).toEqual(["25 €", "100 €", "off", ""]);
+    expect(block("ac-guias").items[0].ebookSlug).toBe("aceites");
     expect(block("ac-asesoramiento")).toMatchObject({ priceLabel: "Precio del servicio: 120 €", buttonUrl: "" });
     for (const url of Object.values(ACEITES_CONTACT)) expect(url).toMatch(/^https:\/\/wa\.me\/34657165343\?text=/);
     expect(new Set(Object.values(ACEITES_CONTACT)).size).toBe(3);

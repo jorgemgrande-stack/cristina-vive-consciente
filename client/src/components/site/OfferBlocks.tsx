@@ -5,6 +5,7 @@ import type { BlockOf } from "@shared/siteEditor";
 import { formatDeadline, groupOrderState } from "@shared/oilOrders";
 import { ebookPath } from "@shared/ebookPage";
 import { formatEurosFixed } from "@shared/orders";
+import { BuyButton } from "@/components/ebooks/EbookParts";
 import { trpc } from "@/lib/trpc";
 import SiteLink from "./SiteLink";
 
@@ -126,7 +127,11 @@ export function ResourcesBlock({ b }: { b: BlockOf<"resources"> }) {
               <div className="mt-auto">
                 {ebook && <p className="font-display text-2xl text-[oklch(0.18_0.018_55)] mb-3">{formatEurosFixed(ebook.priceCents)}</p>}
                 {ebook?.available ? (
-                  <Link href={ebookPath(ebook.slug)} className={`${BTN} !w-full`} style={{ textDecoration: "none" }}>{it.buttonLabel || "Adquirir guía"} <ArrowRight size={15} /></Link>
+                  // La compra se hace aquí mismo: el mismo formulario de pedido por Bizum que la ficha del ebook
+                  <>
+                    <BuyButton ebookId={ebook.slug} title={ebook.title} label={it.buttonLabel || "Adquirir guía"} price={formatEurosFixed(ebook.priceCents)} />
+                    <Link href={ebookPath(ebook.slug)} className="mt-3 inline-flex min-h-11 items-center text-sm font-body underline text-[oklch(0.34_0.07_148)]">Ver los detalles de la guía</Link>
+                  </>
                 ) : (
                   <>
                     <button type="button" disabled className={`${BTN} !w-full opacity-50 cursor-not-allowed`}>{it.buttonLabel || "Adquirir guía"}</button>

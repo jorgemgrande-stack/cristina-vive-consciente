@@ -5,7 +5,8 @@
 import { createBlock, DEFAULT_BLOCK_STYLE, type BlockDataMap, type BlockStyle, type BlockType, type PageBlock, type PageContent } from "./siteEditor";
 import { BIZUM_PHONE } from "./orders";
 
-export const ACEITES_GUIDE_SLUG = "guia-basica-aceites-esenciales";
+/** Ebook «Guía de Aceites Esenciales» (CRM → Ebooks): de él salen el precio y la compra. */
+export const ACEITES_GUIDE_SLUG = "aceites";
 
 /** Canal oficial (el mismo WhatsApp de Cristina) con un mensaje inicial distinto por motivo. */
 const wa = (text: string) => `https://wa.me/34${BIZUM_PHONE.replace(/^\+?34(?=\d{9}$)/, "")}?text=${encodeURIComponent(text)}`;
@@ -90,7 +91,7 @@ export function aceitesBlocks(): PageBlock[] {
     B("ac-guias", "resources", {
       title: "Guías y recursos",
       intro: "Material práctico para aprender y profundizar en el mundo de la aromaterapia a tu propio ritmo.",
-      items: [{ ebookSlug: ACEITES_GUIDE_SLUG, title: "Guía básica de aceites esenciales", text: "PDF digital. Incluida sin coste adicional en el asesoramiento personalizado de aromaterapia.", buttonLabel: "Adquirir guía" }],
+      items: [{ ebookSlug: ACEITES_GUIDE_SLUG, title: "Guía de Aceites Esenciales", text: "PDF digital. Incluida sin coste adicional en el asesoramiento personalizado de aromaterapia.", buttonLabel: "Adquirir guía" }],
     }, { background: "soft", anchor: "guias" }),
   ];
 }
