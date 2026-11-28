@@ -2,7 +2,6 @@
 import { ArrowRight, Check, Leaf } from "lucide-react";
 import { Link } from "wouter";
 import type { BlockOf } from "@shared/siteEditor";
-import { formatDeadline, groupOrderState } from "@shared/oilOrders";
 import { ebookPath } from "@shared/ebookPage";
 import { formatEurosFixed } from "@shared/orders";
 import { BuyButton } from "@/components/ebooks/EbookParts";
@@ -25,48 +24,45 @@ function Action({ label, url }: { label: string; url: string }) {
   return <SiteLink href={url} className={BTN} style={{ textDecoration: "none" }}>{label} <ArrowRight size={15} /></SiteLink>;
 }
 
-export function OilOrdersBlock({ b, now = Date.now() }: { b: BlockOf<"oil_orders">; now?: number }) {
+function Points({ text }: { text: string }) {
+  const items = lines(text);
+  if (!items.length) return null;
+  return (
+    <ul className="space-y-2 mb-5">
+      {items.map((c, i) => (
+        <li key={i} className={`${P} flex gap-2`} style={light}><Check size={16} className="mt-1 flex-shrink-0 text-[oklch(0.52_0.08_148)]" aria-hidden="true" />{c}</li>
+      ))}
+    </ul>
+  );
+}
+
+export function OilOrdersBlock({ b }: { b: BlockOf<"oil_orders"> }) {
   const d = b.data;
-  const state = groupOrderState(d.groupOpen, d.groupDeadline, now);
-  const open = state === "open";
-  const Min = ({ value }: { value: string }) => value ? <p className={`${P} mb-1`}>Importe mínimo de compra: <strong className="whitespace-nowrap">{value}</strong></p> : null;
+  const CARD = "bg-white border border-[oklch(0.9_0.012_78)] p-5 sm:p-7 flex flex-col";
   return (
     <section className="container py-10" aria-label={d.title}>
       <h2 className={`${H2} text-center mb-8`} style={light}>{d.title}</h2>
       <div className="grid md:grid-cols-2 gap-5 max-w-5xl mx-auto">
-        <article className="bg-white border border-[oklch(0.9_0.012_78)] p-5 sm:p-7 flex flex-col" data-testid="oil-group" data-state={state}>
+        <article className={CARD} data-testid="oil-group">
           <h3 className={H3} style={light}>{d.groupTitle}</h3>
           <Paragraphs text={d.groupText} />
-          <Min value={d.groupMin} />
-          {d.groupNote && <p className={`${P} text-sm mb-3`} style={light}>{d.groupNote}</p>}
-          {open
-            ? <p className={`${P} mb-4 text-[oklch(0.34_0.07_148)]`}>Pedido abierto hasta el <strong>{formatDeadline(d.groupDeadline)}</strong> incluido.</p>
-            : d.groupHint && <p className={`${P} mb-4`} style={light}>{d.groupHint}</p>}
-          <div className="mt-auto">
-            {open ? <Action label={d.groupOpenLabel} url={d.groupOpenUrl} /> : <Action label={d.groupClosedLabel} url={d.groupClosedUrl} />}
-          </div>
+          <Points text={d.groupPoints} />
+          {d.groupHint && <p className={`${P} mb-4`} style={light}>{d.groupHint}</p>}
+          <div className="mt-auto"><Action label={d.groupLabel} url={d.groupUrl} /></div>
         </article>
-        <article className="bg-white border border-[oklch(0.9_0.012_78)] p-5 sm:p-7 flex flex-col" data-testid="oil-solo">
+        <article className={CARD} data-testid="oil-solo">
           <h3 className={H3} style={light}>{d.soloTitle}</h3>
           <Paragraphs text={d.soloText} />
-          <Min value={d.soloMin} />
-          {d.soloNote && <p className={`${P} text-sm mb-3`} style={light}>{d.soloNote}</p>}
-          {d.soloHint && <p className={`${P} mb-4`} style={light}>{d.soloHint}</p>}
-          <div className="mt-auto"><Action label={d.soloLabel} url={d.soloUrl} /></div>
+          <Points text={d.soloPoints} />
+          <div className="mt-auto">
+            <Action label={d.soloLabel} url={d.soloUrl} />
+            {d.soloHint && <p className={`${P} text-sm mt-3`} style={light}>{d.soloHint}</p>}
+          </div>
         </article>
       </div>
       <div className="max-w-3xl mx-auto mt-8">
-        {lines(d.conditions).length > 0 && (
-          <>
-            <h3 className={H3} style={light}>{d.conditionsTitle}</h3>
-            <ul className="space-y-2 mb-5">
-              {lines(d.conditions).map((c, i) => (
-                <li key={i} className={`${P} flex gap-2`} style={light}><Check size={16} className="mt-1 flex-shrink-0 text-[oklch(0.52_0.08_148)]" aria-hidden="true" />{c}</li>
-              ))}
-            </ul>
-          </>
-        )}
-        {d.closing && <p className={`${P} font-medium`}>{d.closing}</p>}
+        {lines(d.conditions).length > 0 && (<><h3 className={H3} style={light}>{d.conditionsTitle}</h3><Points text={d.conditions} /></>)}
+        {d.closing && <p className={`${P} font-medium text-center`}>{d.closing}</p>}
       </div>
     </section>
   );

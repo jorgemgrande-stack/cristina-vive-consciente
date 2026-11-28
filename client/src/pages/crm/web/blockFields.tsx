@@ -16,7 +16,7 @@ import { inputCls, labelCls } from "./shared";
 // ─── Esquema de campos ──────────────────────────────────────────────────────
 
 export type FieldDef =
-  | { key: string; label: string; kind: "text" | "textarea" | "rich" | "image" | "url" | "date"; hint?: string }
+  | { key: string; label: string; kind: "text" | "textarea" | "rich" | "image" | "url"; hint?: string }
   | { key: string; label: string; kind: "focus"; imageKey: string; xKey: string; yKey: string }
   | { key: string; label: string; kind: "select"; options: ReadonlyArray<readonly [string, string]> }
   | { key: string; label: string; kind: "list"; itemLabel: string; fields: FieldDef[]; max: number; blank: Record<string, unknown> };
@@ -126,24 +126,18 @@ export const BLOCK_FIELDS: Record<BlockType, FieldDef[]> = {
     { key: "title", label: "Título del apartado", kind: "text" },
     { key: "groupTitle", label: "Pedido conjunto · título", kind: "text" },
     { key: "groupText", label: "Pedido conjunto · texto", kind: "textarea" },
-    { key: "groupOpen", label: "Pedido conjunto · estado", kind: "select", options: opt(["off", "Cerrado"], ["on", "Abierto (hasta la fecha límite)"]) },
-    { key: "groupDeadline", label: "Pedido conjunto · fecha límite (incluida, hora de Madrid)", kind: "date" },
-    { key: "groupMin", label: "Pedido conjunto · importe mínimo", kind: "text" },
-    { key: "groupNote", label: "Pedido conjunto · nota sobre el envío", kind: "text" },
-    { key: "groupHint", label: "Pedido conjunto · frase cuando no está abierto", kind: "text" },
-    { key: "groupOpenLabel", label: "Pedido conjunto · botón cuando está abierto", kind: "text" },
-    { key: "groupOpenUrl", label: "Pedido conjunto · destino cuando está abierto", kind: "url" },
-    { key: "groupClosedLabel", label: "Pedido conjunto · botón cuando está cerrado", kind: "text" },
-    { key: "groupClosedUrl", label: "Pedido conjunto · destino cuando está cerrado", kind: "url" },
+    { key: "groupPoints", label: "Pedido conjunto · condiciones (una por línea)", kind: "textarea" },
+    { key: "groupHint", label: "Pedido conjunto · frase antes del botón", kind: "text" },
+    { key: "groupLabel", label: "Pedido conjunto · botón", kind: "text" },
+    { key: "groupUrl", label: "Pedido conjunto · destino", kind: "url" },
     { key: "soloTitle", label: "Pedido individual · título", kind: "text" },
     { key: "soloText", label: "Pedido individual · texto", kind: "textarea" },
-    { key: "soloMin", label: "Pedido individual · importe mínimo", kind: "text" },
-    { key: "soloNote", label: "Pedido individual · nota sobre el envío", kind: "text" },
-    { key: "soloHint", label: "Pedido individual · frase final", kind: "text" },
+    { key: "soloPoints", label: "Pedido individual · condiciones (una por línea)", kind: "textarea" },
     { key: "soloLabel", label: "Pedido individual · botón", kind: "text" },
     { key: "soloUrl", label: "Pedido individual · destino", kind: "url" },
-    { key: "conditionsTitle", label: "Condiciones · título", kind: "text" },
-    { key: "conditions", label: "Condiciones (una por línea)", kind: "textarea" },
+    { key: "soloHint", label: "Pedido individual · frase bajo el botón", kind: "text" },
+    { key: "conditionsTitle", label: "Condiciones comunes · título (opcional)", kind: "text" },
+    { key: "conditions", label: "Condiciones comunes (una por línea; vacío = no se muestran)", kind: "textarea" },
     { key: "closing", label: "Frase de cierre", kind: "textarea" },
   ],
   service_offer: [
@@ -268,8 +262,6 @@ function Field({ def, value, onChange }: { def: FieldDef; value: unknown; onChan
         </div>
       );
     }
-    case "date":
-      return <div><label className={labelCls} htmlFor={id}>{def.label}</label><input id={id} type="date" className={inputCls} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} /></div>;
     case "textarea":
       return <div><label className={labelCls} htmlFor={id}>{def.label}</label><textarea id={id} rows={3} className={inputCls} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} /></div>;
     case "rich":

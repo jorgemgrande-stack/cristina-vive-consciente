@@ -20,6 +20,6 @@ export function filterOils<T extends { tipoProducto: string; name: string; tags?
     if (!q) return true;
     let tags: string[] = [];
     try { tags = JSON.parse(p.tags ?? "[]") as string[]; } catch { /* etiquetas mal guardadas: se busca solo por nombre */ }
-    return fold(p.name).includes(q) || tags.some((t) => fold(String(t)).includes(q));
+    return fold(p.name).includes(q) || tags.some((t) => !String(t).includes(":") && fold(String(t)).includes(q));
   });
 }

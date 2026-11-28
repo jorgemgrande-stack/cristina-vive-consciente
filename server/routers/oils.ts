@@ -107,7 +107,7 @@ export const oilsRouter = router({
     .input(z.object({ slug: z.string() }))
     .query(async ({ input }) => {
       const product = await getOilProductBySlug(input.slug);
-      if (!product) throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado" });
+      if (!product || product.visibleEnPublico !== 1 || product.status !== "active") throw new TRPCError({ code: "NOT_FOUND", message: "Producto no encontrado" });
       return product;
     }),
 

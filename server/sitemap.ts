@@ -68,7 +68,7 @@ async function getDynamicEntries(): Promise<SitemapEntry[]> {
     db
       .select({ slug: oilProducts.slug, updatedAt: oilProducts.updatedAt })
       .from(oilProducts)
-      .where(eq(oilProducts.status, "active")),
+      .where(and(eq(oilProducts.status, "active"), eq(oilProducts.visibleEnPublico, 1))),
     db
       .select({ slug: blogPosts.slug, updatedAt: blogPosts.updatedAt })
       .from(blogPosts)

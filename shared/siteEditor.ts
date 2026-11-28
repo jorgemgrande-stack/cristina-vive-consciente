@@ -102,13 +102,12 @@ export interface BlockDataMap {
   testimonials: { title: string; items: TestimonialItem[] };
   cta: { title: string; text: string; buttonLabel: string; buttonUrl: string; secondaryLabel: string; secondaryUrl: string };
   separator: { kind: "line" | "space" };
-  /** Pedidos por contacto directo: pedido conjunto (con fecha límite) e individual, y condiciones */
+  /** Pedidos por contacto directo: conjunto (permanente) e individual */
   oil_orders: {
     title: string;
-    groupTitle: string; groupText: string; groupMin: string; groupNote: string; groupHint: string;
-    groupOpen: OnOff; groupDeadline: string; groupOpenLabel: string; groupOpenUrl: string; groupClosedLabel: string; groupClosedUrl: string;
-    soloTitle: string; soloText: string; soloMin: string; soloNote: string; soloHint: string; soloLabel: string; soloUrl: string;
-    conditionsTitle: string; /** Una condición por línea */ conditions: string; closing: string;
+    groupTitle: string; groupText: string; /** Una condición por línea */ groupPoints: string; groupHint: string; groupLabel: string; groupUrl: string;
+    soloTitle: string; soloText: string; soloPoints: string; soloHint: string; soloLabel: string; soloUrl: string;
+    conditionsTitle: string; /** Condiciones comunes (opcional), una por línea */ conditions: string; closing: string;
   };
   /** Servicio con lo que incluye, cómo funciona, precio y reserva (sin destino = reserva pendiente) */
   service_offer: {
@@ -202,7 +201,7 @@ export const BLOCK_CATALOG: ReadonlyArray<{ type: BlockType; label: string; desc
   { type: "testimonials", label: "Opiniones", description: "Lo que dicen tus clientes", group: "Contenido" },
   { type: "cta", label: "Llamada a la acción", description: "Un mensaje destacado con botones", group: "Contenido" },
   { type: "form", label: "Formulario", description: "Formulario configurable que llega a tu CRM", group: "Contenido" },
-  { type: "oil_orders", label: "Pedidos de aceites", description: "Pedido conjunto e individual por contacto directo, con condiciones", group: "Contenido" },
+  { type: "oil_orders", label: "Pedidos de aceites", description: "Pedido conjunto e individual por contacto directo", group: "Contenido" },
   { type: "service_offer", label: "Servicio con precio", description: "Qué incluye, cómo funciona, precio y botón de reserva", group: "Contenido" },
   { type: "resources", label: "Guías y recursos", description: "Productos digitales con el precio y la compra de CRM → Ebooks", group: "Contenido" },
   { type: "connected", label: "Contenido conectado", description: "Listados y fichas con los datos reales (servicios, aceites, agua, blog…)", group: "Conectados" },
@@ -238,9 +237,8 @@ export function defaultBlockData<K extends BlockType>(type: K): BlockDataMap[K] 
     cta: { title: "¿Hablamos?", text: "", buttonLabel: "Contactar", buttonUrl: "/contacto", secondaryLabel: "", secondaryUrl: "" },
     separator: { kind: "line" },
     oil_orders: {
-      title: "Pedidos", groupTitle: "Pedidos conjuntos", groupText: "", groupMin: "", groupNote: "", groupHint: "",
-      groupOpen: "off", groupDeadline: "", groupOpenLabel: "Solicitar pedido conjunto", groupOpenUrl: "/contacto", groupClosedLabel: "Consultar el próximo pedido", groupClosedUrl: "/contacto",
-      soloTitle: "Pedidos individuales", soloText: "", soloMin: "", soloNote: "", soloHint: "", soloLabel: "Solicitar pedido individual", soloUrl: "/contacto",
+      title: "Pedidos", groupTitle: "Pedidos conjuntos", groupText: "", groupPoints: "", groupHint: "", groupLabel: "Consultar próximo pedido", groupUrl: "/contacto",
+      soloTitle: "Pedidos individuales", soloText: "", soloPoints: "", soloHint: "", soloLabel: "Solicitar pedido individual", soloUrl: "/contacto",
       conditionsTitle: "Condiciones generales", conditions: "", closing: "",
     },
     service_offer: { eyebrow: "", title: "Servicio", intro: "", includesTitle: "¿Qué incluye?", includes: "", howTitle: "¿Cómo funciona?", howText: "", priceLabel: "", priceNote: "", buttonLabel: "Reservar", buttonUrl: "", pendingText: "La reserva online todavía no está disponible.", serviceSlug: "", helpLabel: "", helpUrl: "" },

@@ -1,7 +1,7 @@
 /** Sección de Aceites Esenciales: contenido de serie, destinos, estados del pedido conjunto y filtros del catálogo. */
 import { describe, expect, it } from "vitest";
 import { ACEITES_CONTACT, aceitesBlocks, aceitesContent } from "../shared/aceitesPage";
-import { groupOrderState, cleanDate, formatDeadline } from "../shared/oilOrders";
+import { oilLink, visibleOilTags } from "../shared/oilLinks";
 import { OIL_FILTERS, filterOils } from "../shared/oilCatalog";
 import { normalizePageContent } from "./siteContent";
 import type { BlockOf } from "../shared/siteEditor";
@@ -22,45 +22,44 @@ describe("contenido de serie", () => {
     expect(targets).toEqual(["#servicios", "#catalogo", "#catalogo", "#pedidos", "#asesoramiento", "#guias", "#pedidos"]);
     for (const t of targets) expect(anchors.has(t.slice(1)), t).toBe(true);
   });
-  it("importes, precio, canal oficial y reserva pendiente", () => {
+  it("pedidos permanentes: condiciones de cada modalidad, 100 € solo en el individual y sin 25 € ni calendario", () => {
     const o = block("ac-pedidos");
-    expect([o.groupMin, o.soloMin, o.groupOpen, o.groupDeadline]).toEqual(["25 €", "100 €", "off", ""]);
+    expect(o.groupPoints.split("\n")).toEqual(["Sin importe mínimo de compra.", "Gastos de envío aparte.", "Pago por adelantado."]);
+    expect(o.soloPoints.split("\n")).toEqual(["Importe mínimo de compra: 100 €.", "Gastos de envío aparte.", "Pago por adelantado."]);
+    expect([o.groupLabel, o.soloLabel, o.conditions]).toEqual(["Consultar próximo pedido", "Solicitar pedido individual", ""]);
+    expect(o.groupUrl).toBe(ACEITES_CONTACT.next);
+    expect(o.soloUrl).toBe(ACEITES_CONTACT.individual);
+    expect(JSON.stringify(o)).not.toMatch(/25 €|groupOpen|groupDeadline/);
+    expect(JSON.stringify(o).match(/100 €/g)).toHaveLength(1);
+    expect(block("ac-servicios").items[1].text).toBe("Consulta cómo participar en un pedido conjunto o solicita un pedido individual");
+  });
+  it("canal oficial, reserva y precio", () => {
     expect(block("ac-guias").items[0].ebookSlug).toBe("aceites");
     expect(block("ac-asesoramiento")).toMatchObject({ serviceSlug: "asesoramiento_aromaterapia", priceLabel: "Precio del servicio: {precio}", buttonLabel: "Solicitar asesoramiento", helpUrl: ACEITES_CONTACT.advice });
     // El precio no está escrito en la página: sale de CRM → Servicios
     expect(JSON.stringify(block("ac-asesoramiento"))).not.toMatch(/14,90|90 €|120 €/);
     for (const url of Object.values(ACEITES_CONTACT)) expect(url).toMatch(/^https:\/\/wa\.me\/34657165343\?text=/);
-    expect(new Set(Object.values(ACEITES_CONTACT)).size).toBe(4);
+    expect(new Set(Object.values(ACEITES_CONTACT)).size).toBe(3);
     expect(JSON.stringify(aceitesContent()).toLowerCase()).not.toContain("terapéutica");
     expect(JSON.stringify(aceitesContent()).toLowerCase()).not.toContain("bionfriends");
   });
   it("el editor descarta fechas imposibles y destinos peligrosos", () => {
     const raw = aceitesContent();
     const o = raw.blocks[3] as BlockOf<"oil_orders">;
-    o.data.groupDeadline = "2026-02-31";
     o.data.soloUrl = "javascript:alert(1)";
     const saved = normalizePageContent(raw).blocks[3] as BlockOf<"oil_orders">;
-    expect(saved.data.groupDeadline).toBe("");
     expect(saved.data.soloUrl).toBe("");
   });
 });
 
-describe("pedido conjunto", () => {
-  const at = (iso: string) => Date.parse(iso);
-  it("cerrado, sin fecha, abierto y vencido, en hora de Madrid", () => {
-    expect(groupOrderState("off", "2026-12-10", at("2026-12-01T12:00:00Z"))).toBe("closed");
-    expect(groupOrderState("on", "", at("2026-12-01T12:00:00Z"))).toBe("no_date");
-    expect(groupOrderState("on", "2026-12-10", at("2026-12-01T12:00:00Z"))).toBe("open");
-    // El día límite cuenta entero: a las 23:59 de Madrid sigue abierto y a las 00:00 ya no
-    expect(groupOrderState("on", "2026-12-10", at("2026-12-10T23:59:00+01:00"))).toBe("open");
-    expect(groupOrderState("on", "2026-12-10", at("2026-12-11T00:00:00+01:00"))).toBe("expired");
-    // En verano Madrid va dos horas por delante de UTC
-    expect(groupOrderState("on", "2027-07-10", at("2027-07-10T22:30:00Z"))).toBe("expired");
-  });
-  it("fechas", () => {
-    expect(cleanDate("5/12/2026")).toBe("2026-12-05");
-    expect(cleanDate("pronto")).toBe("");
-    expect(formatDeadline("2026-12-05")).toBe("5 de diciembre de 2026");
+describe("fichas que remiten a otro producto", () => {
+  it("la etiqueta define el enlace y no se muestra como etiqueta", () => {
+    const tags = '["guia","ebook:aceites"]';
+    expect(oilLink(tags)).toEqual({ kind: "ebook", ref: "aceites" });
+    expect(visibleOilTags(tags)).toEqual(["guia"]);
+    expect(oilLink('["consulta:asesoramiento_aromaterapia"]')).toEqual({ kind: "consulta", ref: "asesoramiento_aromaterapia" });
+    expect(oilLink('["relajante"]')).toBeNull();
+    expect(oilLink("no es json")).toBeNull();
   });
 });
 

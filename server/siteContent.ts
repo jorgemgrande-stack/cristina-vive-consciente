@@ -5,7 +5,6 @@
  */
 import sanitizeHtml from "sanitize-html";
 import { ACTION_RE } from "../shared/siteActions";
-import { cleanDate } from "../shared/oilOrders";
 import {
   ANCHOR_RE, BLOCK_ALIGNS, BLOCK_ANIMATIONS, BLOCK_BACKGROUNDS, BLOCK_MIN_HEIGHTS, BLOCK_OVERLAYS, BLOCK_SPACINGS, BLOCK_TYPES, BLOCK_WIDTHS,
   CONNECTED_VALUES, DEFAULT_BLOCK_STYLE, DEFAULT_GLOBAL, DEFAULT_SEO, DEVICES, FORM_FIELD_KINDS, PAGE_LIMITS, SECTION_LAYOUTS, SECTION_MAX_DEPTH,
@@ -163,11 +162,8 @@ function normalizeData(type: BlockType, d: Record<string, unknown>, depth: numbe
       const long = (k: string) => str(d[k], S.long);
       return {
         title: t("title"),
-        groupTitle: t("groupTitle"), groupText: long("groupText"), groupMin: str(d.groupMin, 40), groupNote: t("groupNote"), groupHint: t("groupHint"),
-        groupOpen: onOff(d.groupOpen), groupDeadline: cleanDate(str(d.groupDeadline, 20)),
-        groupOpenLabel: str(d.groupOpenLabel, 80), groupOpenUrl: safeLink(d.groupOpenUrl), groupClosedLabel: str(d.groupClosedLabel, 80), groupClosedUrl: safeLink(d.groupClosedUrl),
-        soloTitle: t("soloTitle"), soloText: long("soloText"), soloMin: str(d.soloMin, 40), soloNote: t("soloNote"), soloHint: t("soloHint"),
-        soloLabel: str(d.soloLabel, 80), soloUrl: safeLink(d.soloUrl),
+        groupTitle: t("groupTitle"), groupText: long("groupText"), groupPoints: long("groupPoints"), groupHint: t("groupHint"), groupLabel: str(d.groupLabel, 80), groupUrl: safeLink(d.groupUrl),
+        soloTitle: t("soloTitle"), soloText: long("soloText"), soloPoints: long("soloPoints"), soloHint: t("soloHint"), soloLabel: str(d.soloLabel, 80), soloUrl: safeLink(d.soloUrl),
         conditionsTitle: t("conditionsTitle"), conditions: long("conditions"), closing: long("closing"),
       };
     }
