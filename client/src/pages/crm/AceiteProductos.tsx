@@ -339,6 +339,7 @@ export default function AceiteProductos() {
                 rows={3}
                 style={{ borderRadius: 0 }}
               />
+              <p className="text-xs font-body text-[oklch(0.52_0.04_80)]">Para enlazar a una página de la web: [texto del enlace](/ruta).</p>
             </div>
 
             {/* Beneficios + Indicaciones */}

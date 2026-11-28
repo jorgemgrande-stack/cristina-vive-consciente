@@ -17,7 +17,7 @@ export const AROMA_SERVICE = {
     "Tu botiquín de aceites esenciales en casa",
     "Un acompañamiento personalizado para descubrir las posibilidades de la aromaterapia e incorporar los aceites esenciales a tu vida cotidiana y familiar, teniendo en cuenta tus necesidades, intereses y circunstancias personales.",
     "Tras la consulta podrás valorar con tranquilidad los aceites recomendados y decidir cuáles deseas incorporar a tu botiquín.",
-    "Una vez realizada tu selección, recibirás tu documento personalizado en PDF en un plazo máximo de 10 días y, si lo deseas, puedo encargarme de gestionar la compra.",
+    "Recibirás tu documento personalizado en PDF en un plazo máximo de 10 días desde que me confirmes tu selección y, si lo deseas, puedo encargarme de gestionar la compra.",
     "No es necesario adquirir todos los aceites recomendados ni decidir cuáles comprar durante la consulta.",
     "Modalidad online. El importe de los aceites y los gastos de envío se abonan aparte.",
     "Antes de formalizar la reserva, puedes contactar conmigo por WhatsApp para resolver tus dudas y concretar el asesoramiento.",
@@ -40,6 +40,7 @@ export const AROMA_SERVICE = {
 export const AROMA_FAQ: ReadonlyArray<{ q: string; a: string }> = [
   { q: "¿Cómo se desarrolla el asesoramiento?", a: "Es una consulta individual de un mínimo de una hora. Después podrás valorar con tranquilidad los aceites recomendados y decidir cuáles deseas incorporar a tu botiquín." },
   { q: "¿Es online o presencial?", a: "Es online." },
-  { q: "¿Cuándo recibiré el documento personalizado?", a: "Una vez realizada tu selección de aceites, lo recibirás en PDF en un plazo máximo de 10 días." },
+  { q: "¿Cuándo recibiré el documento personalizado?", a: "Lo recibirás en PDF en un plazo máximo de 10 días desde que me confirmes tu selección de aceites." },
   { q: "¿Tengo que comprar los aceites recomendados?", a: "No es necesario adquirir todos los aceites recomendados ni decidir cuáles comprar durante la consulta. Si lo deseas, Cristina puede gestionar la compra; los aceites y el envío se abonan aparte." },
+  { q: "¿Qué diferencia hay entre la guía básica y el PDF personalizado?", a: "La guía básica es un recurso general de aromaterapia. El PDF personalizado lo preparo para ti con los usos y aplicaciones de los aceites que elijas tras la consulta y te lo envío en un máximo de 10 días desde que me confirmes tu selección." },
 ];

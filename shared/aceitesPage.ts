@@ -75,7 +75,7 @@ export function aceitesBlocks(): PageBlock[] {
         "Gestión de la compra de los aceites seleccionados, si lo deseas.",
       ].join("\n"),
       howTitle: "¿Cómo funciona?",
-      howText: "Tras la consulta podrás valorar con tranquilidad los aceites recomendados y decidir cuáles deseas incorporar a tu botiquín.\n\nUna vez realizada tu selección, recibirás tu documento personalizado en PDF en un plazo máximo de 10 días y, si lo deseas, puedo encargarme de gestionar la compra.\n\nNo es necesario adquirir todos los aceites recomendados ni decidir cuáles comprar durante la consulta.",
+      howText: "Tras la consulta podrás valorar con tranquilidad los aceites recomendados y decidir cuáles deseas incorporar a tu botiquín.\n\nRecibirás tu documento personalizado en PDF en un plazo máximo de 10 días desde que me confirmes tu selección y, si lo deseas, puedo encargarme de gestionar la compra.\n\nNo es necesario adquirir todos los aceites recomendados ni decidir cuáles comprar durante la consulta.",
       serviceSlug: AROMA_SERVICE_SLUG,
       priceLabel: "Precio del servicio: {precio}",
       priceNote: "Modalidad online.\n\nEl importe de los aceites y los gastos de envío se abonan aparte.\n\nAntes de formalizar la reserva, puedes contactar conmigo por WhatsApp para resolver tus dudas y concretar el asesoramiento.",
