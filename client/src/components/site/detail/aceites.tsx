@@ -11,6 +11,7 @@ import type { AppRouter } from "../../../../../server/routers";
 import { trpc } from "@/lib/trpc";
 import { useOilOffers, type OilOffer } from "@/components/oils/useOilOffers";
 import { OILS_NOT_INCLUDED, oilLink, visibleOilTags } from "@shared/oilLinks";
+import { splitLinks } from "@shared/textLinks";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, Leaf, ArrowRight,
@@ -155,7 +156,9 @@ function Hero({ product, offer }: AceitesCtx) {
             {/* Descripción */}
             {product.descripcion && (
               <p className="font-body text-[oklch(0.42_0.02_55)] leading-relaxed">
-                {product.descripcion}
+                {splitLinks(product.descripcion).map((part, i) => typeof part === "string" ? part : (
+                  <a key={i} href={part.href} className="underline text-[oklch(0.38_0.07_148)]">{part.label}</a>
+                ))}
               </p>
             )}
 
