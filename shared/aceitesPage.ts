@@ -4,6 +4,7 @@
  */
 import { createBlock, DEFAULT_BLOCK_STYLE, type BlockDataMap, type BlockStyle, type BlockType, type PageBlock, type PageContent } from "./siteEditor";
 import { BIZUM_PHONE } from "./orders";
+import { AROMA_SERVICE_SLUG } from "./aromaService";
 
 /** Ebook «Guía de Aceites Esenciales» (CRM → Ebooks): de él salen el precio y la compra. */
 export const ACEITES_GUIDE_SLUG = "aceites";
@@ -14,7 +15,7 @@ export const ACEITES_CONTACT = {
   group: wa("Hola Cristina, quiero hacer un pedido conjunto de aceites esenciales."),
   next: wa("Hola Cristina, ¿cuándo es el próximo pedido conjunto de aceites esenciales?"),
   individual: wa("Hola Cristina, quiero hacer un pedido individual de aceites esenciales."),
-  advice: wa("Hola Cristina, me gustaría solicitar el asesoramiento personalizado de aromaterapia."),
+  advice: wa("Hola Cristina, tengo una duda sobre el asesoramiento personalizado de aromaterapia."),
 };
 
 function B<K extends BlockType>(id: string, type: K, data: Partial<BlockDataMap[K]>, style?: Partial<BlockStyle>): PageBlock {
@@ -82,9 +83,11 @@ export function aceitesBlocks(): PageBlock[] {
       ].join("\n"),
       howTitle: "¿Cómo funciona?",
       howText: "Tras la consulta podrás valorar con tranquilidad los aceites recomendados y decidir cuáles deseas incorporar a tu botiquín.\n\nUna vez realizada tu selección, recibirás tu documento personalizado en PDF en un plazo máximo de 10 días y, si lo deseas, puedo encargarme de gestionar la compra.\n\nNo es necesario adquirir todos los aceites recomendados ni decidir cuáles comprar durante la consulta.",
-      priceLabel: "Precio del servicio: 90 €",
+      serviceSlug: AROMA_SERVICE_SLUG,
+      priceLabel: "Precio del servicio: {precio}",
       priceNote: "Modalidad online.\n\nEl importe de los aceites y los gastos de envío se abonan aparte.\n\nAntes de formalizar la reserva, puedes contactar conmigo por WhatsApp para resolver tus dudas y concretar el asesoramiento.",
       buttonLabel: "Solicitar asesoramiento", buttonUrl: ACEITES_CONTACT.advice,
+      helpLabel: "Resolver dudas por WhatsApp", helpUrl: ACEITES_CONTACT.advice,
       pendingText: "La reserva online de este asesoramiento todavía no está disponible.",
     }, { anchor: "asesoramiento" }),
     B("ac-guias", "resources", {

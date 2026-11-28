@@ -51,6 +51,7 @@ import {
   isBookableTime,
   slotsForDate,
   validateHomeAddress,
+  allowsInPerson,
 } from "../../shared/booking";
 import {
   APPOINTMENT_SERVICE_TYPES,
@@ -175,6 +176,10 @@ export const bookingsRouter = router({
       // 2. Modalidad: un masaje solo es presencial (no se acepta Zoom/teléfono/WhatsApp)
       if (!allowedModalities(serviceType).includes(input.modality)) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Los masajes solo se realizan de forma presencial" });
+      }
+
+      if (!isMassage && input.modality === "presencial" && !allowsInPerson(service)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Esta consulta solo se realiza online" });
       }
 
       // 3. Fecha y hora (siempre hora de Madrid; el servidor corre en UTC)

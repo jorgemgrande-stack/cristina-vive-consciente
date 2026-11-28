@@ -74,6 +74,13 @@ export function OilOrdersBlock({ b, now = Date.now() }: { b: BlockOf<"oil_orders
 
 export function ServiceOfferBlock({ b }: { b: BlockOf<"service_offer"> }) {
   const d = b.data;
+  // La consulta publicada manda: precio y reserva. Sin ella no se enlaza una ficha que no existe.
+  const linked = trpc.services.list.useQuery(undefined, { enabled: !!d.serviceSlug });
+  const service = d.serviceSlug ? linked.data?.find((s) => s.slug === d.serviceSlug) : undefined;
+  const loading = !!d.serviceSlug && linked.isLoading;
+  const price = service?.price ? `${Number(service.price).toLocaleString("es-ES", { maximumFractionDigits: 2 })} €` : "";
+  const priceLabel = d.priceLabel.includes("{precio}") ? (price ? d.priceLabel.replace("{precio}", price) : "") : d.priceLabel;
+  const buttonUrl = service ? `/consultas/${service.slug}` : d.buttonUrl;
   return (
     <section className="container py-12 max-w-3xl" aria-label={d.title}>
       {d.eyebrow && <p className="text-[oklch(0.45_0.08_148)] text-xs tracking-[0.2em] uppercase mb-3 font-body" style={{ fontWeight: 500 }}>{d.eyebrow}</p>}
@@ -91,16 +98,21 @@ export function ServiceOfferBlock({ b }: { b: BlockOf<"service_offer"> }) {
       )}
       {d.howText && (<><h3 className={`${H3} mt-8`} style={light}>{d.howTitle}</h3><Paragraphs text={d.howText} /></>)}
       <div className="mt-8 border border-[oklch(0.79_0.04_148)] bg-[oklch(0.95_0.025_148)] p-5 sm:p-7">
-        {d.priceLabel && <p className="font-display text-2xl text-[oklch(0.18_0.018_55)] mb-3">{d.priceLabel}</p>}
+        {priceLabel && <p className="font-display text-2xl text-[oklch(0.18_0.018_55)] mb-3" data-testid="service-price">{priceLabel}</p>}
         <Paragraphs text={d.priceNote} className="text-sm" />
-        {d.buttonLabel && (d.buttonUrl ? (
-          <Action label={d.buttonLabel} url={d.buttonUrl} />
+        {d.buttonLabel && !loading && (buttonUrl ? (
+          <Action label={d.buttonLabel} url={buttonUrl} />
         ) : (
           <div data-testid="service-pending">
             <button type="button" disabled aria-describedby={`${b.id}-pending`} className={`${BTN} opacity-50 cursor-not-allowed`}>{d.buttonLabel}</button>
             {d.pendingText && <p id={`${b.id}-pending`} className={`${P} text-sm mt-2`}>{d.pendingText}</p>}
           </div>
         ))}
+        {d.helpLabel && d.helpUrl && (
+          <p className="mt-3">
+            <SiteLink href={d.helpUrl} className="inline-flex min-h-11 items-center text-sm font-body underline text-[oklch(0.34_0.07_148)]">{d.helpLabel}</SiteLink>
+          </p>
+        )}
       </div>
     </section>
   );

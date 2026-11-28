@@ -26,8 +26,9 @@ describe("contenido de serie", () => {
     const o = block("ac-pedidos");
     expect([o.groupMin, o.soloMin, o.groupOpen, o.groupDeadline]).toEqual(["25 €", "100 €", "off", ""]);
     expect(block("ac-guias").items[0].ebookSlug).toBe("aceites");
-    expect(block("ac-asesoramiento")).toMatchObject({ priceLabel: "Precio del servicio: 90 €", buttonLabel: "Solicitar asesoramiento", buttonUrl: ACEITES_CONTACT.advice });
-    expect(JSON.stringify(block("ac-asesoramiento"))).not.toMatch(/14,90|120 €/);
+    expect(block("ac-asesoramiento")).toMatchObject({ serviceSlug: "asesoramiento_aromaterapia", priceLabel: "Precio del servicio: {precio}", buttonLabel: "Solicitar asesoramiento", helpUrl: ACEITES_CONTACT.advice });
+    // El precio no está escrito en la página: sale de CRM → Servicios
+    expect(JSON.stringify(block("ac-asesoramiento"))).not.toMatch(/14,90|90 €|120 €/);
     for (const url of Object.values(ACEITES_CONTACT)) expect(url).toMatch(/^https:\/\/wa\.me\/34657165343\?text=/);
     expect(new Set(Object.values(ACEITES_CONTACT)).size).toBe(4);
     expect(JSON.stringify(aceitesContent()).toLowerCase()).not.toContain("terapéutica");
