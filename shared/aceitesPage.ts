@@ -36,7 +36,7 @@ export function aceitesBlocks(): PageBlock[] {
       title: "", intro: "", columns: "4",
       items: [
         { icon: "droplets", title: "Catálogo de aceites", text: "Descubre mi selección de aceites esenciales, sinergias, aceites vegetales y accesorios.", buttonLabel: "Explorar catálogo", buttonUrl: "#catalogo" },
-        { icon: "clock", title: "Pedidos conjuntos", text: "Realizamos pedidos agrupados en determinadas fechas del año. Consulta cuándo realizamos el próximo pedido.", buttonLabel: "Próximo pedido", buttonUrl: "#pedidos" },
+        { icon: "clock", title: "Pedidos de aceites esenciales", text: "Consulta cuándo se abre el próximo pedido conjunto o solicita un pedido individual si necesitas reponer tus aceites.", buttonLabel: "Consultar pedidos", buttonUrl: "#pedidos" },
         { icon: "hand", title: "Asesoramiento personalizado", text: "Te acompaño a elegir los aceites más adecuados para ti y tu familia, a aprender cómo utilizarlos y a crear tu propio botiquín de aromaterapia.", buttonLabel: "Conocer asesoramiento", buttonUrl: "#asesoramiento" },
         { icon: "leaf", title: "Guías y recursos", text: "Material práctico para aprender y profundizar en el mundo de la aromaterapia a tu propio ritmo.", buttonLabel: "Ver recursos", buttonUrl: "#guias" },
       ],
