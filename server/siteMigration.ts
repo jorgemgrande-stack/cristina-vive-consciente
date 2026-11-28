@@ -11,6 +11,7 @@ import { createBlock, type BlockDataMap, type BlockStyle, type BlockType, type P
 import { normalizePageContent } from "./siteContent";
 import { cookiesHtml, privacyHtml } from "./legalMigration";
 import { FICHA_SECTIONS } from "../shared/fichaSections";
+import { ACEITES_SEO, aceitesBlocks } from "../shared/aceitesPage";
 
 function B<K extends BlockType>(id: string, type: K, data: Partial<BlockDataMap[K]>, style?: Partial<BlockStyle>): PageBlock {
   const block = createBlock(type, data) as PageBlock;
@@ -106,11 +107,7 @@ const PAGES: Record<string, { seo: ReturnType<typeof seo>; blocks: PageBlock[] }
     hero("hero", { eyebrow: "Sistemas de Agua", title: "El agua que bebes define tu salud", subtitle: "No todos los sistemas de agua son iguales. Cristina Battistelli te ayuda a elegir el sistema ideal para tu hogar, tu agua y tu estilo de vida, con acompañamiento experto desde la elección hasta la instalación.", imageUrl: SITE_IMAGES.heroSistemasAgua, buttonLabel: "Solicitar asesoramiento", buttonUrl: "action:water-advice", secondaryLabel: "Ver sistemas", secondaryUrl: "#productos", height: "l" }),
     conn("catalogo", "sistemas_agua"),
   ] },
-  "/aceites-esenciales": { seo: SITE_SEO, blocks: [
-    hero("hero", { eyebrow: "Aromaterapia terapéutica", title: "Aceites Esenciales con propósito", subtitle: "Los aceites esenciales son herramientas terapéuticas potentes. Su uso correcto requiere personalización profesional.", imageUrl: SITE_IMAGES.heroAceites, buttonLabel: "Reservar consulta con Cristina", buttonUrl: "/consultas", secondaryLabel: "Mi consulta ({n})", secondaryUrl: "/mi-consulta", height: "l" }),
-    B("autoridad", "text", { title: "", html: "<blockquote>Cada aceite tiene su momento, su dosis y su persona.</blockquote><p>Como terapeuta holística certificada, acompaño a cada persona en el uso consciente y seguro de los aceites esenciales. No existe una fórmula universal: existe la tuya.</p><p><strong>Cristina</strong> · Terapeuta holística · Aromaterapia</p>", align: "center" }, { background: "dark", padTop: "m", padBottom: "m", contentWidth: "medium" }),
-    conn("catalogo", "aceites"),
-  ] },
+  "/aceites-esenciales": { seo: ACEITES_SEO, blocks: aceitesBlocks() },
   "/guias-digitales": { seo: SITE_SEO, blocks: [
     hero("hero", { eyebrow: "Recursos digitales", title: "Guías Digitales", subtitle: "Conocimiento práctico y profundo para transformar tu vida desde casa.", imageUrl: SITE_IMAGES.heroConsultas }),
     conn("guias", "guias"),

@@ -39,11 +39,11 @@ describe("migración de las páginas originales", () => {
     }
     expect(MIGRATABLE_KEYS.length).toBe(SYSTEM_PAGES.length);
   });
-  it("Masajes recupera sus dos botones con acción; Agua el asesoramiento; Aceites Mi consulta", () => {
+  it("Masajes recupera sus dos botones con acción; Agua el asesoramiento; Aceites sus dos anclas", () => {
     const hero = (k: string) => migratedContent(k)!.blocks[0].data as unknown as Record<string, string>;
     expect(hero("/masajes")).toMatchObject({ buttonLabel: "Reservar sesión", buttonUrl: "action:booking-masaje", secondaryLabel: "Cómo funciona", secondaryUrl: "action:toggle-technique" });
     expect(hero("/sistemas-agua")).toMatchObject({ buttonUrl: "action:water-advice", secondaryUrl: "#productos" });
-    expect(hero("/aceites-esenciales")).toMatchObject({ secondaryLabel: "Mi consulta ({n})", secondaryUrl: "/mi-consulta" });
+    expect(hero("/aceites-esenciales")).toMatchObject({ buttonUrl: "#servicios", secondaryUrl: "#catalogo" });
   });
   it("las plantillas de ficha llevan una sección conectada por cada parte de la ficha, en su orden", () => {
     for (const [kind, sections] of Object.entries(FICHA_SECTIONS)) {

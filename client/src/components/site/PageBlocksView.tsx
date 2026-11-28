@@ -4,7 +4,7 @@
  *
  * Diseño "Luz Botánica": tipografías y colores de la marca; los valores de diseño de cada bloque son de lista cerrada.
  */
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { ArrowRight, ChevronDown, Clock, Droplets, Flower2, Hand, Heart, Leaf, MapPin, Moon, Shield, Sparkles, Star, Sun } from "lucide-react";
 import { cssUrl, type BlockOf, type BlockStyle, type PageBlock, DEFAULT_BLOCK_STYLE, sectionColumnCount } from "@shared/siteEditor";
@@ -12,7 +12,6 @@ import { trpc } from "@/lib/trpc";
 import SiteLink from "./SiteLink";
 import { actionName } from "@shared/siteActions";
 import { dispatchSiteAction } from "@/lib/siteActions";
-import { useConsultaCart } from "@/contexts/ConsultaCartContext";
 import { FICHA_REGISTRY } from "./detail";
 import { EmbedProvider } from "./embed";
 import { HomeBlog, HomeSlideshow, HomeWater, HOME_SLIDESHOW_DEFAULTS } from "./HomeSections";
@@ -22,7 +21,9 @@ import HomeMasajes from "@/components/HomeMasajes";
 import Consultas from "@/pages/Consultas";
 import Masajes from "@/pages/Masajes";
 import SistemasAgua from "@/pages/SistemasAgua";
-import AceitesEsenciales from "@/pages/AceitesEsenciales";
+import OilCatalog from "@/components/oils/OilCatalog";
+import { OilOrdersBlock, ResourcesBlock, ServiceOfferBlock } from "./OfferBlocks";
+import { aceitesBlocks } from "@shared/aceitesPage";
 import GuiasDigitales from "@/pages/GuiasDigitales";
 import Recomendados from "@/pages/Recomendados";
 import Blog from "@/pages/Blog";
@@ -117,10 +118,8 @@ const Eyebrow = ({ text }: { text: string }) =>
   text ? <p className="text-[oklch(0.52_0.08_148)] text-xs tracking-[0.2em] uppercase mb-3 font-body" style={{ fontWeight: 500 }}>{text}</p> : null;
 
 function Btn({ label, url, variant = "primary", light }: { label: string; url: string; variant?: "primary" | "outline"; light?: boolean }) {
-  // «{n}» en el texto = número de aceites en Mi consulta; sin aceites el botón no se muestra
-  const { count } = useConsultaCart();
-  if (label.includes("{n}") && count === 0) return null;
-  const text = label.replace("{n}", String(count));
+  // «Mi consulta ({n})» ya no existe: un borrador antiguo que aún lo lleve no pinta el botón
+  const text = label.includes("{n}") ? "" : label;
   if (!text || !url) return null;
   return (
     <SiteLink href={url} className={light ? "btn-outline !text-white !border-white/60" : variant === "primary" ? "btn-primary" : "btn-outline"} style={{ textDecoration: "none" }}>
@@ -158,6 +157,8 @@ function HeroBlock({ b, title }: { b: BlockOf<"hero">; title: string }) {
   const [location] = useLocation();
   const h = d.height === "full" ? "min-h-screen" : d.height === "l" ? "min-h-[70vh]" : "min-h-[55vh]";
   const crumbs = d.breadcrumb === "on" && location !== "/";
+  // Foto clara y con mucho detalle en Aceites: velo algo más oscuro y antetítulo claro para que se lea
+  const strong = location === "/aceites-esenciales";
   return (
     <section className={`relative ${h} flex items-end overflow-hidden`}>
       <div className="absolute inset-0 bg-[oklch(0.18_0.018_55)]">
@@ -166,7 +167,9 @@ function HeroBlock({ b, title }: { b: BlockOf<"hero">; title: string }) {
             <img src={d.imageUrl} alt={d.imageAlt || d.title} className="cvc-hero-img w-full h-full object-cover" style={{ ["--ox" as string]: `${d.imageX}%`, ["--oy" as string]: `${d.imageY}%`, ["--oxm" as string]: `${d.imageXM}%`, ["--oym" as string]: `${d.imageYM}%` }} />
           </>
         )}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, oklch(0.18 0.018 55 / 0.85) 0%, oklch(0.18 0.018 55 / 0.5) 50%, oklch(0.18 0.018 55 / 0.2) 100%)" }} />
+        <div className="absolute inset-0" style={{ background: strong
+          ? "linear-gradient(to top, oklch(0.18 0.018 55 / 0.9) 0%, oklch(0.18 0.018 55 / 0.72) 60%, oklch(0.18 0.018 55 / 0.4) 100%)"
+          : "linear-gradient(to top, oklch(0.18 0.018 55 / 0.85) 0%, oklch(0.18 0.018 55 / 0.5) 50%, oklch(0.18 0.018 55 / 0.2) 100%)" }} />
       </div>
       <div className="container relative z-10 pb-14 pt-32">
         {crumbs && (
@@ -176,7 +179,7 @@ function HeroBlock({ b, title }: { b: BlockOf<"hero">; title: string }) {
             <span className="text-white/90">{title || d.title}</span>
           </nav>
         )}
-        {d.eyebrow && <p className="text-[oklch(0.72_0.06_148)] text-xs tracking-[0.2em] uppercase mb-3 font-body" style={{ fontWeight: 500 }}>{d.eyebrow}</p>}
+        {d.eyebrow && <p className={`${strong ? "text-[oklch(0.92_0.07_148)]" : "text-[oklch(0.72_0.06_148)]"} text-xs tracking-[0.2em] uppercase mb-3 font-body`} style={{ fontWeight: 500 }}>{d.eyebrow}</p>}
         <h1 className="text-white font-display mb-4" style={{ fontWeight: 400, maxWidth: "600px" }}>{d.title}</h1>
         {d.subtitle && <p className="text-white/75 text-base md:text-lg font-body leading-relaxed mb-6" style={{ fontWeight: 300, maxWidth: "500px" }}>{d.subtitle}</p>}
         <div className="flex flex-wrap gap-4">
@@ -256,7 +259,11 @@ function Connected({ b, detail, inEditor }: { b: BlockOf<"connected">; detail: D
     case "consultas": return wrap(<Consultas />);
     case "masajes": return wrap(<Masajes />);
     case "sistemas_agua": return wrap(<SistemasAgua />);
-    case "aceites": return wrap(<AceitesEsenciales />);
+    case "aceites": {
+      // Un bloque guardado antes de tener textos propios usa los de serie
+      const base = (aceitesBlocks().find((x) => x.id === "catalogo") as BlockOf<"connected">).data;
+      return <OilCatalog title={d.title || base.title} intro={d.intro || base.intro} buttonLabel={d.buttonLabel || base.buttonLabel} buttonUrl={d.secondaryUrl || base.secondaryUrl} />;
+    }
     case "guias": return wrap(<GuiasDigitales />);
     case "recomendados": return wrap(<Recomendados />);
     case "blog": return wrap(<Blog />);
@@ -408,15 +415,23 @@ function renderInner(block: PageBlock, ctx: ViewCtx, wrapper?: (b: PageBlock, no
     }
     case "features": {
       const d = block.data;
+      const boxed = d.items.some((it) => it.buttonLabel);
+      // Sin título de bloque, cada elemento es un apartado (H2) para no saltar niveles de encabezado
+      const ItemTitle = d.title ? "h3" : "h2";
       return (
         <div className="container py-10">
-          <div className="text-center mb-10">{d.title && <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-3" style={{ fontWeight: 400 }}>{d.title}</h2>}{d.intro && <p className="font-body text-[oklch(0.45_0.02_55)] max-w-2xl mx-auto" style={{ fontWeight: 300 }}>{d.intro}</p>}</div>
-          <div className={`grid grid-cols-1 ${GRID[d.columns]} gap-8`}>
+          {(d.title || d.intro) && <div className="text-center mb-10">{d.title && <h2 className="font-display text-[oklch(0.18_0.018_55)] mb-3" style={{ fontWeight: 400 }}>{d.title}</h2>}{d.intro && <p className="font-body text-[oklch(0.45_0.02_55)] max-w-2xl mx-auto" style={{ fontWeight: 300 }}>{d.intro}</p>}</div>}
+          <div className={`grid grid-cols-1 ${GRID[d.columns]} ${boxed ? "gap-4" : "gap-8"}`}>
             {d.items.map((it, i) => (
-              <div key={i} className="text-center md:text-left">
-                <div className="text-[oklch(0.52_0.08_148)] mb-3 flex justify-center md:justify-start">{ICONS[it.icon] ?? <Leaf size={22} />}</div>
-                <h3 className="font-display text-[oklch(0.18_0.018_55)] mb-2" style={{ fontWeight: 400, fontSize: "1.2rem" }}>{it.title}</h3>
-                <p className="font-body text-sm text-[oklch(0.45_0.02_55)] leading-relaxed" style={{ fontWeight: 300 }}>{it.text}</p>
+              <div key={i} className={boxed ? "bg-white border border-[oklch(0.9_0.012_78)] p-5 flex flex-col text-left" : "text-center md:text-left"}>
+                <div className={`text-[oklch(0.52_0.08_148)] mb-3 flex ${boxed ? "" : "justify-center md:justify-start"}`} aria-hidden="true">{ICONS[it.icon] ?? <Leaf size={22} />}</div>
+                <ItemTitle className="font-display text-[oklch(0.18_0.018_55)] mb-2" style={{ fontWeight: 400, fontSize: "1.2rem" }}>{it.title}</ItemTitle>
+                <p className="font-body text-sm text-[oklch(0.4_0.02_55)] leading-relaxed" style={{ fontWeight: 300 }}>{it.text}</p>
+                {it.buttonLabel && it.buttonUrl && (
+                  <div className="mt-auto pt-4">
+                    <SiteLink href={it.buttonUrl} className="btn-outline w-full justify-center text-center min-h-11" style={{ textDecoration: "none", paddingInline: "0.75rem" }}>{it.buttonLabel}</SiteLink>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -484,6 +499,9 @@ function renderInner(block: PageBlock, ctx: ViewCtx, wrapper?: (b: PageBlock, no
       return block.data.kind === "line" ? <div className="container py-4"><hr className="border-[oklch(0.88_0.015_75)]" /></div> : <div className="h-12" aria-hidden="true" />;
     case "form": return <div className="container py-10"><FormBlock b={block} path={ctx.path} blockId={block.id} /></div>;
     case "connected": return <Connected b={block} detail={ctx.detail} inEditor={ctx.inEditor} />;
+    case "oil_orders": return <OilOrdersBlock b={block} />;
+    case "service_offer": return <ServiceOfferBlock b={block} />;
+    case "resources": return <ResourcesBlock b={block} />;
   }
 }
 
@@ -507,7 +525,27 @@ function Faq({ b }: { b: BlockOf<"faq"> }) {
   );
 }
 
+/**
+ * Al llegar con «#ancla» (desde otra página o recargando) el contenido aún se está pintando: se vuelve a colocar mientras
+ * la altura cambia, durante unos segundos y solo si la persona no ha empezado a desplazarse.
+ */
+function useScrollToHash(enabled: boolean) {
+  useEffect(() => {
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    if (!enabled || !id) return;
+    const go = () => document.getElementById(id)?.scrollIntoView({ behavior: "instant" as ScrollBehavior });
+    const observer = new ResizeObserver(go);
+    const stop = () => { observer.disconnect(); clearTimeout(timer); for (const e of ["wheel", "touchstart", "keydown"]) window.removeEventListener(e, stop); };
+    const timer = setTimeout(stop, 4000);
+    for (const e of ["wheel", "touchstart", "keydown"]) window.addEventListener(e, stop, { passive: true });
+    observer.observe(document.body);
+    go();
+    return stop;
+  }, [enabled]);
+}
+
 /** Lista de bloques de una página. */
 export default function PageBlocksView({ blocks, ctx }: { blocks: PageBlock[]; ctx: ViewCtx }) {
+  useScrollToHash(!ctx.inEditor);
   return <>{blocks.map((b) => <BlockView key={b.id} block={b} ctx={ctx} />)}</>;
 }

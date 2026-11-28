@@ -5,6 +5,7 @@
  */
 import sanitizeHtml from "sanitize-html";
 import { ACTION_RE } from "../shared/siteActions";
+import { cleanDate } from "../shared/oilOrders";
 import {
   ANCHOR_RE, BLOCK_ALIGNS, BLOCK_ANIMATIONS, BLOCK_BACKGROUNDS, BLOCK_MIN_HEIGHTS, BLOCK_OVERLAYS, BLOCK_SPACINGS, BLOCK_TYPES, BLOCK_WIDTHS,
   CONNECTED_VALUES, DEFAULT_BLOCK_STYLE, DEFAULT_GLOBAL, DEFAULT_SEO, DEVICES, FORM_FIELD_KINDS, PAGE_LIMITS, SECTION_LAYOUTS, SECTION_MAX_DEPTH,
@@ -139,7 +140,10 @@ function normalizeData(type: BlockType, d: Record<string, unknown>, depth: numbe
     case "features":
       return {
         title: str(d.title, S.title), intro: str(d.intro, S.long), columns: oneOf(d.columns, ["2", "3", "4"] as const, "3"),
-        items: list(d.items, S.listItems, (x) => ({ icon: str(x.icon, 30), title: str(x.title, S.title), text: str(x.text, S.long) })),
+        items: list(d.items, S.listItems, (x) => {
+          const buttonLabel = str(x.buttonLabel, 80), buttonUrl = safeLink(x.buttonUrl);
+          return { icon: str(x.icon, 30), title: str(x.title, S.title), text: str(x.text, S.long), ...(buttonLabel || buttonUrl ? { buttonLabel, buttonUrl } : {}) };
+        }),
       };
     case "cards":
       return {
@@ -154,6 +158,30 @@ function normalizeData(type: BlockType, d: Record<string, unknown>, depth: numbe
       return { title: str(d.title, S.title), text: str(d.text, S.long), buttonLabel: str(d.buttonLabel, 80), buttonUrl: safeLink(d.buttonUrl), secondaryLabel: str(d.secondaryLabel, 80), secondaryUrl: safeLink(d.secondaryUrl) };
     case "separator":
       return { kind: oneOf(d.kind, ["line", "space"] as const, "line") };
+    case "oil_orders": {
+      const t = (k: string) => str(d[k], S.title);
+      const long = (k: string) => str(d[k], S.long);
+      return {
+        title: t("title"),
+        groupTitle: t("groupTitle"), groupText: long("groupText"), groupMin: str(d.groupMin, 40), groupNote: t("groupNote"), groupHint: t("groupHint"),
+        groupOpen: onOff(d.groupOpen), groupDeadline: cleanDate(str(d.groupDeadline, 20)),
+        groupOpenLabel: str(d.groupOpenLabel, 80), groupOpenUrl: safeLink(d.groupOpenUrl), groupClosedLabel: str(d.groupClosedLabel, 80), groupClosedUrl: safeLink(d.groupClosedUrl),
+        soloTitle: t("soloTitle"), soloText: long("soloText"), soloMin: str(d.soloMin, 40), soloNote: t("soloNote"), soloHint: t("soloHint"),
+        soloLabel: str(d.soloLabel, 80), soloUrl: safeLink(d.soloUrl),
+        conditionsTitle: t("conditionsTitle"), conditions: long("conditions"), closing: long("closing"),
+      };
+    }
+    case "service_offer":
+      return {
+        eyebrow: str(d.eyebrow), title: str(d.title, S.title), intro: str(d.intro, S.long), includesTitle: str(d.includesTitle, S.title), includes: str(d.includes, S.long),
+        howTitle: str(d.howTitle, S.title), howText: str(d.howText, S.long), priceLabel: str(d.priceLabel, S.title), priceNote: str(d.priceNote, S.long),
+        buttonLabel: str(d.buttonLabel, 80), buttonUrl: safeLink(d.buttonUrl), pendingText: str(d.pendingText, S.short),
+      };
+    case "resources":
+      return {
+        title: str(d.title, S.title), intro: str(d.intro, S.long),
+        items: list(d.items, S.listItems, (x) => ({ ebookSlug: str(x.ebookSlug, 100).toLowerCase().replace(/[^a-z0-9_-]/g, ""), title: str(x.title, S.title), text: str(x.text, S.long), buttonLabel: str(x.buttonLabel, 80) })).filter((i) => i.title),
+      };
     case "form":
       return {
         title: str(d.title, S.title), intro: str(d.intro, S.long), submitLabel: str(d.submitLabel, 80) || "Enviar",
@@ -252,6 +280,8 @@ export function plainText(blocks: PageBlock[]): string {
   for (const b of blocks) {
     const d = b.data as unknown as Record<string, unknown>;
     add(d.title, d.subtitle, d.eyebrow, d.html, d.text, d.intro, d.label, d.buttonLabel);
+    if (b.type === "oil_orders") add(...Object.values(b.data));
+    if (b.type === "service_offer") add(b.data.includes, b.data.howText, b.data.priceLabel, b.data.priceNote);
     if (b.type === "section") b.data.columns.forEach((c) => parts.push(plainText(c.blocks)));
     for (const key of ["items", "plans"]) if (Array.isArray(d[key])) for (const it of d[key] as Record<string, unknown>[]) add(it.title, it.text, it.question, it.answer, it.quote);
   }
