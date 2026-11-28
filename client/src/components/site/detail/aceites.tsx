@@ -9,6 +9,8 @@ import { Link } from "wouter";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../../../server/routers";
 import { trpc } from "@/lib/trpc";
+import { useOilOffers, type OilOffer } from "@/components/oils/useOilOffers";
+import { OILS_NOT_INCLUDED, oilLink, visibleOilTags } from "@shared/oilLinks";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, Leaf, ArrowRight,
@@ -48,7 +50,8 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 }
 
 type AceiteProduct = NonNullable<inferRouterOutputs<AppRouter>["oils"]["getProduct"]>;
-interface AceitesCtx { product: AceiteProduct }
+/** `offer`: la ficha remite a una guía digital o al asesoramiento (no se pide como un aceite) */
+interface AceitesCtx { product: AceiteProduct; offer: OilOffer | null }
 const ORDERS_URL = "/aceites-esenciales#pedidos";
 const ADVICE_URL = "/aceites-esenciales#asesoramiento";
 const Ctx = createContext<AceitesCtx | null>(null);
@@ -58,6 +61,8 @@ export function AceitesProvider({ children, slug }: { children: ReactNode; slug:
     { slug: slug ?? "" },
     { enabled: !!slug }
   );
+  const link = oilLink(product?.tags);
+  const offerFor = useOilOffers([link]);
 
   if (isLoading) {
     return (
@@ -81,7 +86,7 @@ export function AceitesProvider({ children, slug }: { children: ReactNode; slug:
     );
   }
 
-  return <Ctx.Provider value={{ product }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ product, offer: offerFor(link) }}>{children}</Ctx.Provider>;
 }
 
 function Breadcrumb({ product }: AceitesCtx) {
@@ -98,10 +103,10 @@ function Breadcrumb({ product }: AceitesCtx) {
   );
 }
 
-function Hero({ product }: AceitesCtx) {
+function Hero({ product, offer }: AceitesCtx) {
   const beneficios = parseJsonArray(product.beneficios);
   const indicaciones = parseJsonArray(product.indicaciones);
-  const tags = parseJsonArray(product.tags);
+  const tags = visibleOilTags(product.tags);
   return (
       <section className="max-w-6xl mx-auto px-6 py-12">
         <div className="grid md:grid-cols-2 gap-12 items-start">
@@ -184,8 +189,15 @@ function Hero({ product }: AceitesCtx) {
               </div>
             )}
 
+            {offer && (offer.price || offer.kind === "consulta") && (
+              <div data-testid="oil-offer">
+                {offer.price && <p className="font-display text-3xl text-[oklch(0.18_0.018_55)]">{offer.price}</p>}
+                {offer.kind === "consulta" && <p className="font-body text-sm text-[oklch(0.38_0.02_55)] mt-1"><strong>{OILS_NOT_INCLUDED}</strong> Los gastos de envío se abonan aparte.</p>}
+              </div>
+            )}
+
             {/* Bloque obligatorio de personalización */}
-            <div className="bg-[oklch(0.96_0.02_148)] border-l-4 border-[oklch(0.52_0.08_148)] px-4 py-4 space-y-2">
+            {!offer && <div className="bg-[oklch(0.96_0.02_148)] border-l-4 border-[oklch(0.52_0.08_148)] px-4 py-4 space-y-2">
               <div className="flex items-start gap-2">
                 <AlertTriangle size={16} className="text-[oklch(0.52_0.08_148)] flex-shrink-0 mt-0.5" />
                 <div>
@@ -199,11 +211,19 @@ function Hero({ product }: AceitesCtx) {
               </div>
             </div>
 
+            }
+
+            {offer && (offer.url ? (
+              <div className="pt-2"><a href={offer.url} className="btn-primary w-full sm:w-auto justify-center text-center" style={{ textDecoration: "none" }}>{offer.label} <ArrowRight size={14} /></a></div>
+            ) : (
+              <p className="font-body text-sm text-[oklch(0.4_0.02_55)]">Disponible próximamente.</p>
+            ))}
+
             {/* La ficha es informativa: se pide por contacto directo desde el apartado de pedidos */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            {!offer && <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <a href={ORDERS_URL} className="btn-primary w-full sm:w-auto justify-center text-center" style={{ textDecoration: "none" }}>Consultar pedidos <ArrowRight size={14} /></a>
               <a href={ADVICE_URL} className="btn-outline w-full sm:w-auto justify-center text-center" style={{ textDecoration: "none" }}>Conocer asesoramiento</a>
-            </div>
+            </div>}
 
             {/* Mensaje personalizado */}
             {product.mensajeConsulta && (
@@ -231,7 +251,8 @@ function Uso({ product }: AceitesCtx) {
   );
 }
 
-function Faq({ product }: AceitesCtx) {
+function Faq({ product, offer }: AceitesCtx) {
+  if (offer) return null; // las preguntas son sobre usar y pedir aceites
   return (
       <section className="max-w-3xl mx-auto px-6 py-12">
         <h2 className="font-display text-xl text-[oklch(0.18_0.018_55)] mb-6">Preguntas frecuentes</h2>
@@ -257,7 +278,8 @@ function Faq({ product }: AceitesCtx) {
   );
 }
 
-function CtaFinal(_: AceitesCtx) {
+function CtaFinal({ offer }: AceitesCtx) {
+  if (offer) return null;
   return (
       <section className="bg-[oklch(0.14_0.018_55)] text-white py-12">
         <div className="max-w-3xl mx-auto px-6 text-center space-y-5">

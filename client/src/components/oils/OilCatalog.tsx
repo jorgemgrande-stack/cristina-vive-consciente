@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { useLabels } from "@/lib/siteGlobal";
 import { trpc } from "@/lib/trpc";
 import { OIL_FILTERS, filterOils, oilTypeLabelKey } from "@shared/oilCatalog";
+import { OILS_NOT_INCLUDED, oilLink } from "@shared/oilLinks";
+import { useOilOffers } from "./useOilOffers";
 
 export default function OilCatalog({ title, intro, buttonLabel, buttonUrl }: { title: string; intro: string; buttonLabel: string; buttonUrl: string }) {
   const L = useLabels();
@@ -18,6 +20,7 @@ export default function OilCatalog({ title, intro, buttonLabel, buttonUrl }: { t
   const [filter, setFilter] = useState("");
   const { data: products = [], isLoading } = trpc.oils.listProducts.useQuery({});
   const shown = useMemo(() => filterOils(products, filter, search), [products, filter, search]);
+  const offerFor = useOilOffers(products.map((p) => oilLink(p.tags)));
 
   return (
     <section className="container py-12 md:py-16" aria-labelledby="oil-catalog-title">
@@ -70,7 +73,9 @@ export default function OilCatalog({ title, intro, buttonLabel, buttonUrl }: { t
         <>
           <p className="text-xs font-body text-[oklch(0.45_0.02_55)] mb-4 uppercase tracking-wider" aria-live="polite">{L(shown.length !== 1 ? "aceites.count.many" : "aceites.count.one", { n: shown.length })}</p>
           <ul className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6" data-testid="oil-grid">
-            {shown.map((p) => (
+            {shown.map((p) => {
+              const offer = offerFor(oilLink(p.tags));
+              return (
               <li key={p.id} className="relative group bg-white border border-[oklch(0.9_0.012_78)] flex flex-col min-w-0">
                 <AdminEditLink href="/crm/aceites/productos" label="Editar producto" />
                 <Link href={`/aceites-esenciales/${p.slug}`} tabIndex={-1} aria-hidden="true">
@@ -90,13 +95,16 @@ export default function OilCatalog({ title, intro, buttonLabel, buttonUrl }: { t
                 <div className="flex flex-col flex-1 p-3 md:p-4 gap-2">
                   <p className="text-[0.6rem] font-body uppercase tracking-wider text-[oklch(0.45_0.07_148)] leading-snug">{oilTypeLabelKey(p.tipoProducto) ? L(oilTypeLabelKey(p.tipoProducto)) : p.tipoProducto}</p>
                   <h3 className="font-display text-base text-[oklch(0.18_0.018_55)] leading-snug break-words flex-1">{p.name}</h3>
+                  {offer?.price && <p className="font-display text-lg text-[oklch(0.18_0.018_55)]" data-testid="oil-price">{offer.price}</p>}
+                  {offer?.kind === "consulta" && <p className="text-xs font-body text-[oklch(0.4_0.02_55)] leading-snug">{OILS_NOT_INCLUDED}</p>}
                   <Link href={`/aceites-esenciales/${p.slug}`} aria-label={`${L("aceites.card.detail")}: ${p.name}`}
                     className="min-h-11 flex items-center justify-center text-center text-xs font-body uppercase tracking-wider border border-[oklch(0.62_0.07_148)] text-[oklch(0.34_0.07_148)] hover:bg-[oklch(0.95_0.02_148)] transition-colors px-2 no-underline">
                     {L("aceites.card.detail")}
                   </Link>
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </>
       )}

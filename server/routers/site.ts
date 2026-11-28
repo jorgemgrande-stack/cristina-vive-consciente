@@ -174,7 +174,7 @@ export const siteRouter = router({
         const type = base === "/consultas" ? "consulta" : "masaje";
         [{ slug }] = [...(await d.select({ slug: services.slug }).from(services).where(and(eq(services.type, type), eq(services.status, "active"), eq(services.visibleEnPublico, 1))).limit(1)), { slug: undefined }];
       } else if (base === "/sistemas-agua") [{ slug }] = [...(await d.select({ slug: waterProducts.slug }).from(waterProducts).where(eq(waterProducts.status, "active")).limit(1)), { slug: undefined }];
-      else if (base === "/aceites-esenciales") [{ slug }] = [...(await d.select({ slug: oilProducts.slug }).from(oilProducts).where(eq(oilProducts.status, "active")).limit(1)), { slug: undefined }];
+      else if (base === "/aceites-esenciales") [{ slug }] = [...(await d.select({ slug: oilProducts.slug }).from(oilProducts).where(and(eq(oilProducts.status, "active"), eq(oilProducts.visibleEnPublico, 1))).limit(1)), { slug: undefined }];
       else if (base === "/blog") [{ slug }] = [...(await d.select({ slug: blogPosts.slug }).from(blogPosts).where(eq(blogPosts.status, "published")).limit(1)), { slug: undefined }];
     }
     return slug ? `${base}/${slug}` : base;

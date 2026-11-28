@@ -390,6 +390,9 @@ export default function AceiteProductos() {
               onChange={(v) => setForm((f) => ({ ...f, tags: v }))}
               placeholder="Ej: relajante, digestivo, inmunidad..."
             />
+            <p className="text-xs font-body text-[oklch(0.52_0.04_80)] -mt-2">
+              Para remitir a otro producto añade «ebook:identificador» (CRM → Ebooks) o «consulta:identificador» (CRM → Servicios): la ficha muestra su precio y lleva a él.
+            </p>
 
             {/* Imagen */}
             <div className="space-y-1">
