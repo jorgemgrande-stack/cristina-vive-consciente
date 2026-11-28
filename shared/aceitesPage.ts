@@ -14,6 +14,7 @@ export const ACEITES_CONTACT = {
   group: wa("Hola Cristina, quiero hacer un pedido conjunto de aceites esenciales."),
   next: wa("Hola Cristina, ¿cuándo es el próximo pedido conjunto de aceites esenciales?"),
   individual: wa("Hola Cristina, quiero hacer un pedido individual de aceites esenciales."),
+  advice: wa("Hola Cristina, me gustaría solicitar el asesoramiento personalizado de aromaterapia."),
 };
 
 function B<K extends BlockType>(id: string, type: K, data: Partial<BlockDataMap[K]>, style?: Partial<BlockStyle>): PageBlock {
@@ -73,19 +74,17 @@ export function aceitesBlocks(): PageBlock[] {
       intro: "Un acompañamiento personalizado para descubrir las posibilidades de la aromaterapia e incorporar los aceites esenciales a tu vida cotidiana y familiar, teniendo en cuenta tus necesidades, intereses y circunstancias personales.",
       includesTitle: "¿Qué incluye?",
       includes: [
-        "Consulta individual de aromaterapia de 60 minutos.",
+        "Consulta individual de un mínimo de una hora de duración.",
         "Selección personalizada de aceites esenciales según tus necesidades e intereses.",
-        "Orientación sobre usos, formas de aplicación, diluciones y precauciones.",
-        "Documento personalizado en PDF con la información y las recomendaciones de la consulta.",
-        "Posibilidad de diseñar tu propio botiquín de aromaterapia, desde una pequeña selección de aceites esenciales hasta un botiquín familiar más completo.",
-        "Guía básica de aceites esenciales en PDF incluida, valorada en 14,90 €.",
+        "Elaboración de un documento personalizado en PDF con los usos y aplicaciones de los aceites esenciales que hayas elegido.",
+        "Guía básica de aceites esenciales en PDF.",
         "Gestión de la compra de los aceites seleccionados, si lo deseas.",
       ].join("\n"),
       howTitle: "¿Cómo funciona?",
-      howText: "Tras la consulta recibirás toda la información personalizada en formato PDF, para que puedas revisarla con tranquilidad, explorar los aceites recomendados y decidir cuáles deseas incorporar a tu botiquín.\n\nUna vez hayas realizado tu selección, puedo encargarme de gestionar la compra.\n\nNo es necesario adquirir todos los aceites recomendados ni decidir cuáles comprar durante la consulta.",
-      priceLabel: "Precio del servicio: 120 €",
-      priceNote: "Incluye la consulta individual de 60 minutos, el trabajo posterior de elaboración del documento personalizado, la guía básica de aceites esenciales y la gestión de la compra.\n\nEl importe de los aceites y los gastos de envío se abonan aparte.",
-      buttonLabel: "Reservar asesoramiento", buttonUrl: "",
+      howText: "Tras la consulta podrás valorar con tranquilidad los aceites recomendados y decidir cuáles deseas incorporar a tu botiquín.\n\nUna vez realizada tu selección, recibirás tu documento personalizado en PDF en un plazo máximo de 10 días y, si lo deseas, puedo encargarme de gestionar la compra.\n\nNo es necesario adquirir todos los aceites recomendados ni decidir cuáles comprar durante la consulta.",
+      priceLabel: "Precio del servicio: 90 €",
+      priceNote: "Modalidad online.\n\nEl importe de los aceites y los gastos de envío se abonan aparte.\n\nAntes de formalizar la reserva, puedes contactar conmigo por WhatsApp para resolver tus dudas y concretar el asesoramiento.",
+      buttonLabel: "Solicitar asesoramiento", buttonUrl: ACEITES_CONTACT.advice,
       pendingText: "La reserva online de este asesoramiento todavía no está disponible.",
     }, { anchor: "asesoramiento" }),
     B("ac-guias", "resources", {
