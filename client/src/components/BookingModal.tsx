@@ -34,6 +34,7 @@ import {
   BOOKING_MESSAGE_MAX,
   BOOKING_MESSAGE_PLACEHOLDER,
   type ServiceLocation,
+  allowsInPerson,
 } from "@shared/booking";
 import { BOOKING_EVENTS } from "@shared/bookingAnalytics";
 import { trackBookingEvent } from "@/lib/analytics";
@@ -152,6 +153,9 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
   const inPlacePrice = selectedService?.price ?? null;
   const shownPrice = isHome ? `${homePrice} €` : formatPrice(inPlacePrice);
   const timeOptions = bookableTimes(form.preferredDate, selectedService?.durationMinutes);
+  const modalityOptions = MODALITY_OPTIONS.filter((o) => o.value !== "presencial" || allowsInPerson(selectedService));
+  // Si el servicio es online y quedaba «presencial» de otra elección, se vuelve a videollamada
+  const modality = isMassage ? "presencial" : modalityOptions.some((o) => o.value === form.modality) ? form.modality : "zoom";
 
   // Modalidad coherente con el servicio: masaje = presencial; al salir de un masaje se vuelve a Zoom.
   const modalityFor = (slug: string, current: string) =>
@@ -184,7 +188,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
         trackBookingEvent(BOOKING_EVENTS.REQUEST_SUBMITTED, {
           service_slug: form.serviceType,
           service_group: isMassage ? "masaje" : "consulta",
-          modality: isMassage ? "presencial" : form.modality,
+          modality,
         });
       }
       setSubmitted(true);
@@ -236,7 +240,7 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
       serviceStreet: isHome ? form.serviceStreet.trim() : undefined,
       servicePostalCode: isHome ? form.servicePostalCode.trim() : undefined,
       serviceCity: isHome ? form.serviceCity.trim() : undefined,
-      modality: (isMassage ? "presencial" : form.modality) as any,
+      modality: modality as any,
       message: form.message.trim() || undefined,
     });
   };
@@ -653,11 +657,11 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                 Modalidad
               </label>
               <div className="grid grid-cols-2 gap-2">
-                {MODALITY_OPTIONS.map((opt) => (
+                {modalityOptions.map((opt) => (
                   <label
                     key={opt.value}
                     className={`flex items-center gap-2 px-3 py-2.5 border cursor-pointer transition-all duration-200 ${
-                      form.modality === opt.value
+                      modality === opt.value
                         ? "border-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]/5"
                         : "border-[oklch(0.88_0.015_75)] bg-white hover:border-[oklch(0.72_0.04_148)]"
                     }`}
@@ -666,12 +670,12 @@ export default function BookingModal({ isOpen, onClose, preselectedService }: Bo
                       type="radio"
                       name="modality"
                       value={opt.value}
-                      checked={form.modality === opt.value}
+                      checked={modality === opt.value}
                       onChange={set("modality")}
                       className="sr-only"
                     />
-                    <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${form.modality === opt.value ? "border-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]" : "border-[oklch(0.72_0.02_60)]"}`} />
-                    <span className="text-xs font-body text-[oklch(0.38_0.02_55)]" style={{ fontWeight: form.modality === opt.value ? 500 : 300 }}>
+                    <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${modality === opt.value ? "border-[oklch(0.52_0.08_148)] bg-[oklch(0.52_0.08_148)]" : "border-[oklch(0.72_0.02_60)]"}`} />
+                    <span className="text-xs font-body text-[oklch(0.38_0.02_55)]" style={{ fontWeight: modality === opt.value ? 500 : 300 }}>
                       {opt.label}
                     </span>
                   </label>

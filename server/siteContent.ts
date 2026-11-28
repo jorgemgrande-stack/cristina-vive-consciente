@@ -176,6 +176,7 @@ function normalizeData(type: BlockType, d: Record<string, unknown>, depth: numbe
         eyebrow: str(d.eyebrow), title: str(d.title, S.title), intro: str(d.intro, S.long), includesTitle: str(d.includesTitle, S.title), includes: str(d.includes, S.long),
         howTitle: str(d.howTitle, S.title), howText: str(d.howText, S.long), priceLabel: str(d.priceLabel, S.title), priceNote: str(d.priceNote, S.long),
         buttonLabel: str(d.buttonLabel, 80), buttonUrl: safeLink(d.buttonUrl), pendingText: str(d.pendingText, S.short),
+        serviceSlug: str(d.serviceSlug, 100).toLowerCase().replace(/[^a-z0-9_]/g, ""), helpLabel: str(d.helpLabel, 80), helpUrl: safeLink(d.helpUrl),
       };
     case "resources":
       return {

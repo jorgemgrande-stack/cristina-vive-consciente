@@ -3,6 +3,9 @@
  * Fuente: datos facilitados por Cristina (2026-10-02). Si cambian horarios o tarifas, se editan aquí.
  */
 
+/** Un servicio marcado «online» en CRM → Servicios no se puede pedir en presencial. */
+export const allowsInPerson = (service?: { modality?: string | null } | null): boolean => service?.modality !== "online";
+
 /** Lugar donde se presta el masaje en consulta. */
 export const MASSAGE_LOCATION = "Navas de Riofrío (Segovia)";
 

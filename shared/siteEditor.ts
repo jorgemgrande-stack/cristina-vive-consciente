@@ -114,6 +114,8 @@ export interface BlockDataMap {
   service_offer: {
     eyebrow: string; title: string; intro: string; includesTitle: string; /** Un punto por línea */ includes: string;
     howTitle: string; howText: string; priceLabel: string; priceNote: string; buttonLabel: string; buttonUrl: string; pendingText: string;
+    /** Consulta de CRM → Servicios: si está publicada, de ella salen el precio («{precio}») y el destino del botón */
+    serviceSlug: string; /** Contacto para dudas, bajo el botón */ helpLabel: string; helpUrl: string;
   };
   resources: { title: string; intro: string; items: ResourceItem[] };
   /** Formulario a medida: cada envío llega a Automatizaciones/CRM como contacto, con todas las respuestas */
@@ -241,7 +243,7 @@ export function defaultBlockData<K extends BlockType>(type: K): BlockDataMap[K] 
       soloTitle: "Pedidos individuales", soloText: "", soloMin: "", soloNote: "", soloHint: "", soloLabel: "Solicitar pedido individual", soloUrl: "/contacto",
       conditionsTitle: "Condiciones generales", conditions: "", closing: "",
     },
-    service_offer: { eyebrow: "", title: "Servicio", intro: "", includesTitle: "¿Qué incluye?", includes: "", howTitle: "¿Cómo funciona?", howText: "", priceLabel: "", priceNote: "", buttonLabel: "Reservar", buttonUrl: "", pendingText: "La reserva online todavía no está disponible." },
+    service_offer: { eyebrow: "", title: "Servicio", intro: "", includesTitle: "¿Qué incluye?", includes: "", howTitle: "¿Cómo funciona?", howText: "", priceLabel: "", priceNote: "", buttonLabel: "Reservar", buttonUrl: "", pendingText: "La reserva online todavía no está disponible.", serviceSlug: "", helpLabel: "", helpUrl: "" },
     resources: { title: "Guías y recursos", intro: "", items: [] },
     form: { title: "Escríbeme", intro: "", fields: FIELD_DEFAULTS.map((f) => ({ ...f })), submitLabel: "Enviar", successMessage: "Gracias, te responderé lo antes posible.", consentText: "He leído y acepto la política de privacidad." },
     connected: { source: "consultas", section: "", eyebrow: "", title: "", intro: "", buttonLabel: "", secondaryLabel: "", secondaryUrl: "" },

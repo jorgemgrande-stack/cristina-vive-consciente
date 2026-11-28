@@ -14,6 +14,7 @@ import BookingModal from "@/components/BookingModal";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../../../server/routers";
 import { trpc } from "@/lib/trpc";
+import { AROMA_FAQ, AROMA_SERVICE_SLUG } from "@shared/aromaService";
 
 const MODALITY_LABEL: Record<string, string> = { online: "Online", presencial: "Presencial", ambos: "Presencial / Online" };
 const MODALITY_ICON: Record<string, ReactNode> = {
@@ -220,7 +221,7 @@ export function ConsultasSection({ name, bare }: { name: string; bare?: boolean 
     }
 
     case "faq": {
-      const faqs = [
+      const faqs = consulta.slug === AROMA_SERVICE_SLUG ? AROMA_FAQ : [
         {
           q: "¿Cómo se desarrolla la consulta?",
           a: consulta.durationLabel
